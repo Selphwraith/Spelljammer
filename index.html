@@ -2048,6 +2048,14 @@ function drawShipImg(key, ctx, cx, cy, w, h, flip, fallbackFn) {
     fallbackFn();
   }
 }
+// Scale w,h for player ships so each class feels bigger than the last.
+// Pinnace = base, squid = 1.25x, hammer = 2x, manow = 2.5x
+function shipSz(type, bw, bh) {
+  if(type==='squid')  return [bw*1.25, bh*1.25];
+  if(type==='hammer') return [bw*2,    bh*2   ];
+  if(type==='manow')  return [bw*2.5,  bh*2.5 ];
+  return [bw, bh]; // pinnace — base size
+}
 
 // Preload — silently skip any file the browser can't load
 function loadSounds() {
@@ -2404,7 +2412,8 @@ function renderLoop(ts=0) {
     cx.save();
     cx.translate(sx, sy);
     cx.rotate(travelAngle + rock);
-    drawShipImg(G.ship.type,cx,0,bob,40,24,false,()=>{
+    const [_tw,_th]=shipSz(G.ship.type,40,24);
+    drawShipImg(G.ship.type,cx,0,bob,_tw,_th,false,()=>{
       if(G.ship.type==='pinnace')drawPinnace(cx,0,bob,18,false,t);
       else if(G.ship.type==='squid')drawSquid(cx,0,bob,18,false,t);
       else if(G.ship.type==='manow')drawManow(cx,0,bob,20,false,t);
@@ -2419,7 +2428,8 @@ function renderLoop(ts=0) {
     if(G.ship.atWp){
       const rx=G.ship.atWp.x*W+28, ry=G.ship.atWp.y*H+8;
       cx.save(); cx.translate(rx,ry); cx.rotate(idleRock);
-      drawShipImg(G.ship.type,cx,0,idleBob,40,24,false,()=>{
+      const [_iw,_ih]=shipSz(G.ship.type,40,24);
+      drawShipImg(G.ship.type,cx,0,idleBob,_iw,_ih,false,()=>{
         if(G.ship.type==='pinnace')drawPinnace(cx,0,idleBob,16,false,t);
         else if(G.ship.type==='squid')drawSquid(cx,0,idleBob,16,false,t);
         else if(G.ship.type==='manow')drawManow(cx,0,idleBob,18,false,t);
@@ -2430,7 +2440,8 @@ function renderLoop(ts=0) {
       const fs=G.ship.atFragSite;
       const rx=fs.x*W+28, ry=fs.y*H-24;
       cx.save(); cx.translate(rx,ry); cx.rotate(idleRock);
-      drawShipImg(G.ship.type,cx,0,idleBob,40,24,false,()=>{
+      const [_iw,_ih]=shipSz(G.ship.type,40,24);
+      drawShipImg(G.ship.type,cx,0,idleBob,_iw,_ih,false,()=>{
         if(G.ship.type==='pinnace')drawPinnace(cx,0,idleBob,16,false,t);
         else if(G.ship.type==='squid')drawSquid(cx,0,idleBob,16,false,t);
         else if(G.ship.type==='manow')drawManow(cx,0,idleBob,18,false,t);
@@ -2443,7 +2454,8 @@ function renderLoop(ts=0) {
         const p=sPos(cur);
         const rx=p.x+34, ry=p.y+8;
         cx.save(); cx.translate(rx,ry); cx.rotate(idleRock);
-        drawShipImg(G.ship.type,cx,0,idleBob,40,24,false,()=>{
+        const [_iw2,_ih2]=shipSz(G.ship.type,40,24);
+        drawShipImg(G.ship.type,cx,0,idleBob,_iw2,_ih2,false,()=>{
           if(G.ship.type==='pinnace')drawPinnace(cx,0,idleBob,16,false,t);
           else if(G.ship.type==='squid')drawSquid(cx,0,idleBob,16,false,t);
           else if(G.ship.type==='manow')drawManow(cx,0,idleBob,18,false,t);
@@ -4011,7 +4023,8 @@ function updateCbtUI(){
 function drawCbtShips(key){
   const pc=document.getElementById('cv-player').getContext('2d');
   pc.clearRect(0,0,120,80);
-  drawShipImg(G.ship.type,pc,60,44,90,55,false,()=>{
+  const [_pw,_ph]=shipSz(G.ship.type,90,55);
+  drawShipImg(G.ship.type,pc,60,44,_pw,_ph,false,()=>{
     if(G.ship.type==='pinnace')drawPinnace(pc,60,44,28,false);
     else if(G.ship.type==='squid')drawSquid(pc,60,44,28,false);
     else if(G.ship.type==='manow')drawManow(pc,60,44,28,false);
@@ -5136,7 +5149,8 @@ function buildShipOverlay(){
   sc.fillStyle='rgba(5,0,15,0.6)'; sc.fillRect(0,0,200,130);
   // Starfield
   for(let i=0;i<40;i++){ sc.fillStyle=`rgba(255,255,255,${Math.random()*0.4+0.1})`; sc.beginPath(); sc.arc(Math.random()*200,Math.random()*130,Math.random()*1.2+0.3,0,Math.PI*2); sc.fill(); }
-  drawShipImg(s.type,sc,100,65,160,95,false,()=>{
+  const [_ow,_oh]=shipSz(s.type,160,95);
+  drawShipImg(s.type,sc,100,65,_ow,_oh,false,()=>{
     if(s.type==='pinnace')drawPinnace(sc,100,65,44,false);
     else if(s.type==='squid')drawSquid(sc,100,65,44,false);
     else if(s.type==='hammer')drawHammer(sc,100,65,44,false);
