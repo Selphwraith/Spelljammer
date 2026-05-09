@@ -1866,6 +1866,7 @@ const SOUND_DATA = {
   'purchase': 'sounds/purchase.mp3',
   'ship_upgrade': 'sounds/ship_upgrade.mp3',
   'loot_open': 'sounds/loot_open.mp3',
+  'title': 'sounds/title.mp3',
 };
 
 // SOUND_FILES kept for reference but audio now loads from SOUND_DATA
@@ -1914,6 +1915,21 @@ function _stopLoop() {
   if (_loopEl) { try { _loopEl.pause(); } catch(_) {} _loopEl = null; }
 }
 
+let _titleEl = null;
+function playTitle(){
+  if(_muted || !_SFX['title']) return;
+  stopTitle();
+  try {
+    const a = _SFX['title'].cloneNode();
+    a.loop = true; a.volume = 0.35;
+    a.play().catch(()=>{});
+    _titleEl = a;
+  } catch(_){}
+}
+function stopTitle(){
+  if(_titleEl){ try{ _titleEl.pause(); }catch(_){} _titleEl=null; }
+}
+
 function toggleMute() {
   _muted = !_muted;
   const btn = document.getElementById('mute-btn');
@@ -1923,8 +1939,12 @@ function toggleMute() {
   } else {
     if (btn) btn.textContent = '🔊 Sound';
     // Restart whatever ambient should be playing for the current phase
-    const scene = G.phase === 'combat' ? 'combat' : G.phase === 'port' ? 'port' : 'map';
-    setAmbient(scene);
+    if(!_gameActive || (G && G.phase === 'menu')){
+      playTitle();
+    } else {
+      const scene = G.phase === 'combat' ? 'combat' : G.phase === 'port' ? 'port' : 'map';
+      setAmbient(scene);
+    }
   }
 }
 
@@ -2331,17 +2351,37 @@ function renderLoop(ts=0) {
     cx.fillStyle=locked?'#333':sph.c;
     cx.beginPath(); cx.arc(p.x-1,p.y+2,R*.55,0,Math.PI*2); cx.fill();
     // Clue indicator — show ✦ if clue obtained but fragment not yet collected
-    // ── Quest turnin badge ❗ ──────────────────────────────
-    if(G.quests){
-      const hasTurnin = G.quests.some(q=>q.turnin===sph.id&&q.state==='active'&&G.ship.inv.some(i=>i.id===q.cargo.id));
-      if(hasTurnin){
+    // ── Quest turnin badges ❗ ──────────────────────────────
+    {
+      // Yellow ❗ — faction delivery quest: carrying cargo, this is the turnin sphere
+      const hasFactionTurnin = G.quests &&
+        G.quests.some(q=>q.turnin===sph.id && q.state==='active' && G.ship.inv.some(i=>i.id===q.cargo.id));
+      // Orange ❗ — local quest: objective complete, return here to claim reward
+      const hasLocalTurnin = G.localQuests && LOCAL_QUEST_DATA[sph.id] &&
+        LOCAL_QUEST_DATA[sph.id].npcs.some(npc=>
+          npc.quests && npc.quests.some(q=>
+            G.localQuests[q.id]==='active' && q.check && q.check(G)
+          )
+        );
+      if(hasFactionTurnin || hasLocalTurnin){
         const bp=sPos(sph), bR=(sph.id===G.ship.loc?22:17);
-        const bx=bp.x+bR*0.7, by=bp.y-bR*0.9;
+        const pulse=0.85+0.15*Math.sin(t*3.5); // gentle pulse
         cx.save();
-        cx.fillStyle='#ffdd00'; cx.font='bold 13px Arial'; cx.textAlign='center'; cx.textBaseline='middle';
-        // Glow
-        cx.shadowColor='#ffdd00'; cx.shadowBlur=8;
-        cx.fillText('❗',bx,by);
+        cx.font=`bold ${Math.round(13*pulse)}px Arial`;
+        cx.textAlign='center'; cx.textBaseline='middle';
+        if(hasFactionTurnin && hasLocalTurnin){
+          // Both — stack them
+          cx.shadowColor='#ffdd00'; cx.shadowBlur=8;
+          cx.fillStyle='#ffdd00'; cx.fillText('❗',bp.x+bR*0.7,bp.y-bR*0.9);
+          cx.shadowColor='#ff8800'; cx.shadowBlur=8;
+          cx.fillStyle='#ff8800'; cx.fillText('❗',bp.x+bR*1.2,bp.y-bR*0.9);
+        } else if(hasFactionTurnin){
+          cx.shadowColor='#ffdd00'; cx.shadowBlur=8;
+          cx.fillStyle='#ffdd00'; cx.fillText('❗',bp.x+bR*0.7,bp.y-bR*0.9);
+        } else {
+          cx.shadowColor='#ff8800'; cx.shadowBlur=8;
+          cx.fillStyle='#ff8800'; cx.fillText('❗',bp.x+bR*0.7,bp.y-bR*0.9);
+        }
         cx.shadowBlur=0; cx.restore();
       }
     }
@@ -5494,6 +5534,7 @@ function showMainMenu() {
   drawMenuShip();
   setTag('Main Menu');
   if (_gameActive) _stopLoop();
+  playTitle();
 }
 
 function hideMainMenu() {
@@ -6693,6 +6734,7 @@ function showCinematic(){
 function skipCinematic(){
   if(_cinAnimId){ cancelAnimationFrame(_cinAnimId); _cinAnimId=null; }
   document.getElementById('cin-ovl').style.display='none';
+  stopTitle();
   _gameActive = true;
   initGame();
 }
