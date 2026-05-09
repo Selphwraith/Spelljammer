@@ -2037,16 +2037,50 @@ function loadShipImages() {
 }
 function drawShipImg(key, ctx, cx, cy, w, h, flip, fallbackFn) {
   const img = _SHIP_IMG[key];
+  const scale = SHIP_IMG_SCALE[key] || 1.0;
+  const sw = w * scale, sh = h * scale;
   if (img) {
     ctx.save();
     ctx.translate(cx, cy);
     if (flip) ctx.scale(-1, 1);
-    ctx.drawImage(img, -w/2, -h/2, w, h);
+    ctx.drawImage(img, -sw/2, -sh/2, sw, sh);
     ctx.restore();
   } else {
+    if(!_SHIP_IMG_FAILED.has(key) && SHIP_IMAGE_DATA[key]) loadShipImages();
     fallbackFn();
   }
 }
+
+// Per-ship render scale multipliers — 1.0 = base size passed by the caller.
+// Tune these freely as artwork comes in; bigger enemies/bosses should feel bigger.
+const SHIP_IMG_SCALE = {
+  // ── Player vessels (escalate with class) ─────────────
+  'pinnace':      1.0,
+  'squid':        1.15,
+  'hammer':       1.25,
+  'manow':        1.40,
+  // ── Pirate raiders (T1 → T3) ─────────────────────────
+  'corsair':      0.90,
+  'plunderer':    1.05,
+  'blackfleet':   1.20,
+  // ── Fragment guardians ───────────────────────────────
+  'nautiloid':    1.10,
+  'githyanki':    1.10,
+  'beholder':     1.20,
+  'leviathan':    1.50,
+  // ── Far Realm enemies ────────────────────────────────
+  'vodoniPatrol': 1.10,
+  'scroBattle':   1.15,
+  'thrikreen':    1.05,
+  'frStalker':    1.10,
+  'frHorde':      1.30,
+  // ── World bosses (all large) ─────────────────────────
+  'elder':        1.60,
+  'wb_grex':      1.35,
+  'wb_admiral':   1.25,
+  'wb_clutch':    1.45,
+  'wb_murmur':    1.55,
+};
 
 // Preload — silently skip any file the browser can't load
 function loadSounds() {
