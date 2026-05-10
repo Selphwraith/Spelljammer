@@ -1292,6 +1292,57 @@ const SHIP_TYPES = {
   manow:   { n:'Man-o-War',  slots:5, hull:230, crew:20, speed:2, cost:3920, availSpheres:['ragestar','vodoni','theweird','squrm','baresun','thedas','nehwon','donig','dukagsh','solaris'], desc:'An elven battle cruiser. Five weapon mounts. First available beyond the breach.' },
 };
 
+// ── SHIP SIGNATURE ABILITIES ─────────────────────────────────────────────────
+// Each non-pinnace ship has a built-in tiered ability that upgrades at every port.
+// G.ship.sigTier: 1 | 2 | 3   (null for pinnace)
+const SIG_ABILITY = {
+  squid: {
+    shipName: 'Squid Ship',
+    ico: '🦑',
+    tiers: [
+      { tier:1, n:'Tentacle Grapple',   cost:0,   cdRounds:3,
+        desc:'Free action — binds the enemy in tentacles, reducing their next attack by 50%.',
+        upgradeDesc:'Unlock at purchase' },
+      { tier:2, n:'Crushing Grip',      cost:300,  cdRounds:3,
+        desc:'Tentacles crush the hull — 8 direct damage AND next enemy attack reduced by 50%.',
+        upgradeDesc:'Tighten the grip — adds hull damage' },
+      { tier:3, n:'Void Stranglehold',  cost:650,  cdRounds:4,
+        desc:'Total immobilization — stuns enemy for 1 full turn AND deals 15 damage.',
+        upgradeDesc:'Full lock — stun + damage' },
+    ]
+  },
+  hammer: {
+    shipName: 'Hammership',
+    ico: '🔨',
+    tiers: [
+      { tier:1, n:'Siege Ram',          cost:0,   cdRounds:4,
+        desc:'Ram the enemy — 2d10 impact damage. Costs 5 hull to yourself from the impact.',
+        upgradeDesc:'Unlock at purchase' },
+      { tier:2, n:'Reinforced Ram',     cost:350,  cdRounds:4,
+        desc:'Armored prow — 3d10 damage. Self hull cost reduced to 3.',
+        upgradeDesc:'Reinforce the prow — more damage, less self-damage' },
+      { tier:3, n:'Void Crusher',       cost:750,  cdRounds:4,
+        desc:'Catastrophic ram — 4d10 damage AND permanently reduces enemy max hull by 10.',
+        upgradeDesc:'Devastate — permanent hull shred' },
+    ]
+  },
+  manow: {
+    shipName: 'Man-o-War',
+    ico: '⚓',
+    tiers: [
+      { tier:1, n:'Starfire Broadside', cost:0,   cdRounds:4,
+        desc:'Fire all ready weapons simultaneously this turn with no individual cooldown penalties.',
+        upgradeDesc:'Unlock at purchase' },
+      { tier:2, n:'Coordinated Barrage',cost:500,  cdRounds:4,
+        desc:'All ready weapons fire simultaneously with +20% damage bonus on each shot.',
+        upgradeDesc:'Synchronize gunnery — damage bonus' },
+      { tier:3, n:'Elven Battle Formation', cost:1000, cdRounds:5,
+        desc:'Full elven broadside — all weapons fire with +20% bonus AND enemy takes −4 on their next attack.',
+        upgradeDesc:'Full formation — suppression added' },
+    ]
+  },
+};
+
 const ENM = {
   // ── Tier 1 Bandits ────────────────────────────────────
   corsair:   { name:'Void Corsairs',        sub:'Pirate Sloop',          hp:42,  maxHp:42,  g:[9,21],
@@ -2635,10 +2686,10 @@ function initGame() {
       type:'pinnace', name:'Elven Comet',
       hull:65, maxHull:65, crew:6, maxCrew:6, air:30, gold:150, speed:4,
       resist:0, wpns:['ballista'], upgrades:[], inv:[],
-      loc:'refuge', atWp:null,
+      loc:'refuge', atWp:null, sigTier:null,
     },
     tvl:{ from:'refuge', to:null, toWp:null, fromPos:null, prog:0, steps:0, cur:0, timer:null, dist:0, lane:null },
-    cbt:{ enemy:null, pStat:'normal', eStat:'normal', pTurn:true, cds:{}, linkedCd:0, volleyCd:0, pendingLootKey:null },
+    cbt:{ enemy:null, pStat:'normal', eStat:'normal', pTurn:true, cds:{}, linkedCd:0, volleyCd:0, pendingLootKey:null, sigCd:0 },
     spheres:SPHERES.map(s=>({...s})),
     frags:0, invFilter:'all', selItem:null, portTab:'supplies',
     clues: new Set(),           // sphere IDs whose fragment clues have been granted
@@ -4234,6 +4285,21 @@ function shopItems(stock){
       cost:u.cost, act:'upg', upg:k, exclusive:isExclusive});
   });
 
+  // ── Ship signature ability upgrade — always available once ship is owned ───
+  const sigDef = SIG_ABILITY[s.type];
+  if(sigDef && s.sigTier && s.sigTier < 3){
+    const nextTier = sigDef.tiers[s.sigTier]; // tiers[0]=T1, tiers[1]=T2, tiers[2]=T3
+    items.push({
+      ico: sigDef.ico,
+      name: `${sigDef.ico} ${nextTier.n} (Tier ${nextTier.tier})`,
+      desc: nextTier.upgradeDesc + ' — ' + nextTier.desc,
+      cost: nextTier.cost,
+      act: 'sig',
+      sigTier: nextTier.tier,
+      exclusive: true,
+    });
+  }
+
   return items;
 }
 
@@ -4269,8 +4335,11 @@ function buy(item){
       }
       break;
     }
-    case 'upg':
-      s.upgrades.push(item.upg);
+    case 'sig':
+      s.sigTier = item.sigTier;
+      snd('ship_upgrade', 0.9);
+      addLog(`${SIG_ABILITY[s.type].ico} ${SIG_ABILITY[s.type].tiers[item.sigTier-1].n} — Tier ${item.sigTier} signature ability installed!`, 'gd');
+      break;
       if(item.upg==='plating'){s.maxHull+=50;s.hull+=50;}
       if(item.upg==='engine')s.speed+=2;
       if(item.upg==='quarters'){s.maxCrew+=8;s.crew=s.maxCrew;}
@@ -4290,8 +4359,9 @@ function upgradeShip(typeKey){
   const st=SHIP_TYPES[typeKey];
   if(G.ship.gold<st.cost)return;
   G.ship.gold-=st.cost;
+  const prevType = G.ship.type;
   G.ship.type=typeKey; G.ship.name=st.n;
-  const hullGain=st.hull-SHIP_TYPES[G.ship.type]?.hull||0;
+  const hullGain=st.hull-SHIP_TYPES[prevType]?.hull||0;
   G.ship.maxHull=st.hull+G.ship.upgrades.filter(u=>u==='plating').length*50;
   G.ship.hull=G.ship.maxHull;
   G.ship.maxCrew=st.crew+G.ship.upgrades.filter(u=>u==='quarters').length*8;
@@ -4299,8 +4369,11 @@ function upgradeShip(typeKey){
   G.ship.speed=st.speed+G.ship.upgrades.filter(u=>u==='engine').length*2;
   // Keep weapons up to new slot count
   while(G.ship.wpns.length>st.slots) G.ship.wpns.pop();
+  // New ship = Tier 1 signature ability (pinnace has none)
+  G.ship.sigTier = SIG_ABILITY[typeKey] ? 1 : null;
   snd('ship_upgrade', 1.0);
-  addLog(`Ship upgraded to ${st.n}! Hull ${G.ship.maxHull}, Crew ${G.ship.maxCrew}, ${st.slots} weapon slots.`,'gd');
+  const sigName = SIG_ABILITY[typeKey]?.tiers[0].n || '';
+  addLog(`Ship upgraded to ${st.n}! Hull ${G.ship.maxHull}, Crew ${G.ship.maxCrew}, ${st.slots} weapon slots.${sigName ? ` Signature ability: ${sigName}.` : ''}`,'gd');
   updateUI(); buildShop(); document.getElementById('pt-gold').textContent=G.ship.gold;
   document.getElementById('s-name').textContent=st.n;
 }
@@ -4455,7 +4528,7 @@ function startCombat(key){
   G.cbt={ enemy:{...t,hp:t.maxHp,burnLeft:0,stunsNext:false,_key:key},
     pStat:'normal', eStat:'normal', pTurn:true, cds:{}, linkedCd:0, volleyCd:0,
     pendingLootKey:key, playerStunnedNext:false,
-    eWpns, eCds, eDisabled, targeting:false, rageStacks:0
+    eWpns, eCds, eDisabled, targeting:false, rageStacks:0, sigCd:0
   };
   G.ship.wpns.forEach((_,i)=>G.cbt.cds[i]=0);
   document.getElementById('ov-combat').classList.add('on');
@@ -4478,7 +4551,7 @@ function startFragmentFight(site){
           pStat:'normal', eStat:'normal', pTurn:true, cds:{}, linkedCd:0, volleyCd:0,
           pendingLootKey:site.guardianKey, playerStunnedNext:false,
           eWpns, eCds:eWpns.map(()=>0), eDisabled:eWpns.map(()=>0),
-          targeting:false, rageStacks:0,
+          targeting:false, rageStacks:0, sigCd:0,
           fragFight:true };
   G.ship.wpns.forEach((_,i)=>G.cbt.cds[i]=0);
   document.getElementById('ov-combat').classList.add('on');
@@ -4499,7 +4572,7 @@ function startWorldBossCombat(key){
   const eDisabled = eWpns.map(()=>0);
   G.cbt={ enemy:{...boss,hp:boss.maxHp,burnLeft:0,stunsNext:false,_key:key,_worldBoss:true},
           pStat:'normal', eStat:'normal', pTurn:true, cds:{}, linkedCd:0, volleyCd:0,
-          pendingLootKey:key, playerStunnedNext:false, eWpns, eCds, eDisabled, targeting:false, rageStacks:0 };
+          pendingLootKey:key, playerStunnedNext:false, eWpns, eCds, eDisabled, targeting:false, rageStacks:0, sigCd:0 };
   G.ship.wpns.forEach((_,i)=>G.cbt.cds[i]=0);
   document.getElementById('ov-combat').classList.add('on');
   document.getElementById('ct-title').textContent=`⚔ ${boss.name.toUpperCase()} ⚔`;
@@ -4525,7 +4598,7 @@ function startShothothuqCombat(){
   G.cbt={ enemy:boss,
           pStat:'normal', eStat:'normal', pTurn:true, cds:{}, linkedCd:0, volleyCd:0,
           pendingLootKey:'shothothug', playerStunnedNext:false,
-          eWpns:wpns, eCds:wpns.map(()=>0), eDisabled:wpns.map(()=>0), targeting:false, rageStacks:0 };
+          eWpns:wpns, eCds:wpns.map(()=>0), eDisabled:wpns.map(()=>0), targeting:false, rageStacks:0, sigCd:0 };
   G.ship.wpns.forEach((_,i)=>G.cbt.cds[i]=0);
   document.getElementById('ov-combat').classList.add('on');
   document.getElementById('ct-title').textContent=`⬡ SHOTHOTHUG — THE MANIFEST HUNGER ⬡`;
@@ -4960,6 +5033,25 @@ function buildCbtPanels() {
   const eb = document.createElement('button'); eb.className = 'btn';
   eb.textContent = '🌀 Evasive Maneuver (50% dodge)';
   eb.onclick = () => doAction('evade'); abilityRow.appendChild(eb);
+
+  // ── Signature Ability ───────────────────────────────────
+  const sigDef = SIG_ABILITY[G.ship.type];
+  if (sigDef && G.ship.sigTier) {
+    const tier = G.ship.sigTier;
+    const tData = sigDef.tiers[tier - 1];
+    const sigOnCd = (G.cbt.sigCd||0) > 0;
+    const sb = document.createElement('button');
+    sb.className = 'btn' + (sigOnCd ? ' disabled' : '');
+    sb.disabled = sigOnCd;
+    sb.style.borderColor = sigOnCd ? '#44334488' : '#ffaa0088';
+    sb.style.color = sigOnCd ? '#665544' : '#ffcc66';
+    sb.style.background = sigOnCd ? '' : 'rgba(40,25,0,0.6)';
+    sb.innerHTML = sigOnCd
+      ? `${sigDef.ico} ${tData.n} <em style="font-size:10px;color:#886644">(${G.cbt.sigCd} rd${G.cbt.sigCd>1?'s':''} cooldown)</em>`
+      : `${sigDef.ico} <strong>${tData.n}</strong> <em style="font-size:9px;color:#cc9944">Tier ${tier} — ${tData.desc}</em>`;
+    sb.onclick = () => doAction('sig');
+    abilityRow.appendChild(sb);
+  }
 
   if (G.ship.upgrades.includes('firectrl') && !G.ship.upgrades.includes('volley')) {
     const readyCount = G.ship.wpns.filter((_,i) => (G.cbt.cds[i]||0) === 0).length;
@@ -5420,6 +5512,121 @@ async function doAction(type, idx, itemUid) {
       break;
     }
 
+    case 'sig': {
+      const sigDef = SIG_ABILITY[G.ship.type];
+      const tier = G.ship.sigTier || 1;
+      const tData = sigDef.tiers[tier - 1];
+      const e = G.cbt.enemy;
+
+      triggerAnim(pCV(), 'anim-flinch-r');
+      snd('ship_upgrade', 0.8);
+      cLog(`${sigDef.ico} ${tData.n}!`, 'gd');
+      await sleep(350);
+
+      if (G.ship.type === 'squid') {
+        // ── Tentacle Grapple / Crushing Grip / Void Stranglehold ──
+        if (tier === 3) {
+          // Stun + 15 damage
+          e.stunsNext = true;
+          const dmg = 15;
+          if(!G._godMode){ e.hp = Math.max(0, e.hp - dmg); }
+          floatDmg(eCV(), G._godMode ? 0 : dmg, false);
+          triggerAnim(eCV(), 'anim-shake');
+          snd('ram_hit', 0.9);
+          cLog(`Void Stranglehold — ${dmg} damage dealt and enemy fully immobilized next round!`, 'gd');
+          if(e.hp <= 0){ G.cbt.sigCd = tData.cdRounds; updateCbtUI(); cbtWin(); return; }
+        } else if (tier === 2) {
+          // 8 damage + halve next attack
+          const dmg = 8;
+          if(!G._godMode){ e.hp = Math.max(0, e.hp - dmg); }
+          floatDmg(eCV(), G._godMode ? 0 : dmg, false);
+          triggerAnim(eCV(), 'anim-shake');
+          snd('ram_hit', 0.7);
+          G.cbt._squidGrip = true;
+          cLog(`Crushing Grip — ${dmg} damage + enemy next attack halved!`, 'gd');
+          if(e.hp <= 0){ G.cbt.sigCd = tData.cdRounds; updateCbtUI(); cbtWin(); return; }
+        } else {
+          // T1 — halve next attack only
+          G.cbt._squidGrip = true;
+          triggerAnim(eCV(), 'anim-shake');
+          cLog(`Tentacle Grapple — enemy's next attack will deal 50% damage!`, 'gd');
+        }
+
+      } else if (G.ship.type === 'hammer') {
+        // ── Siege Ram / Reinforced Ram / Void Crusher ──
+        const selfCost = tier === 1 ? 5 : tier === 2 ? 3 : 2;
+        const dice = tier === 1 ? [2,10] : tier === 2 ? [3,10] : [4,10];
+        const rawDmg = roll(dice[0], dice[1]);
+        const resDmg = Math.max(1, rawDmg - (G.ship.resist||0));
+
+        // Self hull cost
+        if(!G._godMode){ G.ship.hull = Math.max(1, G.ship.hull - selfCost); }
+        floatDmg(pCV(), G._godMode ? 0 : selfCost, false);
+
+        // Enemy damage
+        if(!G._godMode){ e.hp = Math.max(0, e.hp - resDmg); }
+        floatDmg(eCV(), G._godMode ? 0 : resDmg, false);
+        triggerAnim(eCV(), 'anim-shake');
+        triggerAnim(pCV(), 'anim-shake');
+        snd('ram_hit', 1.0);
+
+        if(tier === 3){
+          // Permanently shred enemy max hull
+          e.maxHp = Math.max(10, e.maxHp - 10);
+          e.hp = Math.min(e.hp, e.maxHp);
+          cLog(`Void Crusher — ${resDmg} impact damage! Enemy max hull permanently −10. (Self: −${selfCost} hull)`, 'gd');
+        } else {
+          cLog(`${tData.n} — ${resDmg} impact damage! (Self: −${selfCost} hull)`, 'gd');
+        }
+
+        if(e.hp <= 0){ G.cbt.sigCd = tData.cdRounds; updateCbtUI(); cbtWin(); return; }
+        if(G.ship.hull <= 0){ updateCbtUI(); doDefeat(); return; }
+
+      } else if (G.ship.type === 'manow') {
+        // ── Starfire Broadside / Coordinated Barrage / Elven Battle Formation ──
+        const readyWpns = G.ship.wpns.map((wk,i) => ({wk, i})).filter(({i}) => (G.cbt.cds[i]||0) === 0);
+        if(readyWpns.length === 0){
+          cLog(`${tData.n} — no weapons ready to fire!`, 'dmg');
+          G.cbt.pTurn = true; buildCbtPanels(); return;
+        }
+
+        const dmgBonus = tier >= 2 ? 1.2 : 1.0;
+        let totalFired = 0;
+
+        for(const {wk, i} of readyWpns){
+          const w = WPN[wk];
+          if(G.cbt.eStat === 'phased' && !w.seeking && !w.nether){ cLog(`${w.n} phases through!`,'dmg'); continue; }
+          if(G.cbt.eStat === 'dodging' && !w.seeking && Math.random() < 0.5){ cLog(`${w.n} dodged!`,'gd'); continue; }
+
+          let dmg = roll(w.d[0], w.d[1]);
+          if(dmgBonus > 1) dmg = Math.floor(dmg * dmgBonus);
+          dmg = Math.max(1, dmg - (G.ship.resist||0));
+
+          if(!G._godMode) e.hp = Math.max(0, e.hp - dmg);
+          floatDmg(eCV(), G._godMode ? 0 : dmg, false);
+          cLog(`  ↳ ${w.n}: ${dmg} damage${tier>=2?' (+20%)':''}`, 'gd');
+          totalFired++;
+          // Don't set cooldown for broadside — that's the point
+          await sleep(180);
+          if(e.hp <= 0) break;
+        }
+
+        triggerAnim(eCV(), 'anim-shake');
+        snd('ram_hit', 1.0);
+        cLog(`${tData.n} — ${totalFired} weapon${totalFired!==1?'s':''} fired in unison!`, 'gd');
+
+        // Tier 3 — suppress enemy next attack
+        if(tier === 3){ G.cbt._manowSuppressed = true; cLog(`Elven Battle Formation — enemy attack suppressed next round!`, 'gd'); }
+
+        G.cbt.eStat = 'normal'; // dodge/phase expended
+        if(e.hp <= 0){ G.cbt.sigCd = tData.cdRounds; updateCbtUI(); cbtWin(); return; }
+      }
+
+      G.cbt.sigCd = tData.cdRounds;
+      updateCbtUI();
+      break;
+    }
+
     case 'flee':
       if (Math.random() < 0.5) {
         snd('flee_escape', 0.9);
@@ -5471,6 +5678,7 @@ async function enemyTurn() {
   Object.keys(G.cbt.cds).forEach(k => { if (G.cbt.cds[k] > 0) G.cbt.cds[k] = Math.max(0, G.cbt.cds[k] - cdTick); });
   if (G.cbt.linkedCd > 0) G.cbt.linkedCd = Math.max(0, G.cbt.linkedCd - 1);
   if (G.cbt.volleyCd > 0) G.cbt.volleyCd = Math.max(0, G.cbt.volleyCd - 1);
+  if (G.cbt.sigCd > 0)    G.cbt.sigCd    = Math.max(0, G.cbt.sigCd - 1);
 
   // Tick enemy weapon cooldowns and disabled counters
   G.cbt.eCds = (G.cbt.eCds||[]).map(cd => Math.max(0, cd - 1));
@@ -5494,6 +5702,12 @@ async function enemyTurn() {
 
   // Special — replaces regular attack, checked first (uses old atk[] path for backward compat)
   let usedSpecial = false;
+  // Check squid grip — will halve damage this turn
+  const squidGripActive = !!G.cbt._squidGrip;
+  if (squidGripActive) G.cbt._squidGrip = false;
+  // Check man-o-war suppression — enemy attack reduced
+  const manowSuppressed = !!G.cbt._manowSuppressed;
+  if (manowSuppressed) G.cbt._manowSuppressed = false;
   if (e.sp && Math.random() < e.sp.c && !e._nullified) {
     usedSpecial = true;
     cLog(`⚡ ${e.name} uses ${e.sp.n}!`, 'dmg');
@@ -5577,6 +5791,10 @@ async function enemyTurn() {
         const raw = roll(w.d[0], w.d[1]);
         const res = (w.pierceres || w.ignoreResist) ? 0 : (G.ship.resist||0);
         let dmg = Math.max(1, raw - res);
+        // Squid Grip — halve this attack
+        if (squidGripActive) { dmg = Math.max(1, Math.floor(dmg * 0.5)); cLog(`🦑 Tentacle Grapple absorbs half the impact!`, 'gd'); }
+        // Man-o-War Suppression — reduce by 4
+        if (manowSuppressed) { dmg = Math.max(1, dmg - 4); cLog(`⚓ Elven Battle Formation suppresses the attack! (−4 damage)`, 'gd'); }
         // Rage stacking for Scro War Cannon
         if(w.special==='rage'){ G.cbt.rageStacks=(G.cbt.rageStacks||0)+1; dmg+=G.cbt.rageStacks*2; cLog(`🔥 Rage stack ${G.cbt.rageStacks} — +${G.cbt.rageStacks*2} bonus damage!`,'dmg'); }
         if(ev) G.cbt.pStat='normal';
@@ -6034,6 +6252,26 @@ function buildShipOverlay(){
   const secU=document.createElement('div'); secU.className='shp-section'; secU.textContent='Upgrades Installed'; statsDiv.appendChild(secU);
   if(s.upgrades.length===0){ const u=document.createElement('div'); u.className='upg-item'; u.style.color='#443366'; u.textContent='None yet.'; statsDiv.appendChild(u); }
   else s.upgrades.forEach(u=>{ const d=document.createElement('div'); d.className='upg-item'; d.textContent=`✓ ${u.replace('_',' ')}`; statsDiv.appendChild(d); });
+
+  // Signature ability display
+  const sigDef = SIG_ABILITY[s.type];
+  if(sigDef && s.sigTier){
+    const secS=document.createElement('div'); secS.className='shp-section'; secS.textContent='Signature Ability'; statsDiv.appendChild(secS);
+    const tData = sigDef.tiers[s.sigTier-1];
+    const sigEl=document.createElement('div'); sigEl.className='upg-item';
+    sigEl.style.color='#ffcc66';
+    sigEl.innerHTML=`${sigDef.ico} <strong>${tData.n}</strong> (Tier ${s.sigTier}/3)<br><span style="font-size:10px;color:#997744">${tData.desc}</span>`;
+    statsDiv.appendChild(sigEl);
+    if(s.sigTier < 3){
+      const next=sigDef.tiers[s.sigTier];
+      const nx=document.createElement('div'); nx.className='upg-item'; nx.style.cssText='color:#665533;font-size:10px;';
+      nx.textContent=`Next: ${next.n} — ${next.upgradeDesc} (⚜${next.cost})`;
+      statsDiv.appendChild(nx);
+    } else {
+      const mx=document.createElement('div'); mx.className='upg-item'; mx.style.color='#ffaa00';
+      mx.textContent='✦ Fully upgraded'; statsDiv.appendChild(mx);
+    }
+  }
 
   // Ship upgrade section (at port only)
   const upgSec=document.getElementById('shp-upgrade-section');
@@ -7132,7 +7370,7 @@ function _applyLoad(save) {
       phase: 'map',
       ship: {...state.ship, atWp:null},
       tvl: { from: state.ship.loc, to: null, prog: 0, steps: 0, cur: 0, timer: null, dist: 0, lane: null },
-      cbt: { enemy: null, pStat: 'normal', eStat: 'normal', pTurn: true, cds: {}, pendingLootKey: null },
+      cbt: { enemy: null, pStat: 'normal', eStat: 'normal', pTurn: true, cds: {}, pendingLootKey: null, sigCd: 0 },
       spheres: state.spheres, frags: state.frags,
       clues: new Set(state.clues || []),
       fragsCollected: new Set(state.fragsCollected || []),
@@ -7158,6 +7396,10 @@ function _applyLoad(save) {
     const PC = ['rgba(255,90,0,','rgba(255,40,100,','rgba(150,30,255,','rgba(30,80,255,','rgba(30,230,200,','rgba(255,190,0,'];
     for (let i = 0; i < 55; i++) G.phlo.push({ x:Math.random(),y:Math.random(),vx:(Math.random()-.5)*0.0006,vy:(Math.random()-.5)*0.0006,sz:Math.random()*90+35,col:PC[i%PC.length],a:Math.random()*0.10+0.03,da:(Math.random()-.5)*0.0008 });
     G.localQuests = state.localQuests || {};
+    // ── Migration: old saves won't have sigTier ─────────────
+    if (G.ship.sigTier === undefined) {
+      G.ship.sigTier = SIG_ABILITY[G.ship.type] ? 1 : null;
+    }
     _gameActive = true;
     updateUI(); updateFragUI();
     renderLoop(); loadSounds(); loadShipImages(); loadVoiceFiles(); ensureLqState();
