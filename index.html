@@ -638,6 +638,26 @@ body {
 .qlog-entry-prog  { font-size:10px; color:#776644; margin-top:2px; }
 .qlog-empty { font-size:13px; color:#443366; font-style:italic; text-align:center; padding:30px 0; }
 
+/* Volume panel */
+.vol-row { display:flex; align-items:center; gap:8px; margin-bottom:8px; }
+.vol-lbl { font-size:10px; color:#9977cc; width:58px; flex-shrink:0; }
+.vol-val { font-size:10px; color:#6655aa; width:30px; text-align:right; flex-shrink:0; }
+.vol-row input[type=range] {
+  -webkit-appearance:none; appearance:none;
+  height:3px; border-radius:2px;
+  background:linear-gradient(90deg,#7744cc var(--pct,80%),#22113344 var(--pct,80%));
+  outline:none; cursor:pointer;
+}
+.vol-row input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance:none; appearance:none;
+  width:12px; height:12px; border-radius:50%;
+  background:#9966dd; border:1px solid #cc99ff; cursor:pointer;
+}
+.vol-row input[type=range]::-moz-range-thumb {
+  width:12px; height:12px; border-radius:50%;
+  background:#9966dd; border:1px solid #cc99ff; cursor:pointer;
+}
+
 </style>
 </head>
 <body>
@@ -648,7 +668,35 @@ body {
   <div style="display:flex;align-items:center;gap:8px;">
     <button onclick="showMainMenu()" style="font-family:'Cinzel',serif;font-size:10px;letter-spacing:1px;padding:4px 10px;border:1px solid #44118866;border-radius:3px;background:rgba(15,3,35,0.8);color:#9977cc;cursor:pointer;">☰ Menu</button>
     <button onclick="autoSave(true)" style="font-family:'Cinzel',serif;font-size:10px;letter-spacing:1px;padding:4px 10px;border:1px solid #44118866;border-radius:3px;background:rgba(15,3,35,0.8);color:#9977cc;cursor:pointer;">💾 Save</button>
-    <button id="mute-btn" onclick="toggleMute()" style="font-family:'Cinzel',serif;font-size:10px;letter-spacing:1px;padding:4px 10px;border:1px solid #44118866;border-radius:3px;background:rgba(15,3,35,0.8);color:#9977cc;cursor:pointer;">🔊 Sound</button>
+    <button id="mute-btn" onclick="toggleVolPanel()" style="font-family:'Cinzel',serif;font-size:10px;letter-spacing:1px;padding:4px 10px;border:1px solid #44118866;border-radius:3px;background:rgba(15,3,35,0.8);color:#9977cc;cursor:pointer;">🔊 Sound</button>
+    <!-- Volume panel — hidden by default -->
+    <div id="vol-panel" style="display:none;position:absolute;top:38px;right:8px;z-index:999;background:rgba(5,0,18,0.97);border:1px solid #44118888;border-radius:6px;padding:12px 16px;min-width:200px;box-shadow:0 4px 24px rgba(0,0,0,0.8);">
+      <div style="font-family:'Cinzel',serif;font-size:9px;letter-spacing:2px;color:#7755aa;margin-bottom:10px;text-transform:uppercase;">Audio Settings</div>
+      <div class="vol-row">
+        <span class="vol-lbl">🔊 Master</span>
+        <input type="range" id="vol-master" min="0" max="100" value="80" oninput="applyVolumes()" style="flex:1;">
+        <span class="vol-val" id="vol-master-val">80%</span>
+      </div>
+      <div class="vol-row">
+        <span class="vol-lbl">🎵 Music</span>
+        <input type="range" id="vol-music" min="0" max="100" value="80" oninput="applyVolumes()" style="flex:1;">
+        <span class="vol-val" id="vol-music-val">80%</span>
+      </div>
+      <div class="vol-row">
+        <span class="vol-lbl">💥 SFX</span>
+        <input type="range" id="vol-sfx" min="0" max="100" value="80" oninput="applyVolumes()" style="flex:1;">
+        <span class="vol-val" id="vol-sfx-val">80%</span>
+      </div>
+      <div class="vol-row">
+        <span class="vol-lbl">🗣 Voice</span>
+        <input type="range" id="vol-voice" min="0" max="100" value="80" oninput="applyVolumes()" style="flex:1;">
+        <span class="vol-val" id="vol-voice-val">80%</span>
+      </div>
+      <div style="margin-top:10px;display:flex;gap:8px;">
+        <button onclick="setAllVol(0)" style="flex:1;font-family:'Cinzel',serif;font-size:9px;padding:4px;background:rgba(30,0,0,0.8);border:1px solid #66223388;border-radius:3px;color:#aa6688;cursor:pointer;">🔇 Mute All</button>
+        <button onclick="setAllVol(80)" style="flex:1;font-family:'Cinzel',serif;font-size:9px;padding:4px;background:rgba(0,10,30,0.8);border:1px solid #33449988;border-radius:3px;color:#7799cc;cursor:pointer;">↺ Reset</button>
+      </div>
+    </div>
     <div id="phase-tag">Navigation</div>
   </div>
 </div>
@@ -2086,6 +2134,83 @@ const _SFX = {};        // preloaded Audio elements
 let _loopEl = null;     // currently playing ambient loop
 let _muted = false;
 
+// ── VOLUME STATE ─────────────────────────────────────────
+// All values 0.0–1.0. snd() and setAmbient() multiply their
+// base vol by the relevant category scalar before playing.
+const _VOL = { master:0.8, music:0.8, sfx:0.8, voice:0.8 };
+
+function toggleVolPanel() {
+  const p = document.getElementById('vol-panel');
+  if (!p) return;
+  const open = p.style.display !== 'none';
+  p.style.display = open ? 'none' : 'block';
+  if (!open) _updateVolSliders();
+}
+
+function _updateVolSliders() {
+  ['master','music','sfx','voice'].forEach(k => {
+    const el = document.getElementById('vol-' + k);
+    const val = document.getElementById('vol-' + k + '-val');
+    if (el) { el.value = Math.round(_VOL[k] * 100); _applySliderTrack(el); }
+    if (val) val.textContent = Math.round(_VOL[k] * 100) + '%';
+  });
+}
+
+function _applySliderTrack(el) {
+  el.style.setProperty('--pct', el.value + '%');
+}
+
+function applyVolumes() {
+  ['master','music','sfx','voice'].forEach(k => {
+    const el = document.getElementById('vol-' + k);
+    const val = document.getElementById('vol-' + k + '-val');
+    if (el) {
+      _VOL[k] = parseInt(el.value) / 100;
+      _applySliderTrack(el);
+      if (val) val.textContent = el.value + '%';
+    }
+  });
+  // Update currently playing ambient immediately
+  if (_loopEl) _loopEl.volume = Math.min(1, _VOL.master * _VOL.music * 0.28);
+  if (_titleEl) _titleEl.volume = Math.min(1, _VOL.master * _VOL.music * 0.5);
+  if (_victoryEl) _victoryEl.volume = Math.min(1, _VOL.master * _VOL.music * 1.0);
+  // Update mute button icon
+  const btn = document.getElementById('mute-btn');
+  if (btn) btn.textContent = _VOL.master === 0 ? '🔇 Sound' : '🔊 Sound';
+}
+
+function setAllVol(pct) {
+  const v = pct / 100;
+  ['master','music','sfx','voice'].forEach(k => { _VOL[k] = v; });
+  _updateVolSliders();
+  applyVolumes();
+}
+
+// Close vol panel when clicking outside it
+document.addEventListener('click', e => {
+  const panel = document.getElementById('vol-panel');
+  const btn   = document.getElementById('mute-btn');
+  if (panel && panel.style.display !== 'none' && !panel.contains(e.target) && e.target !== btn) {
+    panel.style.display = 'none';
+  }
+});
+
+// Keep toggleMute for backwards compatibility (keyboard shortcut M etc)
+function toggleMute() {
+  _VOL.master = _VOL.master > 0 ? 0 : 0.8;
+  applyVolumes();
+  _updateVolSliders();
+  if (_VOL.master === 0) {
+    _stopLoop(); stopTitle();
+  } else {
+    const onMenu = !_gameActive || (G && G.phase === 'menu');
+    if (onMenu) { playTitle(); }
+    else if (_gameActive && G && G.phase) {
+      setAmbient(G.phase === 'combat' ? 'combat' : G.phase === 'port' ? 'port' : 'map');
+    }
+  }
+}
+
 // ── Embedded sound data (base64) — works on mobile and desktop without a server
 const SOUND_DATA = {
   'ambient_map': 'sounds/ambient_phlogiston.mp3',
@@ -2210,9 +2335,10 @@ function loadSounds() {
 // Play a one-shot effect (cloned so overlapping shots work)
 function snd(key, vol = 1.0) {
   if (_muted || !_SFX[key]) return;
+  if (_VOL.master === 0 || _VOL.sfx === 0) return;
   try {
     const c = _SFX[key].cloneNode();
-    c.volume = Math.min(1, Math.max(0, vol));
+    c.volume = Math.min(1, Math.max(0, vol * _VOL.master * _VOL.sfx));
     c.play().catch(() => {});
   } catch(_) {}
 }
@@ -2221,13 +2347,13 @@ function snd(key, vol = 1.0) {
 function setAmbient(scene) {
   if (_muted) return;
   const key = { map:'ambient_map', port:'ambient_port', combat:'ambient_combat' }[scene];
-  const vol = scene === 'combat' ? 0.45 : 0.28;
+  const baseVol = scene === 'combat' ? 0.45 : 0.28;
   if (!key || !_SFX[key]) return;
   _stopLoop();
   try {
     const a = _SFX[key].cloneNode();
     a.loop = true;
-    a.volume = vol;
+    a.volume = Math.min(1, baseVol * _VOL.master * _VOL.music);
     a.play().catch(() => {});
     _loopEl = a;
   } catch(_) {}
@@ -2280,32 +2406,28 @@ function loadVoiceFiles() {
   });
 }
 
-function sndVoice(vol = 0.75) {
+function sndVoice(vol = 1.0) {
   if (_muted) return;
+  if (_VOL.master === 0 || _VOL.voice === 0) return;
   const ctx = _getVoiceCtx();
   if (!ctx) return;
-  // Resume context if it was suspended (browser autoplay policy)
   if (ctx.state === 'suspended') ctx.resume().catch(() => {});
-  // Collect buffers that actually loaded
   const available = _voiceBufs.filter(Boolean);
   if (!available.length) {
-    // No Web Audio buffers yet — fall back to the old _SFX version if present
     if (_SFX['voice_chatter']) {
       try {
         const c = _SFX['voice_chatter'].cloneNode();
-        c.volume = vol;
+        c.volume = Math.min(1, vol * _VOL.master * _VOL.voice);
         c.play().catch(() => {});
       } catch(_) {}
     }
     return;
   }
-  // Pick a random buffer
   const buf = available[Math.floor(Math.random() * available.length)];
-  // Random playback rate in the configured range
   const rate = _VOICE_RATE_MIN + Math.random() * (_VOICE_RATE_MAX - _VOICE_RATE_MIN);
   try {
     const gain = ctx.createGain();
-    gain.gain.value = Math.min(1, Math.max(0, vol));
+    gain.gain.value = Math.min(1, Math.max(0, vol * _VOL.master * _VOL.voice));
     gain.connect(ctx.destination);
     const src = ctx.createBufferSource();
     src.buffer = buf;
@@ -2321,34 +2443,14 @@ function playTitle(){
   stopTitle();
   try {
     const a = _SFX['title'].cloneNode();
-    a.loop = true; a.volume = 0.35;
+    a.loop = true;
+    a.volume = Math.min(1, 0.35 * _VOL.master * _VOL.music);
     a.play().catch(()=>{});
     _titleEl = a;
   } catch(_){}
 }
 function stopTitle(){
   if(_titleEl){ try{ _titleEl.pause(); }catch(_){} _titleEl=null; }
-}
-
-function toggleMute() {
-  _muted = !_muted;
-  const btn = document.getElementById('mute-btn');
-  if (_muted) {
-    _stopLoop();
-    stopTitle();
-    if (btn) btn.textContent = '🔇 Muted';
-  } else {
-    if (btn) btn.textContent = '🔊 Sound';
-    // Restart whatever should be playing
-    const onMenu = !_gameActive || (G && G.phase === 'menu') || document.getElementById('main-menu') && !document.getElementById('main-menu').classList.contains('hidden');
-    const onCin  = document.getElementById('cin-ovl') && document.getElementById('cin-ovl').style.display !== 'none';
-    if(onMenu || onCin){
-      playTitle();
-    } else if(_gameActive && G && G.phase){
-      const scene = G.phase === 'combat' ? 'combat' : G.phase === 'port' ? 'port' : 'map';
-      setAmbient(scene);
-    }
-  }
 }
 
 // Weapon key → sound key
@@ -5583,7 +5685,7 @@ function _playVictoryMusic(){
   try {
     _victoryEl = _SFX['victory_final'].cloneNode();
     _victoryEl.loop = true;
-    _victoryEl.volume = 1.0;
+    _victoryEl.volume = Math.min(1, 1.0 * _VOL.master * _VOL.music);
     _victoryEl.play().catch(()=>{});
   } catch(_) {}
 }
@@ -5748,7 +5850,7 @@ function openDockmaster(sphereId) {
   dmRender();
   document.getElementById('ov-dockmaster').classList.add('on');
   snd('port_dock', 0.5);
-  sndVoice(0.7);
+  sndVoice(1.0);
 }
 
 function dmRender() {
@@ -5945,7 +6047,7 @@ function triggerRoamingEncounter(factionId){
   // Show/hide trade and hail based on rep
   addLog(`📡 ${fac.n} vessel hails your comet on the approach lane.`,'');
   snd('sphere_click', 0.5);
-  sndVoice(0.65);
+  sndVoice(1.0);
 }
 function roamAttack(){
   const fac = FACTIONS[_roamFactionId];
@@ -7285,7 +7387,7 @@ document.getElementById('lq-canvas').addEventListener('click', e => {
     if(hit.shop) {
       showLqShop(hit);
     } else {
-      sndVoice(0.65);
+      sndVoice(1.0);
       showLqCard(hit);
     }
   } else {
