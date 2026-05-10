@@ -1035,40 +1035,63 @@ body {
 // ╚══════════════════════════════════════════════════════╝
 
 const WPN = {
-  // ── Standard (available everywhere) ───────────────────
-  ballista:  { n:'Ballista',             d:[2,6],  cd:0, cost:0,   info:'2d6 · fires every round',                      special:null },
-  lcannon:   { n:'Light Cannon',         d:[3,8],  cd:3, cost:0,   info:'3d8 · 3-round reload',                         special:null },
-  hball:     { n:'Heavy Ballista',       d:[3,6],  cd:2, cost:110,  info:'3d6 · 2-round reload',                         special:null },
-  fcannon:   { n:'Force Cannon',         d:[4,8],  cd:3, cost:215, info:'4d8 · 3-round reload',                         special:null },
-  gfire:     { n:'Greek Fire Proj.',     d:[2,6],  cd:2, cost:135, info:'2d6 · 2-round reload · burns target',          special:'burn' },
-  lightning: { n:'Lightning Cannon',     d:[3,8],  cd:2, cost:175, info:'3d8 · 2-round reload',                         special:null },
-  ram:       { n:'Spelljamming Ram',     d:[5,6],  cd:4, cost:270, info:'5d6 · 4-round reload',                         special:null },
-  // ── Exclusive (sphere-specific) ────────────────────────
-  sballista: { n:'Superior Ballista',   d:[3,6],  cd:0, cost:405, info:'3d6 · fires every round · master-forged',       special:null },
-  bombard:   { n:'Bombard',             d:[4,10], cd:5, cost:380, info:'4d10 · 5-round reload · massive impact',        special:null },
-  starlance: { n:'Elven Star Lance',    d:[3,10], cd:5, cost:430, info:'3d10 · 5-round reload · cannot be dodged',      seeking:true },
-  rball:     { n:'Repeating Ballista',  d:[2,6],  cd:0, cost:340, info:'2d6 × 2 · fires TWICE each action',             fires:2 },
-  nether:    { n:'Nether Bolt',         d:[4,8],  cd:4, cost:300, info:'4d8 · 4-round reload · phases through shields', nether:true },
-  voidcann:  { n:'Void Cannon',         d:[6,8],  cd:6, cost:610, info:'6d8 · 6-round reload · catastrophic blast',     special:null },
+  // ── Tier 1 — Refuge / Realmspace / Greyspace ───────────
+  ballista:  { n:'Ballista (Ballista-class)',        d:[2,6],  cd:0, cost:0,    info:'2d6 · fires every round · basic bolt thrower',                      special:null },
+  hball:     { n:'Heavy Ballista (Ballista-class)',  d:[3,6],  cd:2, cost:110,  info:'3d6 · 2-round reload · master-forged bolts',                        special:null },
+  rball:     { n:'Repeating Ballista (Ballista-class)', d:[2,6], cd:0, cost:340, info:'2d6 × 2 · fires TWICE each action · twin-mounted',                 fires:2 },
+  lcannon:   { n:'Light Cannon (Cannon-class)',      d:[3,8],  cd:3, cost:180,  info:'3d8 · 3-round reload · first cannon tier',                          special:null },
+  // ── Tier 2 — Krynnspace / Clusterspace / Herospace ─────
+  fcannon:   { n:'Force Cannon (Cannon-class)',      d:[4,8],  cd:3, cost:295,  info:'4d8 · 3-round reload · heavy shot',                                 special:null },
+  gfire:     { n:'Greek Fire Proj. (Cannon-class)',  d:[2,6],  cd:2, cost:195,  info:'2d6 · 2-round reload · burns target for 2 turns',                   special:'burn' },
+  lightning: { n:'Lightning Cannon (Cannon-class)',  d:[3,8],  cd:2, cost:250,  info:'3d8 · 2-round reload · crackling arc',                              special:null },
+  ram:       { n:'Spelljamming Ram (Ram-class)',     d:[5,6],  cd:4, cost:350,  info:'5d6 · 4-round reload · bone-shattering impact',                     special:null },
+  // ── Tier 3 — Darkspace / Elder Space ───────────────────
+  sballista: { n:'Superior Ballista (Ballista-class)', d:[3,6], cd:0, cost:520, info:'3d6 · fires every round · elven-forged, never jams',                special:null },
+  bombard:   { n:'Bombard (Cannon-class)',           d:[4,10], cd:5, cost:480,  info:'4d10 · 5-round reload · siege-grade explosive',                     special:null },
+  starlance: { n:'Elven Star Lance (Cannon-class)',  d:[3,10], cd:5, cost:560,  info:'3d10 · 5-round reload · cannot be dodged',                          seeking:true },
+  nether:    { n:'Nether Bolt (Cannon-class)',       d:[4,8],  cd:4, cost:400,  info:'4d8 · 4-round reload · phases through shields',                     nether:true },
+  voidcann:  { n:'Void Cannon (Cannon-class)',       d:[6,8],  cd:6, cost:750,  info:'6d8 · 6-round reload · catastrophic void blast',                    special:null },
+  // ── Tier 4 — Far Realm Spheres (Black Market) ──────────
+  // Drawbacks are handled in combat fire logic — see applyFarRealmDrawback()
+  phlogtorch:  { n:'Phlogiston Torch (Flame-class)',    d:[3,6],  cd:2, cost:620, info:'3d6 · 2-round reload · burns 3 turns · 15% backfire risk',       special:'burn', farRealm:true, drawback:'backfire',  hullPenalty:0 },
+  entropic:    { n:'Entropic Discharger (Void-class)',  d:[4,8],  cd:3, cost:780, info:'4d8 · 3-round reload · ignores dodge · costs 2 crew per shot',   special:null,   farRealm:true, drawback:'crew2',     hullPenalty:0 },
+  psylance:    { n:'Psionic Lance (Psi-class)',         d:[3,6],  cd:3, cost:700, info:'3d6 · hits crew directly · 1 crew feedback per shot',             special:null,   farRealm:true, drawback:'crewfeed',  hullPenalty:0, psionic:true },
+  nullbolt:    { n:'Null Bolt (Void-class)',            d:[2,8],  cd:3, cost:650, info:'2d8 · disables enemy special 2 turns · bonus dmg if no special · 20% jam',  special:null, farRealm:true, drawback:'jam20',    hullPenalty:0, nullify:true },
+  realspike:   { n:'Reality Spike (Void-class)',        d:[3,8],  cd:3, cost:720, info:'3d8 · 25% stun next turn · −5 max hull while equipped',           special:null,   farRealm:true, drawback:'hullmax5',  hullPenalty:5 },
+  warpcann:    { n:'Warp Cannon (Warp-class)',          d:[1,32], cd:4, cost:800, info:'1d32 · wildly random · 15% chance fires backward',                special:null,   farRealm:true, drawback:'backshoot', hullPenalty:0 },
+  dissray:     { n:'Dissolution Ray (Void-class)',      d:[3,6],  cd:3, cost:740, info:'3d6 · −5 enemy max hull per hit · −2 your max hull per shot fired', special:null, farRealm:true, drawback:'corrode',   hullPenalty:0 },
+  voidtorrent: { n:'Void Torrent (Void-class)',         d:[2,6],  cd:4, cost:690, info:'2d6 × 3 hits · 4-round cooldown',                                special:null,   farRealm:true, drawback:'none',      hullPenalty:0, fires:3 },
 };
 
 // Upgrade definitions (standard + exclusive)
 // Weapon family chains — format 'family-tier'
 // Higher tier replaces lower tier of the same family in the same slot
 const WPN_FAMILY = {
-  ballista:  'ballista-1',
-  hball:     'ballista-2',
-  sballista: 'ballista-3',
-  rball:     'ballista-3',  // different playstyle but same slot as sballista
-  lcannon:   'cannon-1',
-  fcannon:   'cannon-2',
-  lightning: 'cannon-2',
-  gfire:     'cannon-2',
-  starlance: 'cannon-3',
-  nether:    'cannon-3',
-  bombard:   'cannon-3',
-  voidcann:  'cannon-4',
-  ram:       'ram-1',       // standalone — no chain
+  // ── Ballista chain ───────────────────────────────────────
+  ballista:    'ballista-1',
+  hball:       'ballista-2',
+  sballista:   'ballista-3',
+  rball:       'ballista-3',
+  // ── Cannon chain ────────────────────────────────────────
+  lcannon:     'cannon-1',
+  fcannon:     'cannon-2',
+  lightning:   'cannon-2',
+  gfire:       'cannon-2',
+  starlance:   'cannon-3',
+  nether:      'cannon-3',
+  bombard:     'cannon-3',
+  voidcann:    'cannon-4',
+  // ── Ram — standalone ────────────────────────────────────
+  ram:         'ram-1',
+  // ── Far Realm — each occupies its own slot ──────────────
+  phlogtorch:  'flame-1',
+  entropic:    'void-1',
+  psylance:    'psi-1',
+  nullbolt:    'void-2',
+  realspike:   'void-3',
+  warpcann:    'warp-1',
+  dissray:     'void-4',
+  voidtorrent: 'void-5',
 };
 
 // Returns the index of a weaker same-family weapon the new key would replace, or -1
@@ -1114,20 +1137,47 @@ const UPGRADE_DATA = {
 
 // What each sphere stocks exclusively (weapons + upgrades not sold elsewhere)
 const SPHERE_SHOPS = {
-  refuge:  { label:'IEN Station Armory',     flavor:'Imperial Elven Navy standard issue. The Admiral stocks only the best.', wpns:[], upgs:[] },
-  realm:   { label:'Realmspace Market',      flavor:'Standard spelljammer stock from a dozen factions.',                    wpns:[], upgs:[] },
-  grey:    { label:"Oerth's Dwarven Forge",  flavor:'Dwarven master-craft and heavy siege arms.',                           wpns:['sballista','bombard'], upgs:['cdreduce'] },
-  krynn:   { label:'Krynnspace Starport',    flavor:'Elven precision weapons and IEN-grade arcane crystals.',               wpns:['starlance'], upgs:['chainreact'] },
-  cluster: { label:'Clusterspace Freeport',  flavor:'Pirate salvage — unusual finds, no questions asked.',                  wpns:['rball'], upgs:['firectrl'] },
-  hero:    { label:'Herospace Vault',        flavor:'Pre-Sundering artifacts of terrible and wonderful power.',             wpns:['nether'], upgs:['volley'] },
-  dark:    { label:'Darkspace Void Market',  flavor:'Technology born in the lightless void — for the right price.',        wpns:['voidcann'], upgs:['rapidfire'] },
+  // ── Tier 1 ────────────────────────────────────────────────────────────
+  refuge:  { label:'IEN Station Armory',         flavor:'Imperial Elven Navy standard issue. One gun and pray.',
+             wpns:[], upgs:['plating','engine','quarters','recycler'] },
+  realm:   { label:'Realmspace Trading Post',    flavor:"First real market you've seen in weeks. Feels like civilization.",
+             wpns:['hball','lcannon'], upgs:['cdreduce'] },
+  grey:    { label:"Oerth's Dwarven Forge",      flavor:"Dwarven master-craft. They don't sell junk and they don't haggle.",
+             wpns:['rball','gfire'], upgs:['chainreact'] },
+  // ── Tier 2 ────────────────────────────────────────────────────────────
+  krynn:   { label:'Krynnspace Starport',        flavor:'Dragonlance-era elven precision. The kind of weapons that win wars.',
+             wpns:['starlance','lightning'], upgs:['firectrl'] },
+  cluster: { label:'Clusterspace Freeport',      flavor:"Pirate salvage and no questions asked. Everything works. Mostly.",
+             wpns:['fcannon','ram'], upgs:[] },
+  hero:    { label:'Herospace Vault',            flavor:'Pre-Sundering artifacts of terrible and wonderful power.',
+             wpns:['bombard','nether'], upgs:['volley'] },
+  // ── Tier 3 ────────────────────────────────────────────────────────────
+  dark:    { label:'Darkspace Void Market',      flavor:'Born in the lightless void. For captains who are running out of options.',
+             wpns:['sballista','voidcann'], upgs:['rapidfire'] },
+  // ── Far Realm — Black Market (scattered, one weapon each) ─────────────
+  ragestar:  { label:'Ragestar Black Market',   flavor:"They'll sell you anything here. The question is whether you survive using it.",
+               wpns:['phlogtorch'], upgs:[] },
+  vodoni:    { label:'Vodoni Underground Arms', flavor:"Confiscated weapons. The empire doesn't know this shop exists.",
+               wpns:['entropic'], upgs:[] },
+  theweird:  { label:'The Weird Bazaar',        flavor:"You're not sure what you're buying until it's installed. That's the point.",
+               wpns:['psylance'], upgs:[] },
+  squrm:     { label:'Squrm Salvage Den',       flavor:"Pulled from wrecks you don't want to think about. Still works though.",
+               wpns:['nullbolt'], upgs:[] },
+  baresun:   { label:'Baresun Scar Market',     flavor:"Right on the breach edge. Weapons that should not exist.",
+               wpns:['realspike'], upgs:[] },
+  thedas:    { label:'Thedas Wandering Trader', flavor:"She appears at the dock and is gone before you can ask where she came from.",
+               wpns:['warpcann'], upgs:[] },
+  nehwon:    { label:'Nehwon Grey Market',      flavor:"The locals pretend not to know about this place. They definitely do.",
+               wpns:['dissray'], upgs:[] },
+  donig:     { label:'Donig Deep Cache',        flavor:"Buried in the lower docks. The Scro don't know it's here either.",
+               wpns:['voidtorrent'], upgs:['rapidfire'] },
 };
 
 const SHIP_TYPES = {
-  pinnace: { n:'Pinnace',    slots:2, hull:65,  crew:6,  speed:4, cost:0,    desc:'A nimble scout vessel. Fast but lightly armed and fragile.' },
-  squid:   { n:'Squid Ship', slots:3, hull:110, crew:10, speed:3, cost:490,  desc:'The classic spelljammer. Versatile, reliable, three weapon slots.' },
-  hammer:  { n:'Hammership', slots:4, hull:170, crew:14, speed:2, cost:980,  desc:'A battle-proven vessel built for war. Slow but formidable.' },
-  manow:   { n:'Man-o-War',  slots:5, hull:230, crew:20, speed:2, cost:1960, desc:'An elven battle cruiser. Five weapon mounts. The terror of the void.' },
+  pinnace: { n:'Pinnace',    slots:2, hull:65,  crew:6,  speed:4, cost:0,    availSpheres:null,               desc:'A nimble scout vessel. Fast but lightly armed and fragile.' },
+  squid:   { n:'Squid Ship', slots:3, hull:110, crew:10, speed:3, cost:980,  availSpheres:['krynn'],          desc:'The classic spelljammer. Versatile, reliable, three weapon slots.' },
+  hammer:  { n:'Hammership', slots:4, hull:170, crew:14, speed:2, cost:1960, availSpheres:['dark'],           desc:'A battle-proven vessel built for war. Slow but formidable.' },
+  manow:   { n:'Man-o-War',  slots:5, hull:230, crew:20, speed:2, cost:3920, availSpheres:['ragestar','vodoni','theweird','squrm','baresun','thedas','nehwon','donig','dukagsh','solaris'], desc:'An elven battle cruiser. Five weapon mounts. First available beyond the breach.' },
 };
 
 const ENM = {
@@ -2141,7 +2191,9 @@ function toggleMute() {
 // Weapon key → sound key
 function wpnSound(wk) {
   if (wk === 'ballista' || wk === 'hball' || wk === 'sballista' || wk === 'rball') return 'ballista_fire';
-  return 'cannon_fire'; // lcannon, fcannon, gfire, lightning, ram, bombard, starlance, nether, voidcann
+  if (wk === 'phlogtorch' || wk === 'gfire') return 'cannon_fire';
+  if (wk === 'psylance' || wk === 'nullbolt' || wk === 'realspike' || wk === 'entropic' || wk === 'warpcann' || wk === 'dissray' || wk === 'voidtorrent') return 'cannon_fire';
+  return 'cannon_fire'; // lcannon, fcannon, lightning, ram, bombard, starlance, nether, voidcann
 }
 
 // ╔══════════════════════════════════════════════════════╗
@@ -2157,8 +2209,8 @@ function initGame() {
     phase:'map',
     ship:{
       type:'pinnace', name:'Elven Comet',
-      hull:65, maxHull:65, crew:6, maxCrew:6, air:30, gold:80, speed:4,
-      resist:0, wpns:['ballista','lcannon'], upgrades:[], inv:[],
+      hull:65, maxHull:65, crew:6, maxCrew:6, air:30, gold:150, speed:4,
+      resist:0, wpns:['ballista'], upgrades:[], inv:[],
       loc:'refuge', atWp:null,
     },
     tvl:{ from:'refuge', to:null, toWp:null, fromPos:null, prog:0, steps:0, cur:0, timer:null, dist:0, lane:null },
@@ -3681,10 +3733,15 @@ function buildShop(){
     grid.appendChild(d);
   });
 
-  // Ship class upgrades
+  // Ship class upgrades — only available at designated spheres
   const order=['pinnace','squid','hammer','manow'];
+  const curSphereId = _portSphere?.id || G.ship.loc;
   order.slice(order.indexOf(G.ship.type)+1).forEach(k=>{
-    const st=SHIP_TYPES[k]; const ok=G.ship.gold>=st.cost;
+    const st=SHIP_TYPES[k];
+    // Gate: ship only available at its listed spheres (null = not for sale this way)
+    if(st.availSpheres && !st.availSpheres.includes(curSphereId)) return;
+    if(!st.availSpheres) return; // no sphere listed = not sold (shouldn't happen)
+    const ok=G.ship.gold>=st.cost;
     const d=document.createElement('div'); d.className='sitem'+(ok?'':' dis');
     d.innerHTML=`<div class="siname">🚀 ${st.n}</div><div class="sidesc">${st.desc}</div><div class="sicost">⚜ ${st.cost}</div>`;
     if(ok) d.onclick=()=>upgradeShip(k);
@@ -3700,12 +3757,13 @@ function shopItems(stock){
   if(s.crew<s.maxCrew) items.push({ico:'👥',name:'Hire Crew',desc:`Refill crew to ${s.maxCrew}`,cost:(s.maxCrew-s.crew)*3,act:'crew'});
   if(s.air<30)         items.push({ico:'💨',name:'Refill Air',desc:'Restore to 30 days',cost:Math.floor((30-s.air)*0.5),act:'air'});
 
-  // ── Standard weapons (at every port) ───────────────────
-  ['hball','fcannon','gfire','lightning','ram'].forEach(k=>{
-    if(owned.has(k)) return;                        // already own it
-    if(wpnHasBetter(k, s.wpns)) return;             // own something equal or better
-    const isUpg = wpnReplaces(k, s.wpns) >= 0;     // upgrades a weaker owned weapon
-    if(!isUpg && s.wpns.length >= slots) return;    // no free slot and not an upgrade
+  // ── Standard weapons — only basics available everywhere ───
+  // Higher tiers are sphere-exclusive (see SPHERE_SHOPS)
+  ['ballista'].forEach(k=>{
+    if(owned.has(k)) return;
+    if(wpnHasBetter(k, s.wpns)) return;
+    const isUpg = wpnReplaces(k, s.wpns) >= 0;
+    if(!isUpg && s.wpns.length >= slots) return;
     const w=WPN[k];
     const replN = isUpg ? wpnReplacesName(k, s.wpns) : null;
     items.push({ico:'⚔', name:(isUpg?'⬆ ':'')+w.n,
@@ -3713,14 +3771,8 @@ function shopItems(stock){
       cost:w.cost, act:'wpn', wk:k, isUpg});
   });
 
-  // ── Standard upgrades (at every port) ──────────────────
-  ['plating','engine','quarters','recycler'].forEach(k=>{
-    if(s.upgrades.includes(k)) return;
-    const u=UPGRADE_DATA[k];
-    if(k==='plating'&&s.maxHull>=300) return;
-    if(k==='quarters'&&s.maxCrew>=30) return;
-    items.push({ico:u.ico,name:u.n,desc:u.desc,cost:u.cost,act:'upg',upg:k});
-  });
+  // ── Standard upgrades — only at Refuge; everywhere else via sphere shop ─
+  // (Removed from general pool — Refuge shop handles these explicitly)
 
   // ── Sphere-exclusive weapons ────────────────────────────
   if(stock) stock.wpns.forEach(k=>{
@@ -3730,16 +3782,24 @@ function shopItems(stock){
     if(!isUpg && s.wpns.length >= slots) return;
     const w=WPN[k];
     const replN = isUpg ? wpnReplacesName(k, s.wpns) : null;
-    items.push({ico:'⚔', name:(isUpg?'⬆ ':'')+w.n,
-      desc: w.info + (replN ? ` — replaces ${replN}` : '') + ' ★ Exclusive',
-      cost:w.cost, act:'wpn', wk:k, exclusive:true, isUpg});
+    const frWarning = w.farRealm ? ` ⚠ FAR REALM WEAPON — has drawback` : '';
+    const hullWarn  = w.hullPenalty > 0 ? ` [−${w.hullPenalty} max hull while equipped]` : '';
+    items.push({ico: w.farRealm ? '☠' : '⚔',
+      name:(isUpg?'⬆ ':'')+w.n,
+      desc: w.info + (replN ? ` — replaces ${replN}` : '') + hullWarn + frWarning + ' ★ Exclusive',
+      cost:w.cost, act:'wpn', wk:k, exclusive:true, isUpg, farRealm:!!w.farRealm});
   });
 
-  // ── Sphere-exclusive upgrades ───────────────────────────
+  // ── Sphere-exclusive upgrades (includes standard ones gated to this sphere) ─
   if(stock) stock.upgs.forEach(k=>{
     if(s.upgrades.includes(k)) return;
     const u=UPGRADE_DATA[k];
-    items.push({ico:u.ico,name:u.n,desc:u.desc+' ★ Exclusive',cost:u.cost,act:'upg',upg:k,exclusive:true});
+    if(!u) return;
+    if(k==='plating'&&s.maxHull>=300) return;
+    if(k==='quarters'&&s.maxCrew>=30) return;
+    const isExclusive = u.exclusive;
+    items.push({ico:u.ico, name:u.n, desc:u.desc+(isExclusive?' ★ Exclusive':''),
+      cost:u.cost, act:'upg', upg:k, exclusive:isExclusive});
   });
 
   return items;
@@ -3756,14 +3816,24 @@ function buy(item){
     case 'wpn': {
       const ri = wpnReplaces(item.wk, s.wpns);
       if(ri >= 0) {
-        const oldN = WPN[s.wpns[ri]].n;
+        const oldKey = s.wpns[ri];
+        const oldW = WPN[oldKey];
+        // Restore hull max if old weapon had a penalty
+        if(oldW.hullPenalty > 0){ s.maxHull += oldW.hullPenalty; s.hull = Math.min(s.hull, s.maxHull); }
         s.wpns[ri] = item.wk;
         snd('ship_upgrade', 0.9);
-        addLog(`${WPN[item.wk].n} installed — replaces ${oldN}!`, 'gd');
+        addLog(`${WPN[item.wk].n} installed — replaces ${oldW.n}!`, 'gd');
       } else {
         s.wpns.push(item.wk);
         snd('ship_upgrade', 0.7);
         addLog(`${WPN[item.wk].n} installed!`, 'gd');
+      }
+      // Apply hull penalty for Far Realm weapons
+      const newW = WPN[item.wk];
+      if(newW.hullPenalty > 0){
+        s.maxHull = Math.max(10, s.maxHull - newW.hullPenalty);
+        s.hull = Math.min(s.hull, s.maxHull);
+        addLog(`⚠ ${newW.n} destabilizes your hull — max hull reduced by ${newW.hullPenalty}.`, 'dmg');
       }
       break;
     }
@@ -4454,11 +4524,27 @@ async function doAction(type, idx, itemUid) {
       snd(wpnSound(wk), 0.85);
       await sleep(320);
 
-      // Seeking bypasses dodge+phase; nether bypasses phase only
-      const isDodged = (G.cbt.eStat === 'dodging' && !w.seeking)
-                    || (G.cbt.eStat === 'phased'  && !w.seeking && !w.nether);
+      // Seeking bypasses dodge+phase; nether bypasses phase only; entropic bypasses ALL dodge
+      const isDodged = (G.cbt.eStat === 'dodging' && !w.seeking && wk !== 'entropic')
+                    || (G.cbt.eStat === 'phased'  && !w.seeking && !w.nether && wk !== 'entropic');
+
+      // Entropic Discharger crew check — refuse if crew ≤ 1
+      if(wk === 'entropic' && G.ship.crew <= 1){
+        cLog(`⚠ Entropic Discharger needs at least 2 crew to fire — too few crew!`, 'dmg');
+        updateCbtUI(); await sleep(400);
+        break;
+      }
+
+      // Null Bolt jam check (20%) — happens before firing
+      if(wk === 'nullbolt' && Math.random() < 0.20){
+        G.cbt.cds[idx] = w.cd;
+        cLog(`⚠ Null Bolt JAMS — the resonance field collapses before firing! (${w.cd}-round cooldown)`, 'dmg');
+        updateCbtUI(); await sleep(500);
+        break;
+      }
+
       if (isDodged) {
-        G.cbt.cds[idx] = w.cd;   // weapon is spent whether or not it connects
+        G.cbt.cds[idx] = w.cd;
         snd('miss', 0.7);
         cLog(`Your shot misses — the ${e.name} ${G.cbt.eStat === 'phased' ? 'phases through reality' : 'dodges'}! (${w.n} on cooldown)`, 'dmg');
         G.cbt.eStat = 'normal';
@@ -4466,11 +4552,47 @@ async function doAction(type, idx, itemUid) {
         await sleep(400);
       } else {
         G.cbt.eStat = 'normal';
-        // Fires:2 OR Rapid Fire Mount upgrade on ballista-type
-        const isBallistaType = wk === 'ballista' || wk === 'hball' || wk === 'sballista' || wk === 'rball';
-        const fireCount = (w.fires === 2) || (G.ship.upgrades.includes('rapidfire') && isBallistaType) ? 2 : 1;
 
-        // Roll each shot individually so we can show them separately
+        // Warp Cannon backfire (15%) — fires backward, player takes full damage
+        if(wk === 'warpcann' && Math.random() < 0.15){
+          const backDmg = roll(w.d[0], w.d[1]);
+          G.ship.hull = Math.max(0, G.ship.hull - backDmg);
+          G.cbt.cds[idx] = w.cd;
+          snd('enemy_hit', 1.0);
+          triggerAnim(pCV(), 'anim-shake');
+          floatDmg(pCV(), backDmg, true);
+          cLog(`💥 WARP CANNON BACKFIRE — the shot reverses through the warp field and hits YOUR hull for ${backDmg} damage!`, 'dmg');
+          updateCbtUI();
+          await sleep(600);
+          if(G.ship.hull <= 0){ cbtLose(); return; }
+          break;
+        }
+
+        // Fires:3 (Void Torrent) OR Fires:2 OR Rapid Fire Mount on ballista-type
+        const isBallistaType = wk === 'ballista' || wk === 'hball' || wk === 'sballista' || wk === 'rball';
+        const fireCount = (w.fires === 3) ? 3 : (w.fires === 2) || (G.ship.upgrades.includes('rapidfire') && isBallistaType) ? 2 : 1;
+
+        // Psionic Lance — hits crew directly, not hull
+        if(wk === 'psylance'){
+          const psiDmg = roll(w.d[0], w.d[1]);
+          const crewHit = Math.max(1, Math.floor(psiDmg / 4));
+          e.hp -= G._instakill ? e.hp : Math.floor(psiDmg * 0.5); // light hull damage
+          // Actually crew damage — represented as extra crew loss
+          if(e.crew !== undefined) e.crew = Math.max(0, (e.crew||10) - crewHit);
+          G.cbt.cds[idx] = w.cd;
+          // Feedback — player loses 1 crew per shot
+          G.ship.crew = Math.max(1, G.ship.crew - 1);
+          snd('enemy_hit', 0.9);
+          triggerAnim(eCV(), 'anim-shake');
+          floatDmg(eCV(), psiDmg, false);
+          cLog(`🧠 Psionic Lance bypasses hull — ${psiDmg} psychic damage to crew! [1 crew feedback loss — your crew: ${G.ship.crew}]`, 'gd');
+          updateCbtUI();
+          await sleep(500);
+          if(e.hp <= 0){ cbtWin(); return; }
+          break;
+        }
+
+        // Roll each shot individually
         const shotDmgs = [];
         for (let shot = 0; shot < fireCount; shot++) {
           let d = roll(w.d[0], w.d[1]);
@@ -4479,9 +4601,53 @@ async function doAction(type, idx, itemUid) {
         }
         const totalDmg = shotDmgs.reduce((a,b)=>a+b,0);
 
-        if (w.special === 'burn') { e.burnLeft = (e.burnLeft||0) + 2; e.burnDmg = 5; }
+        if (w.special === 'burn') {
+          const burnTurns = wk === 'phlogtorch' ? 3 : 2;
+          e.burnLeft = (e.burnLeft||0) + burnTurns; e.burnDmg = 5;
+        }
+        // Null Bolt — disable enemy special + bonus dmg if no special
+        if(wk === 'nullbolt'){
+          if(e.sp && !e._nullified){
+            e._nullified = 2; // turns remaining
+            cLog(`⬡ Null Bolt disables ${e.name}'s special ability for 2 turns!`, 'gd');
+          } else {
+            const bonusDmg = roll(2,8);
+            e.hp -= bonusDmg;
+            floatDmg(eCV(), bonusDmg, false);
+            cLog(`⬡ Null Bolt bonus — no special to disable, +${bonusDmg} damage instead!`, 'gd');
+          }
+        }
+        // Reality Spike — 25% stun
+        if(wk === 'realspike' && Math.random() < 0.25){
+          e.stunsNext = true;
+          cLog(`⬡ Reality Spike — ${e.name} is destabilized! It loses its next action.`, 'gd');
+        }
+        // Dissolution Ray — corrode enemy max hull
+        if(wk === 'dissray'){
+          e.maxHp = Math.max(10, (e.maxHp||e.hp) - 5);
+          e.hp = Math.min(e.hp, e.maxHp);
+          G.ship.maxHull = Math.max(10, G.ship.maxHull - 2);
+          G.ship.hull = Math.min(G.ship.hull, G.ship.maxHull);
+          cLog(`⬡ Dissolution Ray corrodes — enemy max hull −5, your max hull −2.`, 'dmg');
+        }
         e.hp -= G._instakill ? e.hp : totalDmg;
         G.cbt.cds[idx] = w.cd;
+
+        // Phlogiston Torch backfire (15%)
+        if(wk === 'phlogtorch' && Math.random() < 0.15){
+          const backBurn = roll(1,4);
+          G.ship.hull = Math.max(0, G.ship.hull - backBurn);
+          snd('enemy_hit', 0.6);
+          triggerAnim(pCV(), 'anim-shake');
+          floatDmg(pCV(), backBurn, true);
+          cLog(`🔥 Phlogiston Torch backfire — flame catches your own hull for ${backBurn} damage!`, 'dmg');
+          if(G.ship.hull <= 0){ cbtLose(); return; }
+        }
+        // Entropic Discharger — costs 2 crew per shot
+        if(wk === 'entropic'){
+          G.ship.crew = Math.max(1, G.ship.crew - 2);
+          cLog(`⬡ Entropic Discharger power draw — 2 crew exhausted. Crew: ${G.ship.crew}/${G.ship.maxCrew}`, 'dmg');
+        }
 
         // Show each shot's damage float separately with a stagger
         if (fireCount === 1) {
@@ -4501,10 +4667,12 @@ async function doAction(type, idx, itemUid) {
         }
 
         const notes = [
-          fireCount === 2 ? `×2 shots (${shotDmgs.join(' + ')})` : '',
-          w.special === 'burn' ? 'burning!' : '',
-          w.seeking ? 'homing' : '',
-          w.nether  ? 'void-piercing' : '',
+          fireCount === 3 ? `×3 shots (${shotDmgs.join(' + ')})` : fireCount === 2 ? `×2 shots (${shotDmgs.join(' + ')})` : '',
+          w.special === 'burn' ? (wk==='phlogtorch'?'burning 3 turns!':'burning!') : '',
+          w.seeking   ? 'homing' : '',
+          w.nether    ? 'void-piercing' : '',
+          wk==='entropic' ? 'dodge-ignored' : '',
+          wk==='dissray'  ? 'corroding' : '',
         ].filter(Boolean).join(' · ');
         cLog(`🔥 ${w.n}: ${totalDmg} damage!${notes ? ' ['+notes+']' : ''} (Enemy hull: ${Math.max(0,e.hp+totalDmg)} → ${Math.max(0,e.hp)})`, 'gd');
         updateCbtUI();
@@ -4706,6 +4874,12 @@ async function enemyTurn() {
     if (e.hp <= 0) { cbtWin(); return; }
   }
 
+  // Null Bolt — tick down nullify counter
+  if(e._nullified > 0){
+    e._nullified--;
+    if(e._nullified === 0) cLog(`⬡ ${e.name}'s special ability recovers.`, '');
+  }
+
   // Dodge/Phase expires — enemy status lasts only one player turn
   if (G.cbt.eStat === 'dodging' || G.cbt.eStat === 'phased') {
     G.cbt.eStat = 'normal';
@@ -4732,7 +4906,7 @@ async function enemyTurn() {
 
   // Special — replaces regular attack entirely
   let usedSpecial = false;
-  if (e.sp && Math.random() < e.sp.c) {
+  if (e.sp && Math.random() < e.sp.c && !e._nullified) {
     usedSpecial = true;
     cLog(`⚡ ${e.name} uses ${e.sp.n}!`, 'dmg');
     await sleep(300);
