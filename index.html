@@ -1420,51 +1420,135 @@ const SPHERE_FACTION = {
 
 // ── QUEST POOL ─────────────────────────────────────────────
 const QUEST_POOL = [
-  // IEN
+  // ── IEN (Imperial Elven Navy) ─────────────────────────────────────────
   { id:'q_ien1', faction:'ien', title:'Scout Report Recovery',
     desc:"IEN Scout Aldren's final report was left at Greyspace before his ship went silent. Retrieve the encoded logs and return them to Realmspace Command.",
-    pickup:'grey', turnin:'realm', reward:300, repGain:20, repLoss:0,
+    pickup:'grey', turnin:'realm', reward:300, repGain:20,
     cargo:{ id:'q_ien1_cargo', n:'IEN Encrypted Scout Logs', ico:'📋', type:'quest', val:0, desc:"Scout Aldren's encrypted final report. Return to Realmspace Command." }},
   { id:'q_ien2', faction:'ien', title:'Missing Patrol — Darkspace',
-    desc:"A three-ship IEN patrol has gone silent in Darkspace. Locate their last known beacon coordinates and return the findings to Herospace.",
-    pickup:'dark', turnin:'hero', reward:350, repGain:25, repLoss:0,
+    desc:"A three-ship IEN patrol has gone silent in Darkspace. Locate their last known beacon and return the findings to Herospace Command.",
+    pickup:'dark', turnin:'hero', reward:350, repGain:25,
     cargo:{ id:'q_ien2_cargo', n:'IEN Patrol Beacon Log', ico:'📡', type:'quest', val:0, desc:'Recovered IEN patrol beacon data. Deliver to Herospace Command.' }},
-  // Merchant
+  { id:'q_ien3', faction:'ien', title:'Armistice Courier',
+    desc:"Sensitive armistice terms between the IEN and the Krynnspace defense fleet need a neutral courier. Pick up the sealed terms at Krynnspace and deliver them to Realmspace Command.",
+    pickup:'krynn', turnin:'realm', reward:380, repGain:30,
+    cargo:{ id:'q_ien3_cargo', n:'IEN Armistice Terms — Sealed', ico:'📜', type:'quest', val:0, desc:'Sealed armistice terms. Do not open. Deliver to Realmspace Command.' }},
+  { id:'q_ien4', faction:'ien', title:'Helm Component Salvage',
+    desc:"A spelljamming helm component worth more than your ship was aboard an IEN frigate that went down near Clusterspace. Pick it up before pirates strip the wreck.",
+    pickup:'cluster', turnin:'hero', reward:420, repGain:25,
+    cargo:{ id:'q_ien4_cargo', n:'IEN Spelljamming Helm Core', ico:'⚙️', type:'quest', val:0, desc:'Salvaged IEN helm core. Delicate — handle carefully. Deliver to Herospace.' }},
+  { id:'q_ien5', faction:'ien', title:'Classified Manifest',
+    desc:"The IEN moved something classified through Krynnspace last cycle. The documentation was separated from the cargo and needs to reach Darkspace before the cargo does.",
+    pickup:'krynn', turnin:'dark', reward:310, repGain:20,
+    cargo:{ id:'q_ien5_cargo', n:'IEN Classified Cargo Manifest', ico:'🗂️', type:'quest', val:0, desc:'Classified IEN cargo documentation. Deliver to Darkspace station.' }},
+  { id:'q_ien6', faction:'ien', title:'Refugee Escort Papers',
+    desc:"A colony of refugees from the Far Realm incursion at Greyspace needs travel authorization to reach Realmspace. The papers are ready — they just need a courier the IEN trusts.",
+    pickup:'grey', turnin:'realm', reward:260, repGain:20,
+    cargo:{ id:'q_ien6_cargo', n:'IEN Refugee Transit Papers', ico:'📄', type:'quest', val:0, desc:'Transit authorization papers for Far Realm refugees. Deliver to Realmspace.' }},
+
+  // ── Merchant Consortium ────────────────────────────────────────────────
   { id:'q_mer1', faction:'merchant', title:'Exotic Cargo Run',
     desc:"The Consortium has a shipment of phlogiston-cured silks ready at Clusterspace. Haul them to Realmspace — the market there will pay a premium.",
-    pickup:'cluster', turnin:'realm', reward:250, repGain:20, repLoss:0,
-    cargo:{ id:'q_mer1_cargo', n:'Consortium Cargo Manifest', ico:'📦', type:'quest', val:0, desc:'Sealed cargo manifest for Consortium goods. Deliver to Realmspace.' }},
+    pickup:'cluster', turnin:'realm', reward:250, repGain:20,
+    cargo:{ id:'q_mer1_cargo', n:'Consortium Cargo Manifest', ico:'📦', type:'quest', val:0, desc:'Sealed cargo manifest for Consortium silks. Deliver to Realmspace.' }},
   { id:'q_mer2', faction:'merchant', title:'Trade Debt Settlement',
     desc:"A Greyspace merchant owes the Consortium a significant debt. Collect their signed bond letter and return it to Clusterspace for legal processing.",
-    pickup:'grey', turnin:'cluster', reward:280, repGain:20, repLoss:0,
+    pickup:'grey', turnin:'cluster', reward:280, repGain:20,
     cargo:{ id:'q_mer2_cargo', n:'Merchant Debt Bond', ico:'📜', type:'quest', val:0, desc:'Signed debt bond from a Greyspace merchant. Return to Clusterspace.' }},
-  // Scro
+  { id:'q_mer3', faction:'merchant', title:'Insurance Survey',
+    desc:"The Consortium needs a survey completed on the wreck lanes near Herospace for insurance purposes. Pick up the surveyor's notes at Herospace and deliver them to Clusterspace.",
+    pickup:'hero', turnin:'cluster', reward:290, repGain:20,
+    cargo:{ id:'q_mer3_cargo', n:"Consortium Wreck Survey", ico:'📊', type:'quest', val:0, desc:"Herospace wreck lane insurance survey. Deliver to Clusterspace broker." }},
+  { id:'q_mer4', faction:'merchant', title:'Stolen Ledger Recovery',
+    desc:"A Consortium ledger containing trade route data was stolen and ended up in Darkspace. Someone is willing to sell it back. Pick it up and return it to Clusterspace before rivals copy it.",
+    pickup:'dark', turnin:'cluster', reward:370, repGain:25,
+    cargo:{ id:'q_mer4_cargo', n:'Consortium Trade Route Ledger', ico:'📒', type:'quest', val:0, desc:'Recovered Consortium ledger. Sensitive route data inside. Deliver to Clusterspace.' }},
+  { id:'q_mer5', faction:'merchant', title:'Advance Payment Delivery',
+    desc:"The Consortium has struck a deal with Krynnspace artisans. Deliver the advance payment documents to Krynnspace before the artisans take another offer.",
+    pickup:'realm', turnin:'krynn', reward:300, repGain:20,
+    cargo:{ id:'q_mer5_cargo', n:'Consortium Advance Payment Bond', ico:'💰', type:'quest', val:0, desc:'Signed advance payment documentation. Time-sensitive. Deliver to Krynnspace.' }},
+  { id:'q_mer6', faction:'merchant', title:'Rare Components Haul',
+    desc:"A shipment of rare arcane components was left at Herospace after a deal fell through. The Consortium bought them at auction — get them to Realmspace before the original seller changes their mind.",
+    pickup:'hero', turnin:'realm', reward:340, repGain:22,
+    cargo:{ id:'q_mer6_cargo', n:'Consortium Rare Components Crate', ico:'🧪', type:'quest', val:0, desc:'Rare arcane components in shielded crates. Deliver to Realmspace.' }},
+
+  // ── Scro War Clans ─────────────────────────────────────────────────────
   { id:'q_scr1', faction:'scro', title:'War Trophy Delivery',
     desc:"A Scro war-captain at Donig has taken a significant trophy from a Vodoni commander. Deliver it to Warlord Command at Dukagsh before it loses political value.",
-    pickup:'donig', turnin:'dukagsh', reward:320, repGain:30, repLoss:0,
+    pickup:'donig', turnin:'dukagsh', reward:320, repGain:30,
     cargo:{ id:'q_scr1_cargo', n:"Vodoni Commander's Signet", ico:'💀', type:'quest', val:0, desc:"A Vodoni commander's battle signet, taken by the Scro. Deliver to Dukagsh." }},
   { id:'q_scr2', faction:'scro', title:'Intelligence Cache',
     desc:"Scro agents at Ragestar have assembled an intelligence cache on IEN movements. Deliver it to the Warchosen at Dukagsh before it goes stale.",
-    pickup:'ragestar', turnin:'dukagsh', reward:300, repGain:25, repLoss:0,
+    pickup:'ragestar', turnin:'dukagsh', reward:300, repGain:25,
     cargo:{ id:'q_scr2_cargo', n:'Scro Intelligence Cache', ico:'🗂️', type:'quest', val:0, desc:'Assembled Scro intelligence on IEN movements. Deliver to Dukagsh.' }},
-  // Vodoni
+  { id:'q_scr3', faction:'scro', title:'Weapons Shipment',
+    desc:"A Scro armory at Dukagsh has a weapons shipment intended for the forward camp at Ragestar. Move it before the IEN starts asking questions about the manifest.",
+    pickup:'dukagsh', turnin:'ragestar', reward:340, repGain:28,
+    cargo:{ id:'q_scr3_cargo', n:'Scro Armory Manifest', ico:'⚔️', type:'quest', val:0, desc:'Scro weapons shipment documentation. Do not open in IEN space. Deliver to Ragestar.' }},
+  { id:'q_scr4', faction:'scro', title:"Warchief's Decree",
+    desc:"The Warchosen has issued a battlefield decree that needs to reach Scro operatives at Squrm. Get it there before they make a decision the Warchosen would rather they didn't.",
+    pickup:'dukagsh', turnin:'squrm', reward:360, repGain:30,
+    cargo:{ id:'q_scr4_cargo', n:"Warchosen's Sealed Decree", ico:'📜', type:'quest', val:0, desc:"The Warchosen's battlefield decree — sealed with war-brand. Deliver to Squrm." }},
+  { id:'q_scr5', faction:'scro', title:'Prisoner Exchange Documents',
+    desc:"The Scro and Vodoni are exchanging prisoners and neither side trusts the other enough to use their own courier. Pick up the exchange terms at Ragestar and deliver them to Donig.",
+    pickup:'ragestar', turnin:'donig', reward:310, repGain:25,
+    cargo:{ id:'q_scr5_cargo', n:'Prisoner Exchange Terms', ico:'🤝', type:'quest', val:0, desc:'Signed prisoner exchange documentation. Neutral courier required. Deliver to Donig.' }},
+  { id:'q_scr6', faction:'scro', title:'Relic Recovery',
+    desc:"A Scro war-relic plundered during the Unhuman War ended up in Clusterspace. A Scro war-captain has located it and bought it back — bring it to Dukagsh.",
+    pickup:'cluster', turnin:'dukagsh', reward:380, repGain:32,
+    cargo:{ id:'q_scr6_cargo', n:'Scro Ancestral War-Relic', ico:'🏺', type:'quest', val:0, desc:'Recovered Scro war-relic. Handle with reverence. Deliver to Dukagsh.' }},
+
+  // ── Vodoni Empire ──────────────────────────────────────────────────────
   { id:'q_vod1', faction:'vodoni', title:'Imperial Supply Run',
     desc:"An Imperial supply convoy was raided near Ragestar. Recover the requisition orders and deliver them to Vodoni Station so the supply chain can be restored.",
-    pickup:'ragestar', turnin:'vodoni', reward:350, repGain:25, repLoss:0,
+    pickup:'ragestar', turnin:'vodoni', reward:350, repGain:25,
     cargo:{ id:'q_vod1_cargo', n:'Imperial Requisition Orders', ico:'📋', type:'quest', val:0, desc:'Recovered Imperial supply requisition. Deliver to Vodoni Station.' }},
   { id:'q_vod2', faction:'vodoni', title:'Reconnaissance Report',
     desc:"Vodoni observers at Donig have completed a theatre assessment. The report must reach Vodoni Command — ground couriers cannot be trusted in the current climate.",
-    pickup:'donig', turnin:'vodoni', reward:380, repGain:30, repLoss:0,
+    pickup:'donig', turnin:'vodoni', reward:380, repGain:30,
     cargo:{ id:'q_vod2_cargo', n:'Vodoni Theatre Assessment', ico:'🗺️', type:'quest', val:0, desc:'Classified Vodoni theatre assessment. Deliver to Vodoni Command.' }},
-  // Far Realm Touched
+  { id:'q_vod3', faction:'vodoni', title:'Census Compliance Documents',
+    desc:"The Empire requires census compliance paperwork from all vessels operating in Donig space. The completed forms are at Donig — deliver them to Vodoni Command before the auditors arrive.",
+    pickup:'donig', turnin:'vodoni', reward:290, repGain:22,
+    cargo:{ id:'q_vod3_cargo', n:'Vodoni Census Compliance Forms', ico:'📄', type:'quest', val:0, desc:'Completed census compliance forms. Deliver to Vodoni Command promptly.' }},
+  { id:'q_vod4', faction:'vodoni', title:'Command Staff Transfer',
+    desc:"A Vodoni command staff officer is being reassigned to Squrm. Their transfer papers and sealed personnel file need to arrive before they do.",
+    pickup:'vodoni', turnin:'squrm', reward:320, repGain:24,
+    cargo:{ id:'q_vod4_cargo', n:'Vodoni Personnel Transfer File', ico:'👤', type:'quest', val:0, desc:'Sealed Vodoni officer transfer documentation. Deliver to Squrm.' }},
+  { id:'q_vod5', faction:'vodoni', title:'Contraband Intelligence',
+    desc:"Imperial investigators at Ragestar have identified a smuggling ring operating out of Dukagsh. The evidence package needs to reach Vodoni Command before the ring disappears.",
+    pickup:'ragestar', turnin:'vodoni', reward:400, repGain:28,
+    cargo:{ id:'q_vod5_cargo', n:'Vodoni Contraband Evidence Package', ico:'🔍', type:'quest', val:0, desc:'Sealed evidence against a smuggling ring. Time-sensitive. Deliver to Vodoni Command.' }},
+  { id:'q_vod6', faction:'vodoni', title:'Diplomatic Pouch',
+    desc:"The Empire is making overtures to the Scro about a shared defense pact against the Far Realm incursion. The diplomatic pouch must not be intercepted. Collect it at Vodoni and deliver to Dukagsh.",
+    pickup:'vodoni', turnin:'dukagsh', reward:420, repGain:30,
+    cargo:{ id:'q_vod6_cargo', n:'Vodoni-Scro Diplomatic Pouch', ico:'💼', type:'quest', val:0, desc:'Imperial diplomatic pouch — sealed and flagged. Deliver to Dukagsh.' }},
+
+  // ── Far Realm Touched ──────────────────────────────────────────────────
   { id:'q_far1', faction:'farealm', title:'Scar Survey Data',
     desc:"Researchers at Baresun have completed a survey of the Far Realm scar sites. The data needs to reach the analysts at The Weird before the stitching degrades further.",
-    pickup:'baresun', turnin:'theweird', reward:400, repGain:30, repLoss:0,
+    pickup:'baresun', turnin:'theweird', reward:400, repGain:30,
     cargo:{ id:'q_far1_cargo', n:'Scar Survey Data Crystal', ico:'🫧', type:'quest', val:0, desc:'Encoded scar survey data from Baresun. Deliver to The Weird.' }},
   { id:'q_far2', faction:'farealm', title:'Void Crystal Cache',
     desc:"The Weird has assembled a cache of stabilised void crystals for transport. Deliver them to the researchers at Baresun before the containment fields decay.",
-    pickup:'theweird', turnin:'baresun', reward:420, repGain:30, repLoss:0,
+    pickup:'theweird', turnin:'baresun', reward:420, repGain:30,
     cargo:{ id:'q_far2_cargo', n:'Stabilised Void Crystal Cache', ico:'💠', type:'quest', val:0, desc:'Void crystals in containment fields. Deliver to Baresun quickly.' }},
+  { id:'q_far3', faction:'farealm', title:'Breach Cartography',
+    desc:"An independent cartographer at Nehwon has completed the first accurate chart of the Far Realm breach points. The Weird needs this before anyone else gets it — or destroys it.",
+    pickup:'nehwon', turnin:'theweird', reward:450, repGain:32,
+    cargo:{ id:'q_far3_cargo', n:'Breach Point Cartography Charts', ico:'🗺️', type:'quest', val:0, desc:"The cartographer's breach charts — unprecedented. Deliver to The Weird immediately." }},
+  { id:'q_far4', faction:'farealm', title:'Salvage From the Wound Road',
+    desc:"Something was recovered from the Wound Road between Baresun and Nehwon — something that was on the other side of the breach before it wasn't. The researchers at Squrm need to see it.",
+    pickup:'baresun', turnin:'squrm', reward:480, repGain:35,
+    cargo:{ id:'q_far4_cargo', n:'Far Realm Salvage — Unidentified', ico:'⬡', type:'quest', val:0, desc:'Recovered Far Realm object in containment shell. Do not touch directly. Deliver to Squrm.' }},
+  { id:'q_far5', faction:'farealm', title:'Psionic Frequency Data',
+    desc:"Researchers at Squrm have isolated the psionic frequency the Far Realm entities use to coordinate. The data needs to reach Thedas where the dampening arrays are being built.",
+    pickup:'squrm', turnin:'thedas', reward:440, repGain:30,
+    cargo:{ id:'q_far5_cargo', n:'Psionic Frequency Analysis', ico:'🧠', type:'quest', val:0, desc:'Encoded psionic frequency data. Do not expose to illithid-adjacent fields. Deliver to Thedas.' }},
+  { id:'q_far6', faction:'farealm', title:'Containment Field Components',
+    desc:"The array at Donig is failing. Replacement containment field components are sitting at Nehwon but no one with clearance can make the run. You have the clearance — barely.",
+    pickup:'nehwon', turnin:'donig', reward:460, repGain:33,
+    cargo:{ id:'q_far6_cargo', n:'Containment Field Components', ico:'🔋', type:'quest', val:0, desc:'Array containment components — fragile. Do not expose to Far Realm fields. Deliver to Donig.' }},
 ];
 
 // ── FRAGMENT GUARDIANS (named, tougher than lane mobs) ───
@@ -2234,10 +2318,15 @@ function initGame() {
     wbPatrol: {},               // key → {fromIdx, toIdx, prog(0-1), dir(1|-1)} per boss
     shothothuqUnlocked: false,  // true when all 4 WBs defeated + 6 breach intel collected
   };
-  // Assign one quest per faction (random pick from pool per faction)
+  // Assign 2-3 quests per faction per run (shuffled), so the player has variety
   const byFaction = {};
   QUEST_POOL.forEach(q=>{ if(!byFaction[q.faction]) byFaction[q.faction]=[]; byFaction[q.faction].push(q); });
-  Object.values(byFaction).forEach(qs=>{ const q=qs[Math.floor(Math.random()*qs.length)]; G.quests.push({...q,state:'inactive'}); });
+  Object.values(byFaction).forEach(qs=>{
+    // Shuffle and take up to 3
+    const shuffled = qs.slice().sort(()=>Math.random()-0.5);
+    const take = Math.min(3, shuffled.length);
+    for(let i=0;i<take;i++) G.quests.push({...shuffled[i], state:'inactive'});
+  });
 
   for(let i=0;i<220;i++) G.stars.push({x:Math.random(),y:Math.random(),r:Math.random()*1.8+0.3,twk:Math.random()*Math.PI*2,spd:Math.random()*0.014+0.003,br:Math.random()});
   const PC=['rgba(255,90,0,','rgba(255,40,100,','rgba(150,30,255,','rgba(30,80,255,','rgba(30,230,200,','rgba(255,190,0,'];
@@ -3534,24 +3623,26 @@ function travelTick(){
     return;
   }
   // ── Roaming faction encounter (separate from combat roll) ──
-  if(!G.tvl._roamChecked && G.tvl.prog > 20 && G.tvl.prog < 80 && Math.random() < 0.03){
-    G.tvl._roamChecked = true;
-    const sphereId = G.tvl.to || G.tvl.from;
-    const factionId = SPHERE_FACTION[sphereId] || SPHERE_FACTION[G.tvl.from];
-    if(factionId && FACTIONS[factionId]){
-      const rep = G.rep[factionId] || 0;
-      if(rep <= -50){
-        // Hostile — auto-attack
-        clearInterval(G.tvl.timer);
-        const fac = FACTIONS[factionId];
-        addLog(`⚠ ${fac.n} forces intercept your vessel — HOSTILE!`,'dmg');
-        startCombat(fac.shipKey);
-        return;
-      } else {
-        // Benign — pause travel and show encounter modal
-        clearInterval(G.tvl.timer);
-        triggerRoamingEncounter(factionId);
-        return;
+  if((G.tvl._roamCount||0) < 2 && G.tvl.prog > 15 && G.tvl.prog < 85 && Math.random() < 0.045){
+    // Space out multiple encounters — don't fire twice in the same stretch
+    if(!G.tvl._lastRoamProg || G.tvl.prog - G.tvl._lastRoamProg > 35){
+      G.tvl._roamCount = (G.tvl._roamCount||0) + 1;
+      G.tvl._lastRoamProg = G.tvl.prog;
+      const sphereId = G.tvl.to || G.tvl.from;
+      const factionId = SPHERE_FACTION[sphereId] || SPHERE_FACTION[G.tvl.from];
+      if(factionId && FACTIONS[factionId]){
+        const rep = G.rep[factionId] || 0;
+        if(rep <= -50){
+          clearInterval(G.tvl.timer);
+          const fac = FACTIONS[factionId];
+          addLog(`⚠ ${fac.n} forces intercept your vessel — HOSTILE!`,'dmg');
+          startCombat(fac.shipKey);
+          return;
+        } else {
+          clearInterval(G.tvl.timer);
+          triggerRoamingEncounter(factionId);
+          return;
+        }
       }
     }
   }
