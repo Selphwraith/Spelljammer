@@ -667,7 +667,7 @@ body {
   <h1>⚓ Spelljammer<span class="hdr-long">: Voyage Through the Phlogiston</span></h1>
   <div style="display:flex;align-items:center;gap:8px;">
     <button onclick="showMainMenu()" style="font-family:'Cinzel',serif;font-size:10px;letter-spacing:1px;padding:4px 10px;border:1px solid #44118866;border-radius:3px;background:rgba(15,3,35,0.8);color:#9977cc;cursor:pointer;">☰ Menu</button>
-    <button onclick="autoSave(true)" style="font-family:'Cinzel',serif;font-size:10px;letter-spacing:1px;padding:4px 10px;border:1px solid #44118866;border-radius:3px;background:rgba(15,3,35,0.8);color:#9977cc;cursor:pointer;">💾 Save</button>
+    <button onclick="showSaveOverlay()" style="font-family:'Cinzel',serif;font-size:10px;letter-spacing:1px;padding:4px 10px;border:1px solid #44118866;border-radius:3px;background:rgba(15,3,35,0.8);color:#9977cc;cursor:pointer;">💾 Save</button>
     <button id="mute-btn" onclick="toggleVolPanel(event)" style="font-family:'Cinzel',serif;font-size:10px;letter-spacing:1px;padding:4px 10px;border:1px solid #44118866;border-radius:3px;background:rgba(15,3,35,0.8);color:#9977cc;cursor:pointer;">🔊 Sound</button>
     <div id="phase-tag">Navigation</div>
   </div>
@@ -3869,7 +3869,7 @@ function arrive(id){
     G.localQuests['refuge_q2_pending'] = false;
     addLog('Engine field test data recorded. Return to Chief Engineer Velt at the Local Quests panel.', 'gd');
   }
-  autoSave();
+_writeAutoSave();
 }
 
 // ╔══════════════════════════════════════════════════════╗
@@ -4130,7 +4130,7 @@ function departPort(){
   document.getElementById('ov-port').classList.remove('on');
   G.phase='map'; setTag('Navigation'); updateUI(); _portSphere=null;
   setAmbient('map');
-  autoSave();
+_writeAutoSave();
 }
 
 function enterWaypoint(wp){
@@ -5709,7 +5709,7 @@ The Far Realm still whispers at the edges of reality. Perhaps one day a new thre
   ), 800);
 }
 function restart(){
-  ['ov-combat','ov-port','ov-waypoint','ov-loot','ov-inv','ov-wpn','ov-shp','ov-qlog','ov-dockmaster','ov-localquest','scr-defeat','scr-win','scr-farwin','tvlbar','msgbox'].forEach(id=>{
+  ['ov-combat','ov-port','ov-waypoint','ov-loot','ov-inv','ov-wpn','ov-shp','ov-qlog','ov-dockmaster','ov-localquest','scr-defeat','scr-win','scr-farwin','tvlbar','msgbox','save-overlay'].forEach(id=>{
     const el=document.getElementById(id); if(el)el.classList.remove('on','active');
   });
   const _fr=document.getElementById('ov-faction-rep'); if(_fr) _fr.style.display='none';
@@ -6549,7 +6549,7 @@ function hideMainMenu(keepTitle) {
 function menuNewGame() {
   hideMainMenu(true); // keep title playing through cinematic
   // Full teardown so combat/port/loot overlays don't linger from an in-progress game
-  ['ov-combat','ov-port','ov-waypoint','ov-loot','ov-inv','ov-wpn','ov-shp','ov-qlog','ov-dockmaster','ov-localquest','scr-defeat','scr-win','scr-farwin','tvlbar','msgbox'].forEach(id=>{
+  ['ov-combat','ov-port','ov-waypoint','ov-loot','ov-inv','ov-wpn','ov-shp','ov-qlog','ov-dockmaster','ov-localquest','scr-defeat','scr-win','scr-farwin','tvlbar','msgbox','save-overlay'].forEach(id=>{
     const el=document.getElementById(id); if(el)el.classList.remove('on','active');
   });
   const _fr=document.getElementById('ov-faction-rep'); if(_fr) _fr.style.display='none';
@@ -6610,95 +6610,116 @@ function drawMenuShip() {
 }
 
 // ── SAVE / LOAD ─────────────────────────────────────────
-const SAVE_KEY = 'spelljammer_saves';
+const SAVE_KEY      = 'spelljammer_saves';
+const AUTOSAVE_KEY  = 'spelljammer_autosave';
 
 function getSaves() {
   try { return JSON.parse(localStorage.getItem(SAVE_KEY)) || [null, null, null]; }
   catch(_) { return [null, null, null]; }
 }
-
-function autoSave(manual = false) {
-  if (!_gameActive || G.phase === 'defeat' || G.phase === 'victory' || G.phase === 'combat') return;
-  // Always auto-save to slot 0 silently; manual save prompts slot choice
-  if (manual) {
-    saveToSlot(0, true);
-  } else {
-    saveToSlot(0, false);
-  }
+function getAutoSave() {
+  try { return JSON.parse(localStorage.getItem(AUTOSAVE_KEY)) || null; }
+  catch(_) { return null; }
 }
 
-function saveToSlot(slot, notify) {
-  // Hard block — never save from a bad game state
+// ── Autosave — fires on sphere arrival, always silent ─────────────────────
+function autoSave(manual = false) {
+  if (!_gameActive || G.phase === 'defeat' || G.phase === 'victory' || G.phase === 'combat') return;
+  if (manual) {
+    // manual flag now opens the save manager instead of saving directly
+    showSaveOverlay();
+    return;
+  }
+  _writeAutoSave();
+}
+
+function _writeAutoSave() {
+  if (!_gameActive || !G || G.phase === 'defeat' || G.phase === 'victory' || G.phase === 'combat') return;
+  try {
+    const entry = _buildSaveEntry('auto', 'Auto Save');
+    localStorage.setItem(AUTOSAVE_KEY, JSON.stringify(entry));
+  } catch(_) {}
+}
+
+// ── Manual named save ─────────────────────────────────────────────────────
+function saveToSlot(slot, notify, customName) {
   if (!_gameActive || !G || G.phase === 'defeat' || G.phase === 'victory' || G.phase === 'combat') {
-    if (notify) showMsg('Cannot Save', 'The game cannot be saved from this state. Return to navigation first.');
+    if (notify) addLog('Cannot save in current state.', '');
     return;
   }
   try {
+    const name = customName || ('Voyage ' + new Date().toLocaleDateString());
     const saves = getSaves();
-    saves[slot] = {
-      slot,
-      timestamp: Date.now(),
-      shipName: G.ship.name,
-      shipType: G.ship.type,
-      hull: G.ship.hull,
-      maxHull: G.ship.maxHull,
-      crew: G.ship.crew,
-      gold: G.ship.gold,
-      frags: G.frags,
-      loc: G.spheres.find(s => s.id === G.ship.loc)?.n || G.ship.loc,
-      data: JSON.stringify({ ship: G.ship, spheres: G.spheres, frags: G.frags,
-        clues: [...G.clues], fragsCollected: [...G.fragsCollected],
-        localQuests: G.localQuests || {},
-        rep: G.rep || {}, quests: G.quests || [], completedQuests: [...(G.completedQuests||[])],
-        postVictory: G.postVictory || false, breachEntered: G.breachEntered || false,
-        worldBossDefeated: [...(G.worldBossDefeated||[])],
-        breachIntel: [...(G.breachIntel||[])],
-        wbDiscovered: [...(G.wbDiscovered||[])],
-        wbPatrol: G.wbPatrol || {},
-        shothothuqUnlocked: G.shothothuqUnlocked || false,
-        farPhlo: G.farPhlo || null,
-        _breachArrived: G._breachArrived || {} })
-    };
+    saves[slot] = _buildSaveEntry(slot, name);
     localStorage.setItem(SAVE_KEY, JSON.stringify(saves));
-    if (notify) addLog('Game saved to Slot ' + (slot + 1) + '.', 'gd');
+    if (notify) addLog(`Voyage saved: "${name}"`, 'gd');
+    buildSaveSlots();
   } catch(e) {
     if (notify) addLog('Save failed (localStorage unavailable).', '');
   }
 }
 
+function _buildSaveEntry(slot, name) {
+  return {
+    slot,
+    name,
+    timestamp: Date.now(),
+    shipName:  G.ship.name,
+    shipType:  G.ship.type,
+    hull:      G.ship.hull,
+    maxHull:   G.ship.maxHull,
+    crew:      G.ship.crew,
+    gold:      G.ship.gold,
+    frags:     G.frags,
+    loc:       G.spheres.find(s => s.id === G.ship.loc)?.n || G.ship.loc,
+    data: JSON.stringify({
+      ship: G.ship, spheres: G.spheres, frags: G.frags,
+      clues: [...G.clues], fragsCollected: [...G.fragsCollected],
+      localQuests: G.localQuests || {},
+      rep: G.rep || {}, quests: G.quests || [], completedQuests: [...(G.completedQuests||[])],
+      postVictory: G.postVictory || false, breachEntered: G.breachEntered || false,
+      worldBossDefeated: [...(G.worldBossDefeated||[])],
+      breachIntel: [...(G.breachIntel||[])],
+      wbDiscovered: [...(G.wbDiscovered||[])],
+      wbPatrol: G.wbPatrol || {},
+      shothothuqUnlocked: G.shothothuqUnlocked || false,
+      farPhlo: G.farPhlo || null,
+      _breachArrived: G._breachArrived || {}
+    })
+  };
+}
+
+// ── Load ──────────────────────────────────────────────────────────────────
 function loadFromSlot(slot) {
+  const save = slot === 'auto' ? getAutoSave() : getSaves()[slot];
+  if (!save) return;
+  _applyLoad(save);
+}
+
+function _applyLoad(save) {
   try {
-    const saves = getSaves();
-    const save = saves[slot];
-    if (!save) return;
     const state = JSON.parse(save.data);
-    // Stop old game cleanly
     if (G.tvl && G.tvl.timer) clearInterval(G.tvl.timer);
     if (G.animId) cancelAnimationFrame(G.animId);
     _stopLoop();
-    // Clear any lingering overlays or end screens before restoring
-    ['ov-combat','ov-port','ov-waypoint','ov-loot','ov-inv','ov-wpn','ov-shp','ov-qlog','ov-dockmaster','ov-localquest','ov-faction-rep','scr-defeat','scr-win','scr-farwin','tvlbar','msgbox'].forEach(id=>{
+    ['ov-combat','ov-port','ov-waypoint','ov-loot','ov-inv','ov-wpn','ov-shp','ov-qlog','ov-dockmaster','ov-localquest','ov-faction-rep','scr-defeat','scr-win','scr-farwin','tvlbar','msgbox','save-overlay'].forEach(id=>{
       const el=document.getElementById(id); if(el)el.classList.remove('on','active');
     });
-    // Restore state
     G = {
       phase: 'map',
       ship: {...state.ship, atWp:null},
       tvl: { from: state.ship.loc, to: null, prog: 0, steps: 0, cur: 0, timer: null, dist: 0, lane: null },
       cbt: { enemy: null, pStat: 'normal', eStat: 'normal', pTurn: true, cds: {}, pendingLootKey: null },
-      spheres: state.spheres,
-      frags: state.frags,
+      spheres: state.spheres, frags: state.frags,
       clues: new Set(state.clues || []),
       fragsCollected: new Set(state.fragsCollected || []),
       invFilter: 'all', selItem: null, portTab: 'supplies',
       _msgCb: null, _pendingLoot: [], _pendingGold: 0,
       stars: [], phlo: [], animId: null,
-      // ── Faction system ───────────────────────────────────
       rep: state.rep || Object.fromEntries(Object.entries(FACTIONS).map(([k,f])=>[k,f.start])),
       quests: state.quests || [],
       completedQuests: new Set(state.completedQuests || []),
       _roamPending: null,
-      // ── Post-victory / Far Realm breach state ────────────
       postVictory: state.postVictory || false,
       breachEntered: state.breachEntered || false,
       worldBossDefeated: new Set(state.worldBossDefeated || []),
@@ -6710,26 +6731,27 @@ function loadFromSlot(slot) {
       _breachArrived: state._breachArrived || {},
       view:{zoom:1,panX:0,panY:0,follow:true,_pan:false,_lastMx:0,_lastMy:0,_didDrag:false},
     };
-    // Rebuild background
-    for (let i = 0; i < 220; i++) G.stars.push({ x: Math.random(), y: Math.random(), r: Math.random() * 1.8 + 0.3, twk: Math.random() * Math.PI * 2, spd: Math.random() * 0.014 + 0.003, br: Math.random() });
+    for (let i = 0; i < 220; i++) G.stars.push({ x:Math.random(),y:Math.random(),r:Math.random()*1.8+0.3,twk:Math.random()*Math.PI*2,spd:Math.random()*0.014+0.003,br:Math.random() });
     const PC = ['rgba(255,90,0,','rgba(255,40,100,','rgba(150,30,255,','rgba(30,80,255,','rgba(30,230,200,','rgba(255,190,0,'];
-    for (let i = 0; i < 55; i++) G.phlo.push({ x: Math.random(), y: Math.random(), vx: (Math.random() - .5) * 0.0006, vy: (Math.random() - .5) * 0.0006, sz: Math.random() * 90 + 35, col: PC[i % PC.length], a: Math.random() * 0.10 + 0.03, da: (Math.random() - .5) * 0.0008 });
+    for (let i = 0; i < 55; i++) G.phlo.push({ x:Math.random(),y:Math.random(),vx:(Math.random()-.5)*0.0006,vy:(Math.random()-.5)*0.0006,sz:Math.random()*90+35,col:PC[i%PC.length],a:Math.random()*0.10+0.03,da:(Math.random()-.5)*0.0008 });
     G.localQuests = state.localQuests || {};
     _gameActive = true;
     updateUI(); updateFragUI();
-    renderLoop();
-    loadSounds();
-    loadShipImages();
-    ensureLqState();
+    renderLoop(); loadSounds(); loadShipImages(); loadVoiceFiles(); ensureLqState();
     setTimeout(() => setAmbient('map'), 200);
-    hideLoad(); hideMainMenu();
-    addLog(`Voyage restored — ${save.shipName} in ${save.loc}. Welcome back, Captain.`, 'imp');
+    hideSaveOverlay(); hideLoad(); hideMainMenu();
+    addLog(`Voyage restored — ${save.shipName} at ${save.loc}. Welcome back, Captain.`, 'imp');
   } catch(e) {
     addLog('Load failed — save data may be corrupted.', '');
   }
 }
 
+// ── Delete ────────────────────────────────────────────────────────────────
 function deleteSlot(slot) {
+  if (slot === 'auto') {
+    try { localStorage.removeItem(AUTOSAVE_KEY); buildSaveSlots(); } catch(_) {}
+    return;
+  }
   try {
     const saves = getSaves();
     saves[slot] = null;
@@ -6738,35 +6760,105 @@ function deleteSlot(slot) {
   } catch(_) {}
 }
 
+// ── Rename ────────────────────────────────────────────────────────────────
+function renameSlot(slot) {
+  const saves = getSaves();
+  const save = saves[slot];
+  if (!save) return;
+  const newName = prompt('Rename this save:', save.name || ('Slot ' + (slot+1)));
+  if (!newName || !newName.trim()) return;
+  save.name = newName.trim();
+  saves[slot] = save;
+  localStorage.setItem(SAVE_KEY, JSON.stringify(saves));
+  buildSaveSlots();
+}
+
+// ── Save Manager UI ───────────────────────────────────────────────────────
+function showSaveOverlay() {
+  buildSaveSlots();
+  document.getElementById('save-overlay').classList.remove('hidden');
+}
+function hideSaveOverlay() {
+  document.getElementById('save-overlay').classList.add('hidden');
+}
+
+function _slotHTML(save, slotId, isAuto) {
+  const canSave = _gameActive && !isAuto && !['defeat','victory','combat'].includes(G?.phase);
+  if (save) {
+    const date = new Date(save.timestamp).toLocaleString();
+    const pct  = Math.round((save.hull / save.maxHull) * 100);
+    const name = save.name || (isAuto ? 'Auto Save' : 'Slot ' + (slotId+1));
+    return `
+      <div class="save-slot">
+        <div class="save-info">
+          <div class="save-name">${isAuto ? '🔄' : '💾'} ${name}</div>
+          <div class="save-detail">${save.shipName} · ${save.loc} · ${save.frags}/6 Fragments · ⚜ ${save.gold} · Hull ${pct}%</div>
+          <div class="save-detail" style="color:#443355;font-size:10px;">${date}</div>
+        </div>
+        <div class="save-actions" style="display:flex;flex-direction:column;gap:4px;align-items:flex-end;">
+          <button class="btn sm gd" onclick="loadFromSlot('${slotId}')">▶ Load</button>
+          ${!isAuto && canSave ? `<button class="btn sm" onclick="promptSaveSlot(${slotId})">↺ Overwrite</button>` : ''}
+          ${!isAuto ? `<button class="btn sm" onclick="renameSlot(${slotId})">✎ Rename</button>` : ''}
+          <button class="btn sm dmg" onclick="deleteSlot('${slotId}')">✕ Delete</button>
+        </div>
+      </div>`;
+  } else {
+    return `
+      <div class="save-slot empty">
+        <div class="save-info"><div class="save-name" style="color:#443366">Empty Slot ${isAuto ? '' : slotId+1}</div></div>
+        <div class="save-actions">
+          ${canSave ? `<button class="btn sm" onclick="promptSaveSlot(${slotId})">💾 Save Here</button>` : ''}
+        </div>
+      </div>`;
+  }
+}
+
 function buildSaveSlots() {
+  // Autosave
+  const autoEl = document.getElementById('autosave-slot');
+  if (autoEl) autoEl.innerHTML = _slotHTML(getAutoSave(), 'auto', true);
+
+  // Manual slots
   const saves = getSaves();
   const container = document.getElementById('save-slots-list');
-  container.innerHTML = '';
-  saves.forEach((save, i) => {
-    const div = document.createElement('div');
-    div.className = 'save-slot' + (save ? '' : ' empty');
-    if (save) {
-      const date = new Date(save.timestamp).toLocaleString();
-      const pct = Math.round((save.hull / save.maxHull) * 100);
-      div.innerHTML = `
-        <div class="save-info">
-          <div class="save-name">Slot ${i+1} — ${save.shipName}</div>
-          <div class="save-detail">${save.loc} · ${save.frags}/6 Fragments · ⚜ ${save.gold} gold · Hull ${pct}%</div>
-          <div class="save-detail" style="color:#443355">${date}</div>
-        </div>
-        <div class="save-actions">
-          <button class="btn sm gd" onclick="loadFromSlot(${i})">Load</button>
-          <button class="btn sm dmg" onclick="deleteSlot(${i})">Del</button>
-        </div>`;
-    } else {
-      div.innerHTML = `
-        <div class="save-info"><div class="save-name" style="color:#443366">Slot ${i+1} — Empty</div></div>
-        <div class="save-actions">
-          ${_gameActive ? `<button class="btn sm" onclick="saveToSlot(${i},true);buildSaveSlots()">Save Here</button>` : ''}
-        </div>`;
+  if (container) {
+    container.innerHTML = '';
+    saves.forEach((save, i) => {
+      const div = document.createElement('div');
+      div.innerHTML = _slotHTML(save, i, false);
+      container.appendChild(div.firstElementChild || div);
+    });
+  }
+
+  // Main menu load list (separate element, load-only)
+  const loadList = document.getElementById('load-slots-list');
+  if (loadList) {
+    loadList.innerHTML = '';
+    const auto = getAutoSave();
+    if (auto) {
+      const d = document.createElement('div');
+      d.innerHTML = _slotHTML(auto, 'auto', true);
+      loadList.appendChild(d.firstElementChild || d);
     }
-    container.appendChild(div);
-  });
+    saves.forEach((save, i) => {
+      if (!save) return;
+      const d = document.createElement('div');
+      d.innerHTML = _slotHTML(save, i, false);
+      loadList.appendChild(d.firstElementChild || d);
+    });
+    if (!auto && saves.every(s=>!s)) {
+      loadList.innerHTML = '<div style="color:#443366;font-style:italic;padding:16px 0;text-align:center;">No saved voyages found.</div>';
+    }
+  }
+}
+
+function promptSaveSlot(slot) {
+  const saves = getSaves();
+  const existing = saves[slot];
+  const defaultName = existing?.name || (G?.ship?.name ? G.ship.name + "'s Voyage" : 'New Voyage');
+  const name = prompt('Name this save:', defaultName);
+  if (name === null) return; // cancelled
+  saveToSlot(slot, true, name.trim() || defaultName);
 }
 
 
@@ -8128,11 +8220,28 @@ document.addEventListener('DOMContentLoaded', () => {
   </div>
 </div>
 
-<!-- ═══ LOAD GAME ═══ -->
+<!-- ═══ SAVE MANAGER ═══ -->
+<div id="save-overlay" class="briefing-overlay hidden">
+  <div class="briefing-panel" style="max-width:500px;">
+    <div class="briefing-title">💾 Ship's Log — Saved Voyages</div>
+
+    <!-- Autosave slot -->
+    <div style="font-family:'Cinzel',serif;font-size:9px;letter-spacing:2px;color:#6644aa;text-transform:uppercase;margin-bottom:6px;margin-top:2px;">Auto Save</div>
+    <div id="autosave-slot" style="margin-bottom:14px;"></div>
+
+    <!-- Manual save slots -->
+    <div style="font-family:'Cinzel',serif;font-size:9px;letter-spacing:2px;color:#6644aa;text-transform:uppercase;margin-bottom:6px;">Manual Saves</div>
+    <div id="save-slots-list" style="flex:1;overflow-y:auto;"></div>
+
+    <button class="btn" onclick="hideSaveOverlay()" style="margin-top:12px;">← Close</button>
+  </div>
+</div>
+
+<!-- ═══ LOAD GAME (kept for main menu compatibility) ═══ -->
 <div id="load-overlay" class="briefing-overlay hidden">
   <div class="briefing-panel" style="max-width:480px;">
     <div class="briefing-title">📜 Ship's Log — Load Voyage</div>
-    <div id="save-slots-list" style="flex:1;overflow-y:auto;"></div>
+    <div id="load-slots-list" style="flex:1;overflow-y:auto;"></div>
     <button class="btn" onclick="hideLoad()" style="margin-top:8px;">← Back to Menu</button>
   </div>
 </div>
