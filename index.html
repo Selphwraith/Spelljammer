@@ -8971,7 +8971,7 @@ document.addEventListener('DOMContentLoaded', () => {
     <div class="mm-divider"></div>
     <button class="mm-btn" onclick="menuShowBriefing()">
       <span class="mm-ico">📖</span>
-      <span><span>Captain's Briefing</span><span class="mm-desc">Rules, controls, and lore — read before your first voyage</span></span>
+      <span><span>How to Play — Captain's Handbook</span><span class="mm-desc">Full rules, controls, combat tactics, and ship guide — read before your first voyage</span></span>
     </button>
   </div>
 </div>
@@ -8979,82 +8979,224 @@ document.addEventListener('DOMContentLoaded', () => {
 <!-- ═══ CAPTAIN'S BRIEFING ═══ -->
 <div id="briefing-overlay" class="briefing-overlay hidden">
   <div class="briefing-panel">
-    <div class="briefing-title">📖 Captain's Briefing</div>
+    <div class="briefing-title">📖 Captain's Handbook — How to Play</div>
     <div class="briefing-scroll">
 
+      <!-- MISSION -->
       <div class="b-section">
-        <div class="b-head">⚓ The Mission</div>
-        <div class="b-body">You are a captain of the <strong>Imperial Elven Navy</strong>, stationed at <em>Refuge</em> — a hidden IEN forward base sealed within an artificial Crystal Sphere. Your orders: navigate the Phlogiston, recover all <strong>six Astral Chart Fragments</strong> scattered across the surrounding spheres, then use the completed chart to reach <em>Elder Space</em> and destroy the <strong>Elder Brain Flagship</strong> before it devours all thought in the known spheres. Refuge does not have a Fragment — you must visit all six other spheres to collect them.</div>
+        <div class="b-head">⚓ Your Mission</div>
+        <div class="b-body">
+          You command a spelljamming vessel for the <strong>Imperial Elven Navy</strong>, launching from <em>Refuge</em> — a hidden IEN base sealed inside an artificial Crystal Sphere. The known spheres are under threat: an <strong>Elder Brain Flagship</strong> drifts through Elder Space, consuming all conscious thought in its path.<br><br>
+          Your orders: travel the Phlogiston, recover all <strong>six Astral Chart Fragments</strong> hidden across six Crystal Spheres, assemble the completed chart, unlock Elder Space, and destroy the Flagship before it reaches the inner spheres. <em>Refuge itself has no Fragment</em> — every other sphere you visit holds one.
+        </div>
       </div>
 
+      <!-- NAVIGATION -->
       <div class="b-section">
-        <div class="b-head">🗺 Navigation</div>
-        <div class="b-body"><strong>Click any Crystal Sphere</strong> to chart a course. Travel consumes your <em>Air Supply</em> each few ticks — if air runs out, your crew suffocates. <strong>Click your current sphere</strong> to enter port. Visiting an uncharted sphere recovers its Fragment automatically. Elder Space requires all 6 Fragments to unlock.</div>
+        <div class="b-head">🗺 Navigation &amp; The Map</div>
+        <div class="b-body">
+          The main screen shows the <strong>Phlogiston</strong> — the flammable sea between Crystal Spheres. Spheres appear as glowing circles.<br><br>
+          <strong>To travel:</strong> tap any sphere to chart a course. Your ship animates across the Phlogiston.<br>
+          <strong>To dock:</strong> tap your <em>current sphere</em> (the one you're already at) to enter port.<br>
+          <strong>Locked spheres</strong> show a lock icon — some require story progress or Fragments to reach.<br><br>
+          <strong>Air Supply</strong> counts down during travel. If it hits zero your crew suffocates — you lose. Refill air at any port before long journeys. The <em>Air Recycler</em> upgrade doubles how long your air lasts.<br><br>
+          <strong>Fragment Collection:</strong> Arriving at a sphere for the first time automatically secures its Fragment. Your Fragment count (shown top-right) must reach 6 before Elder Space unlocks.
+        </div>
       </div>
 
+      <!-- RESOURCES -->
+      <div class="b-section">
+        <div class="b-head">📊 Your Four Resources</div>
+        <div class="b-body">
+          Losing any one of these ends your voyage:<br><br>
+          <strong>⚔ Hull</strong> — Your ship's structural integrity. Reaches 0? The ship breaks apart — defeat. Repair at port or use hull items mid-combat.<br>
+          <strong>👥 Crew</strong> — Your sailors. If crew reaches 0, the helm goes dark and the ship drifts — defeat, even at full hull. Crew can be lost to enemy boarding attacks and certain specials. Hire crew at port.<br>
+          <strong>💨 Air Supply</strong> — Consumed during travel. Runs out mid-voyage? Everyone suffocates. Always refill before leaving port.<br>
+          <strong>⚜ Gold</strong> — Earned from combat loot and selling cargo. Spent on repairs, upgrades, weapons, and supplies. Never drops below 0 — but you can run out.
+        </div>
+      </div>
+
+      <!-- COMBAT BASICS -->
+      <div class="b-section">
+        <div class="b-head">⚔ Combat — The Basics</div>
+        <div class="b-body">
+          Random encounters fire during travel. Combat is <strong>strictly turn-based</strong> — you act first, then the enemy acts, then back to you.<br><br>
+          The combat screen splits into two panels at the bottom:<br>
+          <strong>Left panel — Your Weapons:</strong> tap any ready weapon card to fire it. Green glow = ready. Dimmed with a number = reloading that many rounds.<br>
+          <strong>Right panel — Enemy Systems:</strong> shows the enemy's named weapons with threat ratings (◆◆◆◆◆). High-threat weapons are worth disabling.<br><br>
+          <strong>Hull bars</strong> track both ships above the combat log. The enemy also shows a <strong>crew bar</strong> — drain their crew to 0 and their specials go offline and attacks weaken.
+        </div>
+      </div>
+
+      <!-- COMBAT ACTIONS -->
       <div class="b-section">
         <div class="b-head">⚔ Combat — Your Actions</div>
         <div class="b-body">
-          Encounters fire randomly during travel. Combat is <strong>turn-based</strong> — you act, then the enemy acts.<br><br>
-          <strong>Fire Weapon</strong> — Each weapon has its own cooldown. The Ballista fires every round; cannons take 1–4 rounds to reload. Cooldown pips show rounds remaining.<br>
-          <strong>Evasive Maneuver</strong> — Gives a 50% chance to dodge the <em>next</em> incoming attack. Use it before the enemy fires.<br>
-          <strong>Emergency Repair</strong> — Restores 25 Hull but <strong>costs 2 Crew</strong>. Beware — losing all Crew destroys the ship even at full Hull.<br>
-          <strong>Use Item</strong> — Consume a healing item or Psionic Amplifier from your hold.<br>
-          <strong>Flee</strong> — 50% success. Failure means the enemy still gets their attack.
+          All actions appear below the weapon panels:<br><br>
+          <strong>🔥 Fire Weapon</strong> — Tap a weapon card. Each weapon has a reload time (shown in rounds). The Ballista fires every round; heavier weapons take 1–4 rounds to reload. You can only fire one weapon per turn unless you have special upgrades.<br><br>
+          <strong>🌀 Evasive Maneuver</strong> — 50% chance to dodge the <em>next enemy attack entirely</em>. Use before a known heavy hit. Seeking weapons (Githyanki Silver Swords) cannot be dodged.<br><br>
+          <strong>🔧 Emergency Repair</strong> — Spends 2 Crew to restore up to 25 Hull. Be careful — losing crew is dangerous. Only appears when hull is damaged and crew &gt; 2.<br><br>
+          <strong>Item Buttons</strong> — Any usable item in your cargo hold appears here. Tap to use it instantly.<br><br>
+          <strong>💨 Flee</strong> — 50% chance of escape. On failure, the enemy still attacks. Some items (Emergency Beacon) guarantee a successful flee.
         </div>
       </div>
 
+      <!-- COMBAT UPGRADES -->
       <div class="b-section">
-        <div class="b-head">👁 Combat — Enemy Weapon Systems</div>
-        <div class="b-body">Every enemy now has <strong>named weapon systems</strong> displayed in the right panel during combat. Each weapon shows its threat rating (▮▮▮▮▮) and special properties.<br><br>
-          <strong>High-threat weapons to watch for:</strong><br>
-          <strong>Beholder</strong> — Disintegration Ray permanently reduces your max hull. Silence it fast.<br>
-          <strong>Nautiloid</strong> — Psionic Lancer stuns your entire crew for a round.<br>
-          <strong>Astral Leviathan</strong> — Void Breath Cannon adds reload time to ALL your weapons.<br>
-          <strong>Neogi</strong> — Web Cannon disables a random player weapon for 2 rounds.<br>
-          <strong>Scro</strong> — Rage Cannon escalates damage each round it fires — disable it early.<br>
-          <strong>Far Realm Stalker</strong> — Reality Shear bypasses all your damage resistance.<br>
-          <strong>Elder Brain</strong> — Three devastating weapons including a Void Singularity that shreds max hull permanently.
+        <div class="b-head">⚔ Combat — Special Upgrades</div>
+        <div class="b-body">
+          Purchase these from port shops to unlock powerful combat options:<br><br>
+          <strong>🎯 Linked Fire</strong> (Fire Control System upgrade) — Fire two ready weapons simultaneously once per few rounds.<br>
+          <strong>🌊 Volley Fire</strong> (Volley Array upgrade) — Fire <em>all</em> ready weapons at once. Replaces Linked Fire when installed.<br>
+          <strong>⚡ Chain Reaction Crystal</strong> — Every hit has a 30% chance to trigger a free bonus shot.<br>
+          <strong>🔄 Rapid Reload</strong> — All weapon cooldowns reduced by 1 round permanently.
         </div>
       </div>
 
+      <!-- SHIP SIGNATURES -->
+      <div class="b-section">
+        <div class="b-head">🚀 Ship Signature Abilities</div>
+        <div class="b-body">
+          Each ship class (except the starting Pinnace) has a <strong>built-in signature ability</strong> that upgrades up to three tiers. Buy upgrades at any port.<br><br>
+          <strong>🦑 Squid Ship — Tentacle Grapple:</strong> Binds the enemy, halving their attack damage for 2 full turns. No damage at Tier 1 — pure defense. Tier 2 adds 8 direct damage. Tier 3 stuns the enemy entirely for one turn plus 15 damage. Cooldown: 5–6 rounds.<br><br>
+          <strong>🔨 Hammership — Siege Ram:</strong> Rams the enemy for 2d10–4d10 impact damage — but you take 2–5 hull damage yourself from the collision. High risk, high reward. Tier 3 permanently reduces the enemy's max hull by 10. Cooldown: 5–6 rounds.<br><br>
+          <strong>⚓ Man-o-War — Starfire Broadside:</strong> Fires all ready weapons simultaneously in one devastating salvo — no individual cooldown penalties applied. Tier 2 adds a +20% damage bonus to each shot. Tier 3 also suppresses the enemy's next attack. The capital ship's defining move. Cooldown: 5–7 rounds.
+        </div>
+      </div>
+
+      <!-- ENEMY WEAPONS -->
+      <div class="b-section">
+        <div class="b-head">👁 Enemy Weapon Systems</div>
+        <div class="b-body">
+          Every enemy has <strong>named weapon systems</strong> shown in the right combat panel. Threat ratings run from ◆ (low) to ◆◆◆◆◆ (extreme).<br><br>
+          <strong>Dangerous weapons to watch for:</strong><br>
+          <strong>Beholder — Disintegration Ray ◆◆◆◆◆</strong> — Each hit <em>permanently</em> reduces your max hull. Disable it immediately.<br>
+          <strong>Nautiloid — Psionic Lancer ◆◆◆◆</strong> — Stuns your crew, skipping your next turn.<br>
+          <strong>Astral Leviathan — Void Breath Cannon ◆◆◆◆◆</strong> — Adds +2 reload rounds to <em>all</em> your weapons.<br>
+          <strong>Neogi — Web Cannon ◆◆◆</strong> — Disables a random player weapon for 2 rounds.<br>
+          <strong>Scro — Rage Cannon ◆◆◆◆◆</strong> — Damage escalates every round it keeps firing. Kill it or disable it fast.<br>
+          <strong>Far Realm Stalker — Reality Shear ◆◆◆◆◆</strong> — Ignores all your damage resistance entirely.<br>
+          <strong>Elder Brain — Void Singularity ◆◆◆◆◆</strong> — Pierces resistance AND permanently shreds max hull by 8 per hit.
+        </div>
+      </div>
+
+      <!-- DISABLING WEAPONS -->
       <div class="b-section">
         <div class="b-head">⬡ Disabling Enemy Weapons</div>
-        <div class="b-body">Use a <em>Phase Disruptor</em> or <em>Phase Disruptor Mk.II</em> from your cargo to enter targeting mode. Enemy weapon cards will glow gold — tap one to disable it for 2–3 turns. Disabled weapons go dark and cannot fire until they recover. A wise captain silences the most dangerous system first.</div>
-      </div>
-
-      <div class="b-section">
-        <div class="b-head">📊 Resources</div>
-        <table class="b-table">
-          <tr><th>Resource</th><th>What happens when it hits 0</th></tr>
-          <tr><td>⚔ Hull</td><td>Ship destroyed — defeat</td></tr>
-          <tr><td>👥 Crew</td><td>Ship lost even at full hull — death by drift</td></tr>
-          <tr><td>💨 Air</td><td>Crew suffocates mid-travel — defeat</td></tr>
-          <tr><td>⚜ Gold</td><td>Can't buy supplies — manage spending</td></tr>
-        </table>
-      </div>
-
-      <div class="b-section">
-        <div class="b-head">⚓ Port & Upgrades</div>
-        <div class="b-body">Click your current sphere to dock. The <em>Supplies & Arms</em> tab lets you repair hull, hire crew, refill air, buy weapons, and purchase upgrades. The <em>Sell Cargo</em> tab converts looted trade goods and components into gold.<br><br>
-        <strong>Ship Classes:</strong> Pinnace (2 slots) → Squid Ship (3 slots, 350g) → Hammership (4 slots, 700g) → Man-o-War (5 slots, 1,400g). Larger ships survive longer but cost more to crew.</div>
-      </div>
-
-      <div class="b-section">
-        <div class="b-head">📦 Cargo & Items</div>
         <div class="b-body">
-          <strong>Trade Goods / Components</strong> — Sell at port for gold.<br>
-          <strong>Hull Repair</strong> — Emergency Repair Kit (+20), Leviathan Blood Vial (+30), Astral Forge Elixir (+100, clears burn).<br>
-          <strong>Crew Restore</strong> — Crew's Courage Mead (+3), Spelljammer Stimpack (+6), IEN Surge Rations (+10).<br>
-          <strong>Combat Utility</strong> — Psionic Amplifier (stun), Null Sphere Grenade (stun + damage), Phase Disruptor (disable enemy weapon 2 turns), Phase Disruptor Mk.II (3 turns), Emergency Beacon (100% flee).<br>
-          <strong>Equippables</strong> — Install from your Cargo Manifest for permanent buffs: hull, speed, crew, or damage resistance.<br>
-          <strong>Artifacts</strong> — Trophy loot from major kills; high sell value.
+          Use a <strong>Phase Disruptor</strong> or <strong>Phase Disruptor Mk.II</strong> from your cargo to enter targeting mode. All enemy weapon cards glow gold — tap the one you want to shut down. It goes dark for 2–3 turns and cannot fire. The Mk.II disables for 3 turns instead of 2.<br><br>
+          <em>Tip: always disable the highest-threat weapon first — especially Disintegration Rays and Rage Cannons. A disabled weapon is far more valuable than one point of extra damage.</em>
         </div>
       </div>
 
+      <!-- ENEMY HEALING -->
       <div class="b-section">
-        <div class="b-head">💾 Saving</div>
-        <div class="b-body">The game auto-saves to <strong>Slot 1</strong> each time you arrive at a new sphere or leave port. Use the <em>💾 Save</em> button in the header to save manually. Load from the menu's <em>Load Game</em> screen. Three save slots are available.</div>
+        <div class="b-head">💊 Enemy Healing &amp; Buffs</div>
+        <div class="b-body">
+          Many enemies have a <strong>heal or buff ability</strong> that triggers when their hull drops low. This fires as a separate event — they spend their action recovering instead of attacking you.<br><br>
+          Watch for the warning in the enemy panel: <em>"⚠ [Ability] approaching…"</em> — that's your cue to burst them down before they recover.<br><br>
+          Notable examples: <strong>Astral Leviathan</strong> heals 25 HP once per fight. <strong>Neogi</strong> sacrifices 2 of its own crew to heal 20 HP. <strong>Elder Brain</strong> heals 40 HP below half health. <strong>Githyanki</strong> gains +3 damage resistance for 2 turns instead of healing.<br><br>
+          Killing enemy crew with the <strong>Psionic Lance</strong> weapon also suppresses their healing specials — zero crew disables all special abilities.
+        </div>
+      </div>
+
+      <!-- PORT -->
+      <div class="b-section">
+        <div class="b-head">⚓ Port — Supplies &amp; Arms</div>
+        <div class="b-body">
+          Tap your current sphere to dock. The port has two tabs:<br><br>
+          <strong>Supplies &amp; Arms:</strong> repair hull, hire crew, refill air, buy weapons, purchase ship upgrades, and buy usable items. Prices vary by location and faction reputation.<br>
+          <strong>Sell Cargo:</strong> convert looted trade goods, components, and artifacts into gold. Always sell before buying — you may have more than you think.<br><br>
+          <strong>Faction Reputation</strong> affects prices: high IEN rep gives you discounts; negative Scro rep may add a surcharge. Build rep by completing local quests and making allied choices.
+        </div>
+      </div>
+
+      <!-- SHIPS -->
+      <div class="b-section">
+        <div class="b-head">🚀 Ship Classes</div>
+        <div class="b-body">
+          Upgrade your ship at port shipyards. Larger ships have more weapon slots, higher hull, and bigger crews — but cost significantly more gold:<br><br>
+          <strong>Pinnace</strong> — Starting ship. 2 weapon slots, 65 hull, 6 crew. Fast and cheap but fragile. No signature ability.<br>
+          <strong>🦑 Squid Ship (350g)</strong> — 3 weapon slots, 80 hull, 8 crew. Gains Tentacle Grapple — a powerful defensive ability that halves enemy damage for 2 turns.<br>
+          <strong>🔨 Hammership (700g)</strong> — 4 weapon slots, 100 hull, 12 crew. Gains Siege Ram — brutal high-damage ram attack with self-damage risk.<br>
+          <strong>⚓ Man-o-War (1,400g)</strong> — 5 weapon slots, 130 hull, 16 crew. Gains Starfire Broadside — fires all ready weapons simultaneously. The ultimate endgame vessel.<br><br>
+          <em>Tip: upgrade when you have reliable income and at least one good weapon already purchased.</em>
+        </div>
+      </div>
+
+      <!-- WEAPONS -->
+      <div class="b-section">
+        <div class="b-head">🔫 Weapons Guide</div>
+        <div class="b-body">
+          Weapons range from basic to devastating. Each occupies one weapon slot:<br><br>
+          <strong>Ballista</strong> — Free. Fires every round. Low damage (1d6) but never reloads — reliable bread-and-butter.<br>
+          <strong>Light Cannon</strong> — 1 round reload. Decent damage (2d6). Good second weapon for Pinnace.<br>
+          <strong>Heavy Cannon</strong> — 2 round reload. Strong damage (3d8). Standard mid-game weapon.<br>
+          <strong>Psionic Lance</strong> — Unique. Attacks enemy <em>crew</em> directly, not hull. Great for suppressing enemy specials on Nautiloids and Beholders.<br>
+          <strong>Inferno Cannon</strong> — Applies burn DoT. Enemy takes fire damage every turn for 3 rounds.<br>
+          <strong>Null Bolt</strong> — Suppresses enemy specials for 2 turns in addition to hull damage.<br>
+          <strong>Far Realm weapons</strong> (Void Torrent, Warp Cannon, etc.) — Extreme damage but destabilize your hull slightly. Endgame power.
+        </div>
+      </div>
+
+      <!-- CARGO & ITEMS -->
+      <div class="b-section">
+        <div class="b-head">📦 Cargo &amp; Usable Items</div>
+        <div class="b-body">
+          Items found in loot or purchased at port occupy your cargo hold. Three categories:<br><br>
+          <strong>Hull Repair (use in combat or at sea):</strong><br>
+          🔩 Emergency Repair Kit — +20 hull<br>
+          🧪 Leviathan Blood Vial — +30 hull<br>
+          ⚗️ Astral Forge Elixir — +50 hull, also clears burn damage<br><br>
+          <strong>Crew Restore:</strong><br>
+          🍺 Crew's Courage Mead — +3 crew<br>
+          💉 Spelljammer Stimpack — +6 crew<br>
+          🎖️ IEN Surge Rations — +10 crew<br><br>
+          <strong>Combat Utility:</strong><br>
+          🔮 Psionic Amplifier — Stuns enemy, skips their next action<br>
+          💥 Null Sphere Grenade — Stuns enemy AND deals 15 direct damage<br>
+          ⬡ Phase Disruptor — Enter targeting mode, disable one enemy weapon for 2 turns<br>
+          ⬡ Phase Disruptor Mk.II — Same but 3 turns disabled<br>
+          🔔 Emergency Beacon — 100% guaranteed flee, no roll needed<br>
+          🩹 Alchemist's Mend — Restores 20 hull AND 1 crew simultaneously<br>
+          🫧 Void Salve — Clears all burn damage, restores 15 hull<br><br>
+          <strong>Equippables</strong> (install from Cargo Manifest tab for permanent buffs):<br>
+          Hull plates, resist plating, crew quarters, and more. Once installed, they're permanent.
+        </div>
+      </div>
+
+      <!-- QUESTS -->
+      <div class="b-section">
+        <div class="b-head">📋 Local Quests &amp; Reputation</div>
+        <div class="b-body">
+          Many ports offer <strong>local quests</strong> — side missions that reward gold, items, or reputation. Check the quest board when docked. Quests typically ask you to defeat a specific enemy, deliver cargo, or visit a nearby sphere.<br><br>
+          <strong>Faction Reputation</strong> builds separately with the IEN, Scro, Neogi, and others. Higher rep with a faction unlocks better prices at their ports, exclusive items, and special dialogue. Negative rep means surcharges and potentially hostile encounters.
+        </div>
+      </div>
+
+      <!-- SAVING -->
+      <div class="b-section">
+        <div class="b-head">💾 Saving &amp; Loading</div>
+        <div class="b-body">
+          The game <strong>auto-saves</strong> every time you arrive at a new sphere or leave port. You can also press the <em>💾 Save</em> button in the top header at any time to manually save to one of three slots.<br><br>
+          Load a saved voyage from the main menu's <em>Load Game</em> option. Auto-save is always overwritten — manual saves let you keep multiple voyages.
+        </div>
+      </div>
+
+      <!-- TIPS -->
+      <div class="b-section">
+        <div class="b-head">💡 Captain's Tips</div>
+        <div class="b-body">
+          • <strong>Never leave port with less than 15 air.</strong> Long voyages kill captains who forget to refill.<br>
+          • <strong>Sell cargo before buying supplies.</strong> You may already have enough gold.<br>
+          • <strong>Crew matters as much as hull.</strong> 0 crew = defeat even at full hull. Protect them.<br>
+          • <strong>Disable the scariest weapon first.</strong> Beholder Disintegration Ray and Scro Rage Cannon become exponentially worse the longer they fire.<br>
+          • <strong>Evasive Maneuver before a known big hit.</strong> It's wasted after the attack lands.<br>
+          • <strong>The Squid's Tentacle Grapple stacks with Evasive Maneuver.</strong> Combined, you can survive terrifying enemy turns with minimal damage.<br>
+          • <strong>Man-o-War Broadside on a full reload cycle</strong> deals more burst damage than any other single action in the game — save it for boss fights.<br>
+          • <strong>Drain enemy crew with the Psionic Lance</strong> on tough enemies — at 0 crew they lose their specials and deal reduced damage.<br>
+          • <strong>The Hammership Ram has self-damage.</strong> Don't use it when you're already low on hull.
+        </div>
       </div>
 
     </div>
