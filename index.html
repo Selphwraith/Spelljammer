@@ -5799,7 +5799,6 @@ function dmGrantClue() {
   if (site && !G.clues.has(_dmSphere)) {
     G.clues.add(_dmSphere);
     snd('fragment_collect', 0.8);
-    sndVoice(0.6);
     addLog(`⚑ INTEL: ${site.clue}`, 'imp');
   }
 
