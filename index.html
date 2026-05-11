@@ -534,6 +534,9 @@ body {
      Right col: enemy ship + enemy systems
      Bottom: combat log full width
      ════════════════════════════════════════════════════════ */
+  /* Ensure combat overlay is hidden when not active — belt-and-suspenders */
+  #ov-combat:not(.on) { display: none !important; }
+
   #ov-combat {
     justify-content: flex-start;
     align-items: stretch;
