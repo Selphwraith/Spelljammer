@@ -6314,78 +6314,92 @@ function useItem(uid, inCombat){
   const s=G.ship;
   switch(item.use){
     // ── Hull repair tiers ──
-    case 'hp20':   s.hull=Math.min(s.maxHull,s.hull+20); addLog(`🔩 Emergency Repair Kit: +20 hull restored. (${s.hull}/${s.maxHull})`,'gd'); break;
-    case 'hp30':   s.hull=Math.min(s.maxHull,s.hull+30); addLog(`🧪 Leviathan Blood Vial: +30 hull restored. (${s.hull}/${s.maxHull})`,'gd'); break;
-    case 'hp50':   s.hull=Math.min(s.maxHull,s.hull+50); addLog(`⚗️ Astral Forge Elixir: +50 hull restored. (${s.hull}/${s.maxHull})`,'gd'); break;
-    case 'hp50burn': // Astral Forge Elixir — also clears burn DoT
+    case 'hp20':
+      if(s.hull>=s.maxHull){ showMsg('Hull Intact','Your hull is already at full integrity.'); return; }
+      s.hull=Math.min(s.maxHull,s.hull+20); addLog(`🔩 Emergency Repair Kit: +20 hull restored. (${s.hull}/${s.maxHull})`,'gd'); break;
+    case 'hp30':
+      if(s.hull>=s.maxHull){ showMsg('Hull Intact','Your hull is already at full integrity.'); return; }
+      s.hull=Math.min(s.maxHull,s.hull+30); addLog(`🧪 Leviathan Blood Vial: +30 hull restored. (${s.hull}/${s.maxHull})`,'gd'); break;
+    case 'hp50':
+      if(s.hull>=s.maxHull){ showMsg('Hull Intact','Your hull is already at full integrity.'); return; }
+      s.hull=Math.min(s.maxHull,s.hull+50); addLog(`⚗️ Astral Forge Elixir: +50 hull restored. (${s.hull}/${s.maxHull})`,'gd'); break;
+    case 'hp50burn': { // Astral Forge Elixir — also clears burn DoT
+      const burnActive = G.phase==='combat' && G.cbt.enemy && G.cbt.enemy.burnLeft > 0;
+      if(s.hull>=s.maxHull && !burnActive){ showMsg('Hull Intact','Your hull is already at full integrity and there is no burn to clear.'); return; }
       s.hull=Math.min(s.maxHull,s.hull+50);
       if(G.phase==='combat'&&G.cbt.enemy){ G.cbt.enemy.burnLeft=0; addLog(`⚗️ Astral Forge Elixir: +50 hull + burn cleared! (${s.hull}/${s.maxHull})`,'gd'); }
       else addLog(`⚗️ Astral Forge Elixir: +50 hull restored. (${s.hull}/${s.maxHull})`,'gd');
-      break;
+      break; }
     case 'hp20crew1': // Alchemist's Mend — hull + crew combo
+      if(s.hull>=s.maxHull && s.crew>=s.maxCrew){ showMsg('All Good','Your hull and crew are already at full.'); return; }
       s.hull=Math.min(s.maxHull,s.hull+20);
       s.crew=Math.min(s.maxCrew,s.crew+1);
       addLog(`🩹 Alchemist's Mend: +20 hull and +1 crew restored.`,'gd'); break;
-    // ── Crew restore tiers ──
-    case 'crew3':  s.crew=Math.min(s.maxCrew,s.crew+3); addLog(`🍺 Crew's Courage Mead: +3 crew restored. (${s.crew}/${s.maxCrew})`,'gd'); break;
-    case 'crew6':  s.crew=Math.min(s.maxCrew,s.crew+6); addLog(`💉 Spelljammer Stimpack: +6 crew restored. (${s.crew}/${s.maxCrew})`,'gd'); break;
     case 'hp100': // Astral Forge Elixir legacy
+      if(s.hull>=s.maxHull){ showMsg('Hull Intact','Your hull is already at full integrity.'); return; }
       s.hull=Math.min(s.maxHull,s.hull+100);
       if(G.phase==='combat'&&G.cbt.enemy) G.cbt.enemy.burnLeft=0;
       addLog(`⚗️ Astral Forge Elixir: +100 hull restored and burn cleared! (${s.hull}/${s.maxHull})`,'gd'); break;
-    case 'crew10': // IEN Surge Rations legacy
+    // ── Crew restore tiers ──
+    case 'crew3':
+      if(s.crew>=s.maxCrew){ showMsg('Crew Full','Your crew is already at full strength.'); return; }
+      s.crew=Math.min(s.maxCrew,s.crew+3); addLog(`🍺 Crew's Courage Mead: +3 crew restored. (${s.crew}/${s.maxCrew})`,'gd'); break;
+    case 'crew6':
+      if(s.crew>=s.maxCrew){ showMsg('Crew Full','Your crew is already at full strength.'); return; }
+      s.crew=Math.min(s.maxCrew,s.crew+6); addLog(`💉 Spelljammer Stimpack: +6 crew restored. (${s.crew}/${s.maxCrew})`,'gd'); break;
+    case 'crew10':
+      if(s.crew>=s.maxCrew && G.phase!=='combat'){ showMsg('Crew Full','Your crew is already at full strength.'); return; }
       s.crew=Math.min(s.maxCrew,s.crew+10);
       if(G.phase==='combat') G.cbt._surgeBoost=true;
       addLog(`🎖️ IEN Surge Rations: +10 crew restored!`,'gd'); break;
     // ── Combat utility tiers ──
-    case 'stun':  // Psionic Amplifier — stun only
+    case 'stun':
       if(G.phase!=='combat'&&!inCombat){ showMsg('Combat Only','Psionic Amplifier can only be used during combat.'); return; }
       G.cbt.enemy.stunsNext=true; addLog('🔮 Psionic Amplifier: enemy will be stunned their next action!','gd'); break;
-    case 'stundmg': // Null Sphere Grenade — stun + 15 damage
+    case 'stundmg':
       if(G.phase!=='combat'&&!inCombat){ showMsg('Combat Only','Null Sphere Grenade can only be used during combat.'); return; }
       G.cbt.enemy.stunsNext=true;
       { const nd=15; G.cbt.enemy.hp=Math.max(0,G.cbt.enemy.hp-nd); floatDmg(eCV(),nd,false); triggerAnim(eCV(),'anim-shake'); snd('stun',0.9); }
       addLog('💥 Null Sphere Grenade: enemy stunned + 15 direct damage!','gd');
       if(G.phase==='combat'){updateCbtUI(); if(G.cbt.enemy.hp<=0){cbtWin();return;}}
       break;
-    case 'disable': // Phase Disruptor (T1) — enter targeting mode, 2-turn disable
+    case 'disable':
       if(G.phase!=='combat'&&!inCombat){ showMsg('Combat Only','Phase Disruptor can only be used during combat.'); return; }
       if(!(G.cbt.eWpns||[]).length){ showMsg('No Target','This enemy has no targetable weapon systems.'); return; }
       G.cbt.targeting='disable'; G.cbt._disableDuration=2; G.cbt._disableItem=item;
       addLog('⬡ Phase Disruptor armed — select an enemy weapon system to disable.','gd');
-      buildCbtPanels(); return; // don't remove item yet — resolveTargeting handles that
-    case 'disable3': // Phase Disruptor Mk.II (T2) — 3-turn disable
+      buildCbtPanels(); return;
+    case 'disable3':
       if(G.phase!=='combat'&&!inCombat){ showMsg('Combat Only','Phase Disruptor Mk.II can only be used during combat.'); return; }
       if(!(G.cbt.eWpns||[]).length){ showMsg('No Target','This enemy has no targetable weapon systems.'); return; }
       G.cbt.targeting='disable'; G.cbt._disableDuration=3; G.cbt._disableItem=item;
       addLog('⬡ Phase Disruptor Mk.II armed — select an enemy weapon system to disable (3 turns).','gd');
       buildCbtPanels(); return;
     // ── Void Salve — clears burn DoT + heals 15 ──
-    case 'voidsalve':
+    case 'voidsalve': {
+      const burnActive = G.phase==='combat' && G.cbt.enemy && (G.cbt.enemy.burnLeft||0) > 0;
+      if(s.hull>=s.maxHull && !burnActive){ showMsg('Nothing to Heal','Hull is at full integrity and there is no burn to clear.'); return; }
       s.hull=Math.min(s.maxHull,s.hull+15);
       if(G.phase==='combat'&&G.cbt.enemy) G.cbt.enemy.burnLeft=0;
-      addLog('🫧 Void Salve: burn cleared + 15 hull restored.','gd'); break;
+      addLog('🫧 Void Salve: burn cleared + 15 hull restored.','gd'); break; }
     // ── Emergency Beacon — 100% flee ──
     case 'beacon':
       if(G.phase!=='combat'&&!inCombat){ showMsg('Combat Only','Emergency Beacon can only be used during combat.'); return; }
       addLog('🔔 Emergency Beacon triggered — emergency extraction confirmed!','gd');
-      s.inv=s.inv.filter(i=>i.uid!==uid);
-      updateUI();
+      s.inv=s.inv.filter(i=>i.uid!==uid); updateUI();
       setTimeout(()=>endCbt(false),400); return;
     // ── Void Welder — restore lost max hull ──
     case 'voidwelder': {
       const shipBase = SHIP_TYPES[s.type]?.hull || s.maxHull;
       const cap = shipBase + s.upgrades.filter(u=>u==='plating').length * 50;
-      if(s.maxHull >= cap){
-        showMsg('Hull Intact','Your hull structure is at full integrity — no repairs needed.');
-        s.inv = s.inv.filter(i=>i.uid!==uid); updateUI(); return;
-      }
+      if(s.maxHull >= cap){ showMsg('Hull Intact','Your hull structure is at full integrity — no max hull has been lost.'); return; }
       const restored = Math.min(20, cap - s.maxHull);
       s.maxHull += restored;
       s.hull = Math.min(s.hull + restored, s.maxHull);
       addLog(`🔩⚡ Void Welder: hull structure restored +${restored} max hull. (Now ${s.maxHull} max)`, 'gd');
-      break;
-    }  s.maxHull+=20; s.hull+=20; addLog('🔷 Rune-Carved Plate installed: +20 max hull.','gd'); break;
+      break; }
+    // ── Equippables ──
+    case 'hull20':  s.maxHull+=20; s.hull+=20; addLog('🔷 Rune-Carved Plate installed: +20 max hull.','gd'); break;
     case 'hull35':  s.maxHull+=35; s.hull+=35; addLog('🔷 Void-Forged Hull Plate installed: +35 max hull.','gd'); break;
     case 'resist3': s.resist=(s.resist||0)+3; addLog('🌀 Anti-Magic Shard installed: −3 incoming damage.','gd'); break;
     case 'resist4': s.resist=(s.resist||0)+4; addLog('🔷 Phase Plating installed: −4 incoming damage.','gd'); break;
