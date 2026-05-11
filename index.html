@@ -2855,7 +2855,7 @@ function sndVoice(vol = 1.0) {
   if (!ctx) return;
   if (ctx.state === 'suspended') ctx.resume().catch(() => {});
   const available = _voiceBufs.filter(Boolean);
-  const VOICE_BOOST = 3.0; // voices were too quiet — boost by 3×
+  const VOICE_BOOST = 0.8; // normalized files — slight reduction to sit well in mix
   if (!available.length) {
     if (_SFX['voice_chatter']) {
       try {
