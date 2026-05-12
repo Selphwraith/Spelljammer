@@ -803,7 +803,15 @@ body {
   padding:5px 14px; font-size: 0.688em; color:#7766aa; font-style:italic;
   pointer-events:none; max-width:500px; text-align:center;
 }
-/* Close button */
+/* Close / Back buttons */
+#lq-back {
+  position:absolute; top:10px; left:14px; background:none;
+  border:1px solid #44006644; border-radius:3px; color:#6655aa;
+  font-size: 0.75em; padding:4px 10px; cursor:pointer;
+  font-family:'Cinzel',serif; letter-spacing:1px; z-index:5;
+  display:none;
+}
+#lq-back:hover { border-color:#9966dd; color:#ddbbff; }
 #lq-close {
   position:absolute; top:10px; right:14px; background:none;
   border:1px solid #44006644; border-radius:3px; color:#6655aa;
@@ -1566,6 +1574,7 @@ body {
 
   <!-- LOCAL QUEST OVERLAY -->
   <div id="ov-localquest">
+    <button id="lq-back" onclick="lqBack()">← Back</button>
     <button id="lq-close" onclick="closeLocalQuest()">⛵ Return to Chart</button>
     <canvas id="lq-canvas"></canvas>
     <div id="lq-log-strip">Click an NPC ship to hail them.</div>
@@ -1603,7 +1612,7 @@ body {
       <div style="font-size:11px;color:#ffd700;">⚜ Gold: <span id="lq-qm-gold">0</span></div>
       <div class="lq-sep"></div>
       <div class="lq-shop-grid" id="lq-qm-grid"></div>
-      <button class="btn" onclick="closeLqShop()" style="margin-top:6px;font-size:11px;">← Back</button>
+      <button class="btn" onclick="lqBack()" style="margin-top:6px;font-size:11px;">← Back</button>
     </div>
   </div>
 
@@ -10357,6 +10366,7 @@ function openLocalQuest() {
   document.getElementById('lq-card').classList.remove('on');
   document.getElementById('lq-shop').classList.remove('on');
   document.getElementById('lq-log-strip').textContent = 'Click an NPC ship to hail them. — ' + data.label;
+  _lqUpdateNav(); // show/hide back button
 
   LQ.canvas = document.getElementById('lq-canvas');
   LQ.ctx = LQ.canvas.getContext('2d');
@@ -10368,6 +10378,54 @@ function closeLocalQuest() {
   document.getElementById('ov-localquest').classList.remove('on');
   if(LQ.animId) { cancelAnimationFrame(LQ.animId); LQ.animId = null; }
   LQ.selectedNpc = null;
+}
+
+// Navigate back one level within the local quest hub
+function lqBack() {
+  const shopOpen = document.getElementById('lq-shop')?.classList.contains('on');
+  const cardOpen = document.getElementById('lq-card')?.classList.contains('on');
+  if(shopOpen) {
+    // Shop → back to NPC card (if there was one) or canvas
+    document.getElementById('lq-shop').classList.remove('on');
+    if(LQ.selectedNpc && LQ.selectedNpc.shop) {
+      // QM NPC — going back shows the canvas (QM has no regular card)
+      LQ.selectedNpc = null;
+    } else if(LQ.selectedNpc) {
+      document.getElementById('lq-card').classList.add('on');
+    } else {
+      LQ.selectedNpc = null;
+    }
+    _lqUpdateNav();
+    return;
+  }
+  if(cardOpen) {
+    // NPC card → back to canvas
+    document.getElementById('lq-card').classList.remove('on');
+    LQ.selectedNpc = null;
+    _lqUpdateNav();
+    return;
+  }
+  // Canvas level → close the whole overlay (same as Return to Chart)
+  closeLocalQuest();
+}
+
+// Show/hide the Back button based on current layer depth
+function _lqUpdateNav() {
+  const shopOpen = document.getElementById('lq-shop')?.classList.contains('on');
+  const cardOpen = document.getElementById('lq-card')?.classList.contains('on');
+  const backBtn  = document.getElementById('lq-back');
+  if(backBtn) backBtn.style.display = (shopOpen || cardOpen) ? 'block' : 'none';
+}
+
+function closeLqShop() {
+  document.getElementById('lq-shop').classList.remove('on');
+  // If the NPC that opened the shop had a regular card, restore it
+  if(LQ.selectedNpc && !LQ.selectedNpc.shop) {
+    document.getElementById('lq-card').classList.add('on');
+  } else {
+    LQ.selectedNpc = null;
+  }
+  _lqUpdateNav();
 }
 
 function lqRenderLoop(ts=0) {
@@ -10557,9 +10615,9 @@ function showLqCard(npc) {
     const closeBtn = document.createElement('button');
     closeBtn.className = 'btn'; closeBtn.textContent = '✕ Close';
     closeBtn.style.fontSize = '11px';
-    closeBtn.onclick = () => { card.classList.remove('on'); LQ.selectedNpc = null; };
+    closeBtn.onclick = () => lqBack();
     btnRow.appendChild(closeBtn);
-    card.classList.add('on'); return;
+    card.classList.add('on'); _lqUpdateNav(); return;
   }
 
   const status = G.localQuests[quest.id] || 'available';
@@ -10598,10 +10656,11 @@ function showLqCard(npc) {
   const closeBtn = document.createElement('button');
   closeBtn.className = 'btn'; closeBtn.textContent = '✕ Close';
   closeBtn.style.cssText = 'font-size:11px;border-color:#33224455;color:#554477;';
-  closeBtn.onclick = () => { card.classList.remove('on'); LQ.selectedNpc = null; };
+  closeBtn.onclick = () => lqBack();
   btnRow.appendChild(closeBtn);
 
   card.classList.add('on');
+  _lqUpdateNav();
 }
 
 function lqAccept(quest, npc) {
@@ -10714,6 +10773,7 @@ function showLqShop(npc) {
 
   document.getElementById('lq-shop').classList.add('on');
   document.getElementById('lq-card').classList.remove('on');
+  _lqUpdateNav();
 }
 
 function closeLqShop() {
@@ -11179,8 +11239,8 @@ window.addEventListener('keydown', e=>{
         close: ()=> closeOverlay('qlog') },
       { check: ()=> document.getElementById('ov-journal')?.classList.contains('on'),
         close: ()=> closeOverlay('journal') },
-      { check: ()=> { const el=document.getElementById('ov-localquest'); return el&&(el.style.display==='flex'||el.style.display==='block'); },
-        close: ()=> { if(typeof closeLocalQuest==='function') closeLocalQuest(); else document.getElementById('ov-localquest').style.display='none'; } },
+      { check: ()=> { const el=document.getElementById('ov-localquest'); return el&&(el.classList.contains('on')); },
+        close: ()=> lqBack() },
       { check: ()=> document.getElementById('ov-waypoint')?.classList.contains('on'),
         close: ()=> departWaypoint?.() },
       { check: ()=> document.getElementById('ov-port')?.classList.contains('on'),
