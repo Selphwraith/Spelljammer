@@ -2674,31 +2674,68 @@ const FLOW_TICK_MULT = { '+1': 0.60, '0': 1.00, '-1': 1.60 };
 // ║  TIME & FATIGUE SYSTEM — D&D 8-hour helm rule        ║
 // ╚══════════════════════════════════════════════════════╝
 //
-// One travel leg = 8 hours of helmsman concentration
-// After each leg the helmsman needs rest (anchor for remaining ~16hrs of the day)
-// Pushing past 8hr limit = Constitution check failed = Fatigued
-// Pushing again = Exhausted
-// Anchoring (full rest) = back to Fresh regardless of fatigue level
-//
-// Time tracks departure hour. Each leg advances clock by 8 hours.
-// Day rolls over when legsToday * 8 >= 24. Air drains 1 per day.
+// One travel leg = 8 hours of helmsman concentration = 1 day
+// After each leg: anchor popup (Anchor or Push On)
+// Pushing = Fatigued (1st push), Exhausted (2nd+)
+// Full anchor rest = Fresh
 
-const LEG_HOURS    = 8;           // hours per travel leg
-const DAY_START_HOUR = 6;         // 06:00 departure each morning
-const WATCH_REAL_MS = 6000;       // 6 real seconds per leg animation
-const WATCH_NAMES  = ['Morning Leg','Afternoon Leg','Night Leg']; // journal flavor
+const LEG_HOURS    = 8;
+const DAY_START_HOUR = 6;
+
+// Base real-time per leg at speed 4 (base ship)
+// Speed upgrades halve this: speed 6 = 75%, speed 8 = 50%, speed 10 = 40%
+const WATCH_REAL_MS_BASE = 6000; // 6 real seconds at base speed
+
+// Compute actual WATCH_REAL_MS based on ship speed
+function getWatchRealMs() {
+  const speed = G?.ship?.speed || 4;
+  // Each +2 speed = ×0.75 multiplier (speed 6=75%, 8=56%, 10=42%)
+  // But we want speed 8 = exactly half, so use: factor = 4/speed
+  const factor = Math.max(0.3, 4 / speed);
+  return Math.round(WATCH_REAL_MS_BASE * factor);
+}
 
 // Lane cost in LEGS (8-hr helmsman shifts)
-const LANE_BASE_LEGS = { 1: 2, 2: 2, 3: 3, 4: 4, 5: 6 };
-const LANE_MAX_LEGS  = 5;
+// Design targets at base speed (speed 4):
+//   d:1 with-flow    → 1 leg  (~1 day)
+//   d:1 against-flow → 3 legs (3 days)
+//   d:2 with-flow    → 2 legs (2 days)
+//   d:2 no-flow      → 3 legs (3 days)  [using d:2 base=3]
+//   d:2 against-flow → 5 legs (5 days) [capped at LANE_MAX_LEGS]
+//   d:3 with-flow    → 2 legs (2 days)
+//   d:3 no-flow      → 3 legs (3 days)
+//   d:3 against-flow → 5 legs (5 days)
+//   d:4 with-flow    → 2 legs (2 days)
+//   d:4 no-flow      → 4 legs (4 days)
+//   d:4 against-flow → 5 legs (5 days)  [capped]
+//   d:5 no-flow      → 6 legs (6 days)
+// Lane cost in LEGS (8-hr helmsman shifts)
+// Speed reduces leg COUNT (fewer days) — animation per leg is always the same speed
+// A faster ship covers a lane in fewer 8-hr shifts, not by rushing each shift
+// d:1 with=1, no=2, against=3  |  d:2 with=2, no=3, against=4
+// d:3 with=2, no=3, against=4  |  d:4 with=2, no=4, against=5(cap)  |  d:5=6
+const LANE_BASE_LEGS = { 1: 2, 2: 3, 3: 3, 4: 4, 5: 6 };
+const LANE_MAX_LEGS  = 8; // cap for against-flow extreme lanes
 
 function laneWatchCost(lane, ship) {
   let cost = LANE_BASE_LEGS[lane.d] || 3;
-  if (lane.flow ===  1) cost = Math.max(1, Math.ceil(cost * 0.5));
-  if (lane.flow === -1) cost = Math.min(LANE_MAX_LEGS, Math.ceil(cost * 1.5));
+  if (lane.flow ===  1) cost = Math.max(1, Math.round(cost * 0.65)); // with flow: fewer days
+  if (lane.flow === -1) cost = Math.min(LANE_MAX_LEGS, Math.round(cost * 1.35)); // against: more days
+  // Speed reduces leg count: each 2 speed above base saves 1 leg (min 1)
   const speedBonus = Math.floor((ship.speed - 4) / 2);
   return Math.max(1, cost - speedBonus);
 }
+
+// Animation: base 6 seconds per leg at speed 4
+// Higher speed = faster animation within each leg = ship visually zips across
+// BUT leg count still controls how many DAYS pass — unchanged by this
+// Speed 4 = 6s/leg, Speed 6 = 4.5s, Speed 8 = 3s (visually 2× faster), Speed 10 = 2.4s
+function getWatchRealMs() {
+  const speed = G?.ship?.speed || 4;
+  return Math.max(1500, Math.round(6000 * (4 / speed)));
+}
+
+function calcMoveBudget() { return 1; }
 
 function calcMoveBudget() { return 1; } // 1 leg per day always
 
@@ -3478,7 +3515,7 @@ function initGame() {
     phase:'map',
     ship:{
       type:'pinnace', name:'Elven Comet',
-      hull:65, maxHull:65, crew:6, maxCrew:6, air:30, gold:150, speed:4,
+      hull:65, maxHull:65, crew:6, maxCrew:6, air:30, maxAir:30, gold:150, speed:4,
       resist:0, wpns:['ballista'], upgrades:[], inv:[],
       loc:'refuge', atWp:null, sigTier:null,
     },
@@ -4816,9 +4853,10 @@ function startTravel(toId, _resumeWatchesLeft, _pausedPos, _pausedProg){
   }
   updateWatchHUD();
 
-  // Real-time duration for this watch segment
+  // Visual speed: faster ship = faster animation per leg (ship looks quicker)
+  // Day count is set by laneWatchCost (leg count) — independent of animation speed
   const fatFactor = fatigueLevel() >= 3 ? 1.2 : 1.0;
-  const watchMs   = Math.round(WATCH_REAL_MS * fatFactor);
+  const watchMs   = Math.round(getWatchRealMs() * fatFactor);
   const steps     = Math.max(40, Math.round(watchMs / 100));
   const tickMs    = Math.round(watchMs / steps);
 
@@ -4882,10 +4920,9 @@ function startWaypointTravel(wp){
   const dist=Math.hypot(wp.x-from.x, wp.y-from.y);
   G.phase='traveling';
   const lane={ d:1, label:`Route to ${wp.n}`, lore:'A short diversion from the main Phlogiston lanes.', pool:['nautiloid','neogi'], rate:0.140, warzone:false, flow:0 };
-  // Waypoints: ~5s real time base
-  const speedFactor = 4 / G.ship.speed;
+  // Waypoints: short diversion — visually faster with ship speed upgrades
   const fatFactor = fatigueLevel() >= 3 ? 1.25 : 1.0;
-  const totalMs = Math.round(5000 * speedFactor * fatFactor);
+  const totalMs = Math.round(getWatchRealMs() * 0.6 * fatFactor);
   const wpSteps = Math.max(20, Math.round(totalMs / 100));
   const wpTickMs = Math.round(totalMs / wpSteps);
   watchTravelStarted(); updateWatchHUD();
@@ -4914,10 +4951,9 @@ function startFragSiteTravel(fs){
   const lane = { d:2, label:`Route to ${fs.n}`,
     lore:'Uncharted space between the lanes. Something lurks out here.',
     pool:['nautiloid','neogi','corsair','plunderer'], rate:0.180, warzone:false, flow:0 };
-  // Fragment sites: ~10s base (short off-lane trip)
-  const speedFactor = 4 / G.ship.speed;
+  // Fragment sites: off-lane — visually faster with ship speed upgrades
   const fatFactor = fatigueLevel() >= 3 ? 1.25 : 1.0;
-  const totalMs = Math.round(10000 * speedFactor * fatFactor);
+  const totalMs = Math.round(getWatchRealMs() * fatFactor);
   const fsSteps = Math.max(20, Math.round(totalMs / 100));
   const fsTickMs = Math.round(totalMs / fsSteps);
   watchTravelStarted(); updateWatchHUD();
@@ -5244,7 +5280,7 @@ function shopItems(stock){
   // ── Basic supplies (always available) ──────────────────
   if(s.hull<s.maxHull) items.push({ico:'🔧',name:'Repair Hull',desc:`Restore to ${s.maxHull} HP`,cost:Math.floor((s.maxHull-s.hull)*0.5),act:'repair'});
   if(s.crew<s.maxCrew) items.push({ico:'👥',name:'Hire Crew',desc:`Refill crew to ${s.maxCrew}`,cost:(s.maxCrew-s.crew)*3,act:'crew'});
-  if(s.air<30)         items.push({ico:'💨',name:'Refill Air',desc:'Restore to 30 days',cost:Math.floor((30-s.air)*0.5),act:'air'});
+  if(s.air<(s.maxAir||30)) items.push({ico:'💨',name:'Refill Air',desc:`Restore to ${s.maxAir||30} days`,cost:Math.floor((30-s.air)*0.5),act:'air'});
 
   // ── Void Welder — available at drydock ports to buy ─────
   if(stock && stock.drydock){
@@ -5344,7 +5380,7 @@ function buy(item){
   switch(item.act){
     case 'repair':  s.hull=s.maxHull; snd('repair_hull',0.7); addLog('Hull repaired.','gd'); break;
     case 'crew':    s.crew=s.maxCrew; snd('purchase',0.7); addLog('Crew hired to full.','gd'); break;
-    case 'air':     s.air=30; snd('purchase',0.7); addLog('Air supply refilled.','gd'); break;
+    case 'air':     s.air=s.maxAir||30; snd('purchase',0.7); addLog('Air supply refilled.','gd'); break;
     case 'wpn': {
       const ri = wpnReplaces(item.wk, s.wpns);
       if(ri >= 0) {
@@ -5410,8 +5446,10 @@ function buy(item){
           s.maxCrew += 8; s.crew = s.maxCrew;
           addLog(`Crew Quarters installed: +8 max crew.`, 'gd'); break;
         case 'recycler':
-          // Air recycler doubles effective air duration — handled in travel tick
-          addLog(`Air Recycler installed: air lasts 2× longer.`, 'gd'); break;
+          s.maxAir = (s.maxAir || 30) * 2;
+          s.air    = s.maxAir; // top up to new max
+          addLog(`Air Recycler installed: air capacity doubled to ${s.maxAir} days!`, 'gd');
+          break;
         case 'cdreduce':
           s.cdBonus = (s.cdBonus||0) + 1;
           addLog(`Rapid Reload System installed: all weapon reload times −1 round.`, 'gd'); break;
@@ -5516,7 +5554,7 @@ function buildWaypointShop(){
   const items=[];
   if(s.hull<s.maxHull) items.push({ico:'🔧',name:'Emergency Repair',desc:`Restore to ${s.maxHull} HP`,cost:Math.ceil((s.maxHull-s.hull)*0.7),act:'repair'});
   if(s.crew<s.maxCrew) items.push({ico:'👥',name:'Crew from Reserves',desc:`Refill crew to ${s.maxCrew}`,cost:(s.maxCrew-s.crew)*5,act:'crew'});
-  if(s.air<30)         items.push({ico:'💨',name:'Emergency Air',desc:'Restore to 30 days',cost:Math.ceil((30-s.air)*0.8),act:'air'});
+  if(s.air<(s.maxAir||30)) items.push({ico:'💨',name:'Emergency Air',desc:`Restore to ${s.maxAir||30} days`,cost:Math.ceil((30-s.air)*0.8),act:'air'});
   if(!items.length){
     const d=document.createElement('div'); d.style.cssText='color:#5544aa;font-style:italic;font-size:13px;grid-column:1/-1;text-align:center;padding:14px;';
     d.textContent='All supplies already at maximum.'; grid.appendChild(d); return;
@@ -5530,7 +5568,7 @@ function buildWaypointShop(){
       s.gold-=item.cost;
       if(item.act==='repair'){ s.hull=s.maxHull; snd('repair_hull',0.7); addLog('Hull repaired at waypoint.','gd'); }
       if(item.act==='crew'){ s.crew=s.maxCrew; snd('purchase',0.7); addLog('Crew replenished.','gd'); }
-      if(item.act==='air'){ s.air=30; snd('purchase',0.6); addLog('Air supply refilled.','gd'); }
+      if(item.act==='air'){ s.air=s.maxAir||30; snd('purchase',0.6); addLog('Air supply refilled.','gd'); }
       updateUI(); buildWaypointShop();
     };
     grid.appendChild(d);
@@ -7000,6 +7038,26 @@ async function enemyTurn() {
         if(healDef.once) e._healUsed = true;
         floatDmg(eCV(), healed, true);
         cLog(`${healDef.txt} (+${healed} HP — now ${e.hp}/${e.maxHp})`, 'dmg');
+      } else if(healDef.fx === 'nova'){
+        // Caiphon: Stellar Nova Pulse — deals damage + shreds player max hull
+        const s = G.ship;
+        const novaDmg = roll(healDef.d[0], healDef.d[1]);
+        const resist = s.resist || 0;
+        const actualDmg = healDef.pierceres ? novaDmg : Math.max(1, novaDmg - resist);
+        s.hull = Math.max(0, s.hull - actualDmg);
+        floatDmg(pCV(), actualDmg, true);
+        triggerAnim(pCV(), 'anim-shake');
+        snd('player_hit', 1.0);
+        if(healDef.maxhullshred){
+          s.maxHull = Math.max(1, s.maxHull - healDef.maxhullshred);
+          s.hull = Math.min(s.hull, s.maxHull);
+          cLog(`⭐ ${healDef.txt} — ${actualDmg} damage + −${healDef.maxhullshred} max hull permanently!`, 'dmg');
+        } else {
+          cLog(`⭐ ${healDef.txt} — ${actualDmg} damage!`, 'dmg');
+        }
+        updateCbtUI();
+        await sleep(400);
+        if(s.hull <= 0){ await sleep(300); doDefeat(); return; }
       } else if(healDef.fx === 'buff'){
         if(healDef.buffStat === 'resist'){
           e._buffResist = healDef.buffAmt; e._buffResistTurns = healDef.buffTurns;
@@ -7549,13 +7607,21 @@ function useItem(uid, inCombat){
       setTimeout(()=>endCbt(false),400); return;
     // ── Void Welder — restore lost max hull ──
     case 'voidwelder': {
-      const shipBase = SHIP_TYPES[s.type]?.hull || s.maxHull;
-      const cap = shipBase + s.upgrades.filter(u=>u==='plating').length * 50;
-      if(s.maxHull >= cap){ showMsg('Hull Intact','Your hull structure is at full integrity — no max hull has been lost.'); return; }
-      const restored = Math.min(20, cap - s.maxHull);
+      // True cap = ship base + plating upgrades + any equippable hull boosts
+      // We reconstruct: base + plating*50 + hull20 items already installed in maxHull
+      // Simplest: use a stored _maxHullNominal or recalculate from upgrades
+      const shipBase = SHIP_TYPES[s.type]?.hull || 65;
+      const platingBonus = s.upgrades.filter(u=>u==='plating').length * 50;
+      // hull20 / hull35 equippables are tracked in upgrades array too
+      const equip20 = s.upgrades.filter(u=>u==='hull20').length * 20;
+      const equip35 = s.upgrades.filter(u=>u==='hull35').length * 35;
+      const cap = shipBase + platingBonus + equip20 + equip35;
+      const trueCap = Math.max(cap, s.maxHull); // never go below current maxHull
+      if(s.maxHull >= trueCap){ showMsg('Hull Intact','Your hull structure is at full integrity — no max hull has been lost.'); return; }
+      const restored = Math.min(20, trueCap - s.maxHull);
       s.maxHull += restored;
       s.hull = Math.min(s.hull + restored, s.maxHull);
-      addLog(`🔩⚡ Void Welder: hull structure restored +${restored} max hull. (Now ${s.maxHull} max)`, 'gd');
+      addLog(`🔩⚡ Void Welder: hull structure restored +${restored} max hull. (Now ${s.maxHull}/${trueCap})`, 'gd');
       break; }
     // ── Equippables ──
     case 'hull20':  s.maxHull+=20; s.hull+=20; addLog('🔷 Rune-Carved Plate installed: +20 max hull.','gd'); break;
@@ -7774,11 +7840,14 @@ function updateUI(){
   const s=G.ship;
   $id('s-hull',Math.max(0,s.hull)); $id('s-mhull',s.maxHull);
   $id('s-crew',s.crew); $id('s-mcrew',s.maxCrew); $id('s-air',s.air);
+  // Show max air if recycler installed
+  const airEl = document.getElementById('s-air');
+  if(airEl) airEl.parentElement.innerHTML = `<span id="s-air">${s.air}</span><span style="color:#446655;font-size:0.85em;">/${s.maxAir||30}</span> days`;
   $id('s-gold',s.gold); $id('s-speed',s.speed); $id('s-name',s.name);
   $id('s-resist',s.resist>0?`-${s.resist}`:'—');
   document.getElementById('b-hull').style.width=Math.max(0,(s.hull/s.maxHull)*100)+'%';
   document.getElementById('b-crew').style.width=Math.max(0,(s.crew/s.maxCrew)*100)+'%';
-  document.getElementById('b-air').style.width=Math.max(0,(s.air/30)*100)+'%';
+  document.getElementById('b-air').style.width=Math.max(0,(s.air/(s.maxAir||30))*100)+'%';
   document.getElementById('w-list').innerHTML=s.wpns.map((k,i)=>{
     const w=WPN[k]; const cd=G.cbt.cds?.[i]||0;
     return `<div class="witem">${cd>0?'🔄':'●'} ${w.n} ${cd>0?`(${cd} rd cooldown)`:`(${w.info})`}</div>`;
@@ -7814,7 +7883,7 @@ function updateMobileHUD(){
   $id('sd-items',s.inv.length); $id('sd-invval',invValSd);
   const sdBH=document.getElementById('sd-b-hull'); if(sdBH)sdBH.style.width=Math.max(0,(s.hull/s.maxHull)*100)+'%';
   const sdBC=document.getElementById('sd-b-crew'); if(sdBC)sdBC.style.width=Math.max(0,(s.crew/s.maxCrew)*100)+'%';
-  const sdBA=document.getElementById('sd-b-air'); if(sdBA)sdBA.style.width=Math.max(0,(s.air/30)*100)+'%';
+  const sdBA=document.getElementById('sd-b-air'); if(sdBA)sdBA.style.width=Math.max(0,(s.air/(s.maxAir||30))*100)+'%';
   const sdWL=document.getElementById('sd-w-list');
   if(sdWL) sdWL.innerHTML=s.wpns.map((k,i)=>{
     const w=WPN[k]; const cd=G.cbt.cds?.[i]||0;
@@ -9000,7 +9069,7 @@ const LOCAL_QUEST_DATA = {
             check: (G) => (G.localQuests?.realm_q1_kills || 0) >= 1,
             rewardFn: (G) => {
               G.ship.gold += 80;
-              G.ship.air = 30;
+              G.ship.air = G.ship.maxAir||30;
               addLog('Ensign Vaen transfers 80 gold and restores your air supply. "Navigation is clear. Good hunting, Captain."', 'gd');
             },
             trigger: (G) => { G.localQuests.realm_q1_kills = 0; }
@@ -9657,7 +9726,7 @@ function showLqShop(npc) {
     if(item.act === 'upg' && G.ship.upgrades.includes(item.upg)) return;
     // Hide supplies that are already full
     if(item.act === 'hull40' && G.ship.hull >= G.ship.maxHull) return;
-    if(item.act === 'air' && G.ship.air >= 30) return;
+    if(item.act === 'air' && G.ship.air >= (G.ship.maxAir||30)) return;
     if(item.act === 'crew4' && G.ship.crew >= G.ship.maxCrew) return;
     const canAfford = G.ship.gold >= item.cost;
     const d = document.createElement('div');
@@ -9675,7 +9744,7 @@ function showLqShop(npc) {
           G.ship.hull = Math.min(G.ship.maxHull, G.ship.hull + 40); msg = 'Hull patched (+40 HP).';
           snd('purchase', 0.8); snd('repair_hull', 0.7);
         } else if(item.act === 'air') {
-          G.ship.air = 30; msg = 'Air supply restored.';
+          G.ship.air = G.ship.maxAir||30; msg = 'Air supply restored.';
           snd('purchase', 0.8);
         } else if(item.act === 'crew4') {
           G.ship.crew = Math.min(G.ship.maxCrew, G.ship.crew + 4); msg = '4 crew assigned.';
@@ -9686,7 +9755,11 @@ function showLqShop(npc) {
             if(item.upg==='plating'){G.ship.maxHull+=50;G.ship.hull+=50;}
             if(item.upg==='engine'){G.ship.speed+=2;}
             if(item.upg==='quarters'){G.ship.maxCrew+=8;G.ship.crew=G.ship.maxCrew;}
-            if(item.upg==='recycler'){} // handled in travelTick
+            if(item.upg==='recycler'){
+              G.ship.maxAir = (G.ship.maxAir||30) * 2;
+              G.ship.air    = G.ship.maxAir;
+              addLog(`Air Recycler installed: air capacity doubled to ${G.ship.maxAir} days!`,'gd');
+            }
             msg = item.name + ' installed!';
             snd('purchase', 0.9); snd('ship_upgrade', 0.85);
           } else {
