@@ -2813,11 +2813,41 @@ function tickLeg() {
   updateWatchHUD();
 }
 
+// restAdvanceToMorning — always snaps totalHours forward to the NEXT 06:00 boundary.
+// Rest always wakes at dawn regardless of current watch position.
+// 06:00 = totalHours that is an exact multiple of 24 (since day starts at 0h = 06:00).
+// At 14:00 (rem=8): adds 16h → crosses midnight → new day.
+// At 22:00 (rem=16): adds 8h → crosses midnight → new day.
+// At 06:00 (rem=0): adds 24h → full extra day (already at dawn, rest = skip to next dawn).
+function restAdvanceToMorning() {
+  if (!G.watch) return;
+  const cur = G.watch.totalHours || 0;
+  const rem = cur % 24;
+  const hoursToAdd = rem === 0 ? 24 : (24 - rem);
+  const prev = cur;
+  G.watch.totalHours = cur + hoursToAdd;
+  G.watch.moveUsed   = 0;
+  G.watch.moveBudget = 1;
+
+  const prevDays = Math.floor(prev / 24);
+  const newDays  = Math.floor(G.watch.totalHours / 24);
+  const crossed  = newDays - prevDays;
+
+  for (let i = 0; i < crossed; i++) {
+    G.watch.day++;
+    G.travelDays = (G.travelDays || 0) + 1;
+    G.ship.air   = Math.max(0, G.ship.air - 1);
+    if (G.ship.air <= 0) { updateUI(); doDefeat(); return; }
+  }
+  updateUI();
+  updateWatchHUD();
+}
+
 // advanceWatch — called when anchoring (full rest)
 // Ticks the leg (time passes) AND resets fatigue
 function advanceWatch(silent) {
   if (!G.watch) return;
-  tickLeg();                   // time and air
+  restAdvanceToMorning();      // always wake at 06:00
   G.watch.legsPushed = 0;      // fatigue cleared by rest
   if (!silent) addLog(`06:00 — Day ${G.watch.day}. Rested. Air: ${G.ship.air} days remaining.`, '');
 }
@@ -2882,9 +2912,7 @@ Anchoring now means full rest and a fresh helmsman at dawn. Pushing on risks fat
     const pausedProg = G.tvl?._pausedProg;
     const laneOrigin = G.tvl?._laneOrigin;
     if (toId) G._resumeTravel = { toId, watchesRemaining, pausedPos, pausedProg, laneOrigin };
-    // tickLeg already ran above in watchExpiredMidJourney — signal doRest not to double-count
-    if (G.watch) G.watch._restTickDone = true;
-    doRest();
+    doRest(); // restAdvanceToMorning inside will snap to next 06:00
   };
   const pushCb = () => {
     G.watch._pauseShown = false;
@@ -2924,10 +2952,8 @@ function doRest() {
   if (G.watch?.restingPhase) return;
   if (G.phase === 'traveling') { clearInterval(G.tvl.timer); G.phase = 'map'; }
 
-  // Track whether tickLeg has ALREADY been called this rest cycle
-  // watchExpiredMidJourney calls tickLeg then immediately calls doRest — flag that
-  const _tickAlreadyDone = !!G.watch?._restTickDone;
-  if (G.watch) G.watch._restTickDone = false; // clear the flag
+  // restAdvanceToMorning always snaps to next 06:00 correctly —
+  // no need to track whether tickLeg already ran; the snap handles any prior leg tick.
 
   // Always snapshot mid-lane resume state when called during a journey
   // This covers the sidebar button, port button, and anchor popup paths
@@ -2976,8 +3002,8 @@ function doRest() {
       G.watch.restingPhase = false;
       G.watch.legsPushed   = 0; // full rest = Fresh — fatigue cleared
 
-      // Advance time if tickLeg wasn't already called by watchExpiredMidJourney
-      if (!_tickAlreadyDone) tickLeg();
+      // Always advance to next 06:00 on rest
+      restAdvanceToMorning();
 
       // Rest heals hull (+25) and crew (+2) — crew doing repairs and recovery
       const s = G.ship;
@@ -5852,7 +5878,7 @@ function waystationPurchase(item, ws){
       if (G._waystationRested) { addLog('Already rested at this waystation.', ''); break; }
       G._waystationRested = true;
       G.watch.legsPushed = 0;
-      tickLeg();
+      restAdvanceToMorning();
       // Rest healing: hull +25, crew +2
       { const s2 = G.ship;
         const hh = Math.min(25, s2.maxHull - s2.hull);
