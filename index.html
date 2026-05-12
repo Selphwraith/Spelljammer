@@ -2882,7 +2882,8 @@ Anchoring now means full rest and a fresh helmsman at dawn. Pushing on risks fat
     const pausedProg = G.tvl?._pausedProg;
     const laneOrigin = G.tvl?._laneOrigin;
     if (toId) G._resumeTravel = { toId, watchesRemaining, pausedPos, pausedProg, laneOrigin };
-    // doRest() handles the animation, advanceWatch, and the resume prompt
+    // tickLeg already ran above in watchExpiredMidJourney — signal doRest not to double-count
+    if (G.watch) G.watch._restTickDone = true;
     doRest();
   };
   const pushCb = () => {
@@ -2922,6 +2923,11 @@ The helmsman has been at the helm for 8 hours. Anchor here for the night, or pus
 function doRest() {
   if (G.watch?.restingPhase) return;
   if (G.phase === 'traveling') { clearInterval(G.tvl.timer); G.phase = 'map'; }
+
+  // Track whether tickLeg has ALREADY been called this rest cycle
+  // watchExpiredMidJourney calls tickLeg then immediately calls doRest — flag that
+  const _tickAlreadyDone = !!G.watch?._restTickDone;
+  if (G.watch) G.watch._restTickDone = false; // clear the flag
 
   // Always snapshot mid-lane resume state when called during a journey
   // This covers the sidebar button, port button, and anchor popup paths
@@ -2970,12 +2976,15 @@ function doRest() {
       G.watch.restingPhase = false;
       G.watch.legsPushed   = 0; // full rest = Fresh — fatigue cleared
 
-      if (fatigLvl >= 2 && G.ship.crew < G.ship.maxCrew) {
-        G.ship.crew = Math.min(G.ship.maxCrew, G.ship.crew + 1);
-        addLog('The crew is rested. One injured hand returns to duty.', 'gd');
-      }
-      // tickLeg already ran in watchExpiredMidJourney — don't double-count
-      // Just log the wake-up with current day state
+      // Advance time if tickLeg wasn't already called by watchExpiredMidJourney
+      if (!_tickAlreadyDone) tickLeg();
+
+      // Rest heals hull (+25) and crew (+2) — crew doing repairs and recovery
+      const s = G.ship;
+      const hullHeal = Math.min(25, s.maxHull - s.hull);
+      if (hullHeal > 0) { s.hull += hullHeal; addLog(`🔧 Crew repaired the hull overnight. +${hullHeal} hull.`, 'gd'); }
+      const crewHeal = Math.min(2, s.maxCrew - s.crew);
+      if (crewHeal > 0) { s.crew += crewHeal; addLog(`👥 ${crewHeal} crew rehabilitated and back on duty.`, 'gd'); }
       addLog(`06:00 — Anchor lifted. Day ${G.watch.day}. Helmsman is ${fatigueName()}.`, '');
       addJournalEntry(`Anchored ${timeStr(hour)}–06:00. Full rest. Helmsman fresh. Day ${G.watch.day} underway.`, '');
       updateWatchHUD(); updateUI(); _writeAutoSave();
@@ -5798,16 +5807,19 @@ function buildWaystationGrid(ws){
     items.push({ ico:'💨', name:'Refill Air', desc:`Restore to ${maxAir} days`, cost, act:'air' });
   }
 
-  // Rest (always available — resets fatigue, costs time = 1 day + gold)
+  // Rest (always available — resets fatigue, costs time = 1 day + gold; one per stop)
   const restCost = Math.ceil(30 * PREMIUM);
-  items.push({ ico:'🌙', name:'Anchor & Rest', desc:'Crew rests — fatigue cleared, 1 day passes', cost:restCost, act:'rest_wp' });
+  const alreadyRested = !!G._waystationRested;
+  items.push({ ico:'🌙', name: alreadyRested ? '🌙 Already Rested' : 'Anchor & Rest',
+    desc: alreadyRested ? 'Your crew has already rested here.' : 'Crew rests — fatigue cleared, 1 day passes, hull +25, crew +2',
+    cost:restCost, act:'rest_wp', _disabled: alreadyRested });
 
   if(items.length === 0){
     grid.innerHTML = '<div style="color:#5533aa;font-style:italic;font-size:11px;grid-column:1/-1;text-align:center;padding:8px;">Nothing needed — your ship is in full order.</div>';
   }
 
   items.forEach(item => {
-    const affordable = s.gold >= item.cost;
+    const affordable = s.gold >= item.cost && !item._disabled;
     const card = document.createElement('div');
     card.className = 'shop-card' + (affordable ? '' : ' cant-afford');
     card.innerHTML =
@@ -5815,7 +5827,7 @@ function buildWaystationGrid(ws){
       `<div class="sh-name">${item.name}</div>` +
       `<div class="sh-desc">${item.desc}</div>` +
       `<div class="sh-cost ${affordable?'':'cant'}">⚜ ${item.cost}</div>`;
-    if(affordable) card.onclick = () => waystationPurchase(item, ws);
+    if(affordable && !item._disabled) card.onclick = () => waystationPurchase(item, ws);
     grid.appendChild(card);
   });
 }
@@ -5836,9 +5848,18 @@ function waystationPurchase(item, ws){
       s.air = s.maxAir || 12;
       addLog(`💨 Air refilled to ${s.air} days. (${ws.n})`, 'gd'); break;
     case 'rest_wp':
-      // Anchor rest — clears fatigue; tickLeg advances time/air
+      // Guard: only allow one rest per waystation stop
+      if (G._waystationRested) { addLog('Already rested at this waystation.', ''); break; }
+      G._waystationRested = true;
       G.watch.legsPushed = 0;
       tickLeg();
+      // Rest healing: hull +25, crew +2
+      { const s2 = G.ship;
+        const hh = Math.min(25, s2.maxHull - s2.hull);
+        if (hh > 0) { s2.hull += hh; addLog(`🔧 Crew repaired the hull while anchored. +${hh} hull.`, 'gd'); }
+        const ch = Math.min(2, s2.maxCrew - s2.crew);
+        if (ch > 0) { s2.crew += ch; addLog(`👥 ${ch} crew recovered. Back on duty.`, 'gd'); }
+      }
       addLog(`🌙 Crew rested at ${ws.n}. Day ${G.watch.day}. Fatigue cleared.`, 'gd');
       addJournalEntry(`Anchored at waystation ${ws.n}. Paid ${item.cost} gold for berth. Full rest.`, '');
       updateWatchHUD();
@@ -5854,6 +5875,7 @@ function departWaypoint(){
   document.getElementById('ov-waypoint').classList.remove('on');
   G.phase = 'map'; setTag('Navigation'); updateUI();
   G._currentWaystation = null;
+  G._waystationRested = false; // allow rest again next time
   // If we stopped here mid-journey, offer to resume
   if(G._resumeTravel){
     const rt = G._resumeTravel; G._resumeTravel = null;
@@ -6469,21 +6491,61 @@ function drawTheMurmur(ctx,x,y,sz){
 // ── ANIMATION HELPERS ──────────────────────────────────
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
-function floatDmg(canvasEl, amount, isHeal=false) {
+function floatDmg(canvasEl, amount, isHeal=false, label=null) {
+  if(!canvasEl) return;
+  const rect = canvasEl.getBoundingClientRect();
+  const jitter = Math.random()*28 - 14;
+
+  // Main damage/heal number
+  const el = document.createElement('div');
+  el.className = 'float-dmg';
+  el.textContent = isHeal ? `+${amount}` : `-${amount}`;
+  const col = isHeal ? '#44ee88' : amount >= 25 ? '#ff2211' : amount >= 15 ? '#ff5533' : '#ff8844';
+  el.style.cssText = [
+    `left:${rect.left + rect.width/2 + jitter}px`,
+    `top:${rect.top + 10}px`,
+    `color:${col}`,
+    `font-size:${isHeal ? 20 : Math.min(38, 18 + Math.floor(amount/4))}px`,
+    `font-weight:bold`,
+  ].join(';');
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 1300);
+
+  // Optional context label below the number
+  if (label) {
+    const lb = document.createElement('div');
+    lb.className = 'float-dmg';
+    lb.textContent = label;
+    lb.style.cssText = [
+      `left:${rect.left + rect.width/2 + jitter}px`,
+      `top:${rect.top + 38}px`,
+      `color:#ddbbff`,
+      `font-size:11px`,
+      `font-weight:normal`,
+      `letter-spacing:0.5px`,
+    ].join(';');
+    document.body.appendChild(lb);
+    setTimeout(() => lb.remove(), 1500);
+  }
+}
+
+// floatText — standalone label float (no number), used for status events like STUNNED, DISABLED, CREW LOST
+function floatText(canvasEl, text, color='#ddbbff', yOffset=10) {
   if(!canvasEl) return;
   const rect = canvasEl.getBoundingClientRect();
   const el = document.createElement('div');
   el.className = 'float-dmg';
-  el.textContent = isHeal ? `+${amount}` : `-${amount}`;
-  const col = isHeal ? '#44ee88' : amount >= 20 ? '#ff3322' : '#ff8844';
+  el.textContent = text;
   el.style.cssText = [
     `left:${rect.left + rect.width/2 + (Math.random()*20-10)}px`,
-    `top:${rect.top + 10}px`,
-    `color:${col}`,
-    `font-size:${isHeal ? 20 : Math.min(36, 20 + Math.floor(amount/5))}px`,
+    `top:${rect.top + yOffset}px`,
+    `color:${color}`,
+    `font-size:13px`,
+    `font-weight:bold`,
+    `letter-spacing:1px`,
   ].join(';');
   document.body.appendChild(el);
-  setTimeout(() => el.remove(), 1200);
+  setTimeout(() => el.remove(), 1600);
 }
 
 function triggerAnim(el, cls) {
@@ -6542,6 +6604,8 @@ function buildCbtPanels() {
   // ── PLAYER WEAPONS ──
   if (!G.cbt.pTurn) {
     playerPanel.innerHTML += '<div style="color:#9966dd;font-style:italic;font-size:10px;padding:4px;">Enemy is acting…</div>';
+  } else if (G.cbt._playerStunned) {
+    playerPanel.innerHTML += '<div style="color:#ff7755;font-style:italic;font-size:10px;padding:4px;border:1px solid #ff443322;border-radius:3px;margin:4px 0;background:rgba(40,10,0,0.5);">⚡ STUNNED — click any action to lose turn</div>';
   } else {
     if (G.cbt.pStat === 'stunned') G.cbt.pStat = 'normal';
     G.ship.wpns.forEach((wk, i) => {
@@ -6715,6 +6779,7 @@ async function resolveTargeting(idx) {
   G.cbt._disableDuration = 0;
   snd('stun', 0.9);
   triggerAnim(eCV(), 'anim-shake');
+  floatText(eCV(), `⬡ ${wpn.n} DISABLED`, '#88ddff', 10);
   cLog('⬡ ' + wpn.n + ' disabled for ' + duration + ' round' + (duration!==1?'s':'') + '! System goes dark.', 'gd');
   updateCbtUI();
   buildCbtPanels();
@@ -6728,6 +6793,17 @@ async function doAction(type, idx, itemUid) {
   if (!G.cbt.pTurn || G.phase !== 'combat') return;
   G.cbt.pTurn = false;
   buildCbtBtns(); // shows "enemy acting…"
+
+  // Consume stun — player loses this action, enemy gets their turn
+  if (G.cbt._playerStunned) {
+    G.cbt._playerStunned = false;
+    floatText(pCV(), '⚡ STUNNED!', '#ff7755');
+    cLog('⚡ Your crew is stunned — unable to act this round!', 'dmg');
+    await sleep(900);
+    cLog('Your crew shakes off the neural disruption.', '');
+    if (G.cbt.enemy?.hp > 0) await enemyTurn();
+    return;
+  }
 
   switch (type) {
 
@@ -6799,7 +6875,8 @@ async function doAction(type, idx, itemUid) {
           G.ship.crew = Math.max(1, G.ship.crew - 1);
           snd('enemy_hit', 0.9);
           triggerAnim(eCV(), 'anim-shake');
-          floatDmg(eCV(), hullHit, false);
+          floatDmg(eCV(), hullHit, false, `👥 -${crewHit} CREW`);
+          floatText(pCV(), '🧠 -1 CREW FEEDBACK', '#ff8844', 55);
           const crewStatus = e.crew !== undefined ? ` | Enemy crew: ${e.crew}/${e.maxCrew}` : '';
           cLog(`🧠 Psionic Lance — ${hullHit} hull + ${crewHit} enemy crew drained!${crewStatus} [−1 your crew from feedback]`, 'gd');
           if(e.crew !== undefined && e.crew <= 0){
@@ -7319,7 +7396,11 @@ async function enemyTurn() {
     const hpPct = e.hp / e.maxHp;
     const thresholdMet = hpPct <= (healDef.threshold || 0.5);
     const onceGuard = healDef.once ? !e._healUsed : true;
-    if(thresholdMet && onceGuard && Math.random() < healDef.c){
+    // Crew guard: no hull repair if crew ≤ 2, and no crewCost heal if it would reach ≤ 0 crew
+    const crewTooLow = e.crew !== undefined && e.crew <= 2;
+    const crewCostWouldKill = healDef.crewCost && e.crew !== undefined && (e.crew - healDef.crewCost) <= 0;
+    const crewBlocked = crewTooLow || crewCostWouldKill;
+    if(thresholdMet && onceGuard && !crewBlocked && Math.random() < healDef.c){
       usedSpecial = true;
       cLog(`✨ ${e.name} — ${healDef.n}!`, 'dmg');
       await sleep(350);
@@ -7336,7 +7417,7 @@ async function enemyTurn() {
         const healed = Math.min(healDef.amt, e.maxHp - e.hp);
         e.hp = Math.min(e.maxHp, e.hp + healDef.amt);
         if(healDef.once) e._healUsed = true;
-        floatDmg(eCV(), healed, true);
+        floatDmg(eCV(), healed, true, '🔧 HULL REPAIRED');
         cLog(`${healDef.txt} (+${healed} HP — now ${e.hp}/${e.maxHp})`, 'dmg');
       } else if(healDef.fx === 'nova'){
         // Caiphon: Stellar Nova Pulse — deals damage + shreds player max hull
@@ -7418,13 +7499,18 @@ async function enemyTurn() {
         await sleep(400);
         break;
       case 'crew': {
-        G.ship.crew = Math.max(0, G.ship.crew - 2);
+        const stolen = e.sp.crewSteal || 2;
+        G.ship.crew = Math.max(0, G.ship.crew - stolen);
+        // Stolen crew added to enemy crew count (thralls put to work)
+        if(e.crew !== undefined) { e.crew = Math.min(e.maxCrew || 99, e.crew + stolen); }
+        floatText(pCV(), `👥 -${stolen} CREW STOLEN`, '#ff8844', 10);
+        if(e.crew !== undefined) floatText(eCV(), `👥 +${stolen} CREW`, '#44ee88', 10);
         cLog(e.sp.txt, 'dmg');
         triggerAnim(pCV(), 'anim-shake');
         updateCbtUI();
         await sleep(500);
         if (G.ship.crew <= 0) { cLog(`☠ Your entire crew has been lost! The ship drifts without a helm.`, 'dmg'); await sleep(700); doDefeat(); return; }
-        cLog(`⚠ Crew reduced to ${G.ship.crew}!`, 'dmg');
+        cLog(`⚠ Crew reduced to ${G.ship.crew}! Enemy presses ${stolen} captured hands into service.`, 'dmg');
         break;
       }
       case 'multi': {
@@ -7494,32 +7580,33 @@ async function enemyTurn() {
         cLog(G._godMode?`${e.name} — ${w.n}: GODMODE`:`${e.name} — ${w.n}: ${dmg} damage!${res>0?` [${res} resisted]`:''} ${w.txt}`,'dmg');
 
         // Crew loss
-        if(w.crew){ G.ship.crew=Math.max(0,G.ship.crew-w.crew); if(G.ship.crew<=0){cLog('☠ Entire crew lost!','dmg');updateCbtUI();await sleep(800);doDefeat();return;} cLog(`⚠ ${w.crew} crew lost! (${G.ship.crew} remaining)`,'dmg'); }
+        if(w.crew){ G.ship.crew=Math.max(0,G.ship.crew-w.crew); floatText(pCV(), `👥 -${w.crew} CREW`, '#ff8844', 55); if(G.ship.crew<=0){cLog('☠ Entire crew lost!','dmg');updateCbtUI();await sleep(800);doDefeat();return;} cLog(`⚠ ${w.crew} crew lost! (${G.ship.crew} remaining)`,'dmg'); }
 
         // maxhullshred — permanently reduces player max hull (Beholder Disintegration, Elder Void Pulse)
         // Can only be repaired by a Void Welder item or at a Structural Drydock port facility
-        if(w.maxhullshred && !G._godMode){ G.ship.maxHull=Math.max(10,G.ship.maxHull-w.maxhullshred); G.ship.hull=Math.min(G.ship.hull,G.ship.maxHull); cLog(`☠ Hull structure permanently compromised — max hull −${w.maxhullshred}! Seek a Structural Drydock to repair.`,'dmg'); }
+        if(w.maxhullshred && !G._godMode){ G.ship.maxHull=Math.max(10,G.ship.maxHull-w.maxhullshred); G.ship.hull=Math.min(G.ship.hull,G.ship.maxHull); floatText(pCV(),`⚠ MAX HULL -${w.maxhullshred}`,'#ff3311',55); cLog(`☠ Hull structure permanently compromised — max hull −${w.maxhullshred}! Seek a Structural Drydock to repair.`,'dmg'); }
 
         // corrode — weapons with special:'corrode' (same permanent treatment)
-        if(w.special==='corrode' && !G._godMode){ const shred=w.maxhullshred||5; G.ship.maxHull=Math.max(10,G.ship.maxHull-shred); G.ship.hull=Math.min(G.ship.hull,G.ship.maxHull); cLog(`☠ ${w.n} corrodes your hull plating permanently — max hull −${shred}! Seek a Structural Drydock.`,'dmg'); }
+        if(w.special==='corrode' && !G._godMode){ const shred=w.maxhullshred||5; G.ship.maxHull=Math.max(10,G.ship.maxHull-shred); G.ship.hull=Math.min(G.ship.hull,G.ship.maxHull); floatText(pCV(),`⚠ CORRODED -${shred}`,'#ff5511',55); cLog(`☠ ${w.n} corrodes your hull plating permanently — max hull −${shred}! Seek a Structural Drydock.`,'dmg'); }
 
         // cooldowncurse — add rounds to ALL player weapons (Leviathan Void Breath)
-        if(w.cooldowncurse){ const c=w.cooldowncurse; Object.keys(G.cbt.cds).forEach(k=>{G.cbt.cds[k]=(G.cbt.cds[k]||0)+c;}); cLog(`⚠ Void Breath curse — all your weapons +${c} reload round${c>1?'s':''}!`,'dmg'); }
+        if(w.cooldowncurse){ const c=w.cooldowncurse; Object.keys(G.cbt.cds).forEach(k=>{G.cbt.cds[k]=(G.cbt.cds[k]||0)+c;}); floatText(pCV(),`🫧 ALL WEAPONS +${c} CD`,'#cc88ff',55); cLog(`⚠ Void Breath curse — all your weapons +${c} reload round${c>1?'s':''}!`,'dmg'); }
 
         // Legacy slowAll
-        if(w.special==='slowAll'){ Object.keys(G.cbt.cds).forEach(k=>{G.cbt.cds[k]=(G.cbt.cds[k]||0)+1;}); cLog(`⚠ Void Breath disrupts your weapon systems — all weapons +1 cooldown!`,'dmg'); }
+        if(w.special==='slowAll'){ Object.keys(G.cbt.cds).forEach(k=>{G.cbt.cds[k]=(G.cbt.cds[k]||0)+1;}); floatText(pCV(),'🫧 ALL WEAPONS +1 CD','#cc88ff',55); cLog(`⚠ Void Breath disrupts your weapon systems — all weapons +1 cooldown!`,'dmg'); }
 
         // psistun — Psionic Lancer stuns next player turn
-        if(w.psistun){ G.cbt.playerStunnedNext=true; cLog(`⚡ Psionic lance scrambles your helm — crew disoriented next round!`,'dmg'); }
+        if(w.psistun){ G.cbt.playerStunnedNext=true; floatText(pCV(),'⚡ STUNNED NEXT','#ffaa33',55); cLog(`⚡ Psionic lance scrambles your helm — crew disoriented next round!`,'dmg'); }
 
         // Legacy stun special
-        if(w.special==='stun'){ G.cbt.playerStunnedNext=true; cLog(`⚡ Psionic lance scrambles your helm — crew disoriented next round!`,'dmg'); }
+        if(w.special==='stun'){ G.cbt.playerStunnedNext=true; floatText(pCV(),'⚡ STUNNED NEXT','#ffaa33',55); cLog(`⚡ Psionic lance scrambles your helm — crew disoriented next round!`,'dmg'); }
 
         // webdisable — Web Cannon disables a random player weapon for 2 rounds
         if(w.webdisable && G.ship.wpns.length>0){
           const rdy=G.ship.wpns.map((_,pi)=>pi).filter(pi=>(G.cbt.cds[pi]||0)===0);
           const target=rdy.length>0?rdy[Math.floor(Math.random()*rdy.length)]:Math.floor(Math.random()*G.ship.wpns.length);
           G.cbt.cds[target]=(G.cbt.cds[target]||0)+2;
+          floatText(pCV(),`🕸 ${WPN[G.ship.wpns[target]].n} WEBBED`,'#cc88ff',55);
           cLog(`🕸️ Web Cannon — ${WPN[G.ship.wpns[target]].n} webbed and disabled for 2 rounds!`,'dmg');
         }
 
@@ -7528,22 +7615,24 @@ async function enemyTurn() {
           const rdy=G.ship.wpns.map((_,pi)=>pi).filter(pi=>(G.cbt.cds[pi]||0)===0);
           const target=rdy.length>0?rdy[Math.floor(Math.random()*rdy.length)]:Math.floor(Math.random()*G.ship.wpns.length);
           G.cbt.cds[target]=(G.cbt.cds[target]||0)+1;
+          floatText(pCV(),`🧨 ${WPN[G.ship.wpns[target]].n} SABOTAGED`,'#ffcc44',55);
           cLog(`🧨 Saboteur Charges — ${WPN[G.ship.wpns[target]].n} disabled for 1 round!`,'dmg');
         }
 
         // disarmall — Anti-Magic Cone disables ALL player weapons for 1 round
-        if(w.disarmall){ Object.keys(G.cbt.cds).forEach(k=>{G.cbt.cds[k]=Math.max(G.cbt.cds[k]||0,1);}); cLog(`🌀 Anti-Magic Cone — all your weapons suppressed for 1 round!`,'dmg'); }
+        if(w.disarmall){ Object.keys(G.cbt.cds).forEach(k=>{G.cbt.cds[k]=Math.max(G.cbt.cds[k]||0,1);}); floatText(pCV(),'🌀 ALL WEAPONS SUPPRESSED','#cc88ff',55); cLog(`🌀 Anti-Magic Cone — all your weapons suppressed for 1 round!`,'dmg'); }
 
         // Disable a player weapon — legacy disarmPlayer flag
         if(w.disarmPlayer && G.ship.wpns.length>0){
           const rdy=G.ship.wpns.map((_,pi)=>pi).filter(pi=>(G.cbt.cds[pi]||0)===0);
           const target=rdy.length>0?rdy[Math.floor(Math.random()*rdy.length)]:Math.floor(Math.random()*G.ship.wpns.length);
           G.cbt.cds[target]=(G.cbt.cds[target]||0)+2;
+          floatText(pCV(),`⚠ ${WPN[G.ship.wpns[target]].n} DISABLED`,'#ffcc44',55);
           cLog(`⚠ ${WPN[G.ship.wpns[target]].n} disabled for 2 rounds!`,'dmg');
         }
 
         // ramping — Rage Cannon damage increases each turn
-        if(w.ramping){ G.cbt.rageStacks=(G.cbt.rageStacks||0)+1; const bonus=G.cbt.rageStacks*2; if(!G._godMode){G.ship.hull-=bonus; floatDmg(pCV(),bonus,false);} cLog(`🔥 Rage Canon escalating — stack ${G.cbt.rageStacks}, +${bonus} bonus damage!`,'dmg'); }
+        if(w.ramping){ G.cbt.rageStacks=(G.cbt.rageStacks||0)+1; const bonus=G.cbt.rageStacks*2; if(!G._godMode){G.ship.hull-=bonus; floatDmg(pCV(),bonus,false,'RAGE ESCALATES');} cLog(`🔥 Rage Canon escalating — stack ${G.cbt.rageStacks}, +${bonus} bonus damage!`,'dmg'); }
 
         updateCbtUI(); await sleep(550);
         if(G.ship.hull<=0){doDefeat();return;}
@@ -7564,17 +7653,15 @@ async function enemyTurn() {
     if(!available.some(({w})=>w.special==='rage')) G.cbt.rageStacks=0;
   }
 
-  // playerStunnedNext — skip next player turn
+  // playerStunnedNext — mark that NEXT player action is skipped (no extra enemy turn!)
   if (G.cbt.playerStunnedNext) {
     G.cbt.playerStunnedNext = false;
+    G.cbt._playerStunned = true; // doAction will consume this on next click
+    updateCbtUI();
+    await sleep(280);
+    if(G.phase !== 'combat') return;
     G.cbt.pTurn = true;
-    document.getElementById('cacts').innerHTML =
-      '<div style="color:#ff7755;font-style:italic;font-size:12px;padding:6px 0;">⚡ STUNNED — your crew cannot act this round!</div>';
-    updateCbtUI(); buildCbtBtns();
-    await sleep(1200);
-    cLog('Your crew shakes off the neural disruption.', '');
-    G.cbt.pTurn = false;
-    await enemyTurn();
+    buildCbtBtns();
     return;
   }
 
@@ -8484,48 +8571,96 @@ function roamAttack(){
 }
 function roamTrade(){
   const fac = FACTIONS[_roamFactionId];
-  const stock = (ROAM_SHOP[_roamFactionId]||[]).map(s=>({...s})); // fresh copy per encounter
-  // Build a small shop inside the result area
+  // Build persistent session stock with purchase tracking + 3-day restock
+  if(!G._roamStock || G._roamStock.factionId !== _roamFactionId) {
+    const baseStock = ROAM_SHOP[_roamFactionId] || [];
+    const lastTrade = G._roamLastTrade?.[_roamFactionId] || 0;
+    const dayNow = G.watch?.day || 1;
+    const needsRestock = (dayNow - lastTrade) >= 3;
+    G._roamStock = {
+      factionId: _roamFactionId,
+      items: baseStock.map(s => ({
+        ...s,
+        remaining: needsRestock ? s.qty : (G._roamSavedStock?.[_roamFactionId]?.[s.id] ?? s.qty),
+      }))
+    };
+    if(needsRestock) {
+      if(!G._roamLastTrade) G._roamLastTrade = {};
+      G._roamLastTrade[_roamFactionId] = dayNow;
+    }
+  }
   const resEl = document.getElementById('roam-result');
   resEl.style.display = 'block';
   resEl.style.color = '#bbaadd';
-  let html2 = `<div style="font-family:'Cinzel',serif;font-size:10px;letter-spacing:2px;color:#886644;margin-bottom:8px;">— ${fac.short.toUpperCase()} FIELD GOODS —</div>`;
-  stock.forEach((s,i)=>{
-    const itm = ITEMS[s.id]; if(!itm) return;
-    const price = Math.round((itm.val||20)*1.4); // 40% markup over base val
-    const canAfford = G.ship.gold >= price;
-    html2 += `<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid #22113322;">
-      <span style="font-size:14px;">${itm.ico}</span>
-      <span style="flex:1;font-size:11px;color:${canAfford?'#ccaadd':'#554455'};">${itm.n}</span>
-      <span style="font-size:10px;color:#886633;">⚜ ${price}</span>
-      <button onclick="roamBuyItem('${s.id}',${price},${i})" ${canAfford?'':'disabled'}
-        style="font-size:9px;padding:3px 8px;background:${canAfford?'rgba(30,15,5,0.9)':'rgba(10,5,10,0.5)'};
-        border:1px solid ${canAfford?'#aa882255':'#33223344'};color:${canAfford?'#ffcc66':'#443333'};
-        font-family:'Cinzel',serif;border-radius:3px;cursor:${canAfford?'pointer':'default'};">Buy</button>
-    </div>`;
-  });
-  html2 += `<div style="font-size:10px;color:#443344;margin-top:6px;">Gold: ⚜ <span id="roam-gold-display">${G.ship.gold}</span></div>`;
-  resEl.innerHTML = html2;
-  document.getElementById('roam-continue-btn').style.display='block';
+  _buildRoamShopHTML(fac, resEl);
+  document.getElementById('roam-continue-btn').style.display = 'block';
   document.getElementById('roam-continue-btn').textContent = 'Done Trading →';
   applyRep(_roamFactionId, 5);
-  addLog(`Trading with ${fac.n} field merchant.`,'');
+  addLog(`Trading with ${fac.n} field merchant.`, '');
   snd('port_dock', 0.6);
 }
+
+function _buildRoamShopHTML(fac, resEl){
+  const stock = G._roamStock?.items || [];
+  let html = `<div style="font-family:'Cinzel',serif;font-size:10px;letter-spacing:2px;color:#886644;margin-bottom:8px;">— ${(fac.short||fac.n).toUpperCase()} FIELD GOODS —</div>`;
+  stock.forEach((s, i) => {
+    const itm = ITEMS[s.id]; if(!itm) return;
+    const price = Math.round((itm.val||20) * 1.4);
+    const soldOut = s.remaining <= 0;
+    const canAfford = G.ship.gold >= price;
+    const rowCol = soldOut ? '#332233' : (canAfford ? '#ccaadd' : '#554455');
+    const nameStr = soldOut ? `<s style="opacity:0.4">${itm.n}</s>` : itm.n;
+    const maxQty = Math.min(s.remaining, 5);
+    let qtyHtml = '';
+    if(!soldOut && maxQty > 1){
+      qtyHtml = `<select id="roam-qty-${i}" style="font-size:9px;background:#0a0018;color:#ffcc66;border:1px solid #553322;border-radius:2px;padding:1px 2px;width:34px;">`;
+      for(let q=1;q<=maxQty;q++) qtyHtml += `<option value="${q}">${q}</option>`;
+      qtyHtml += '</select>';
+    }
+    const stockLabel = soldOut ? ' <span style="font-size:8px;color:#553344;">[SOLD OUT]</span>'
+                               : ` <span style="font-size:8px;color:#554444;">[${s.remaining}]</span>`;
+    const btnBg = soldOut ? 'rgba(10,5,10,0.5)' : (canAfford ? 'rgba(30,15,5,0.9)' : 'rgba(10,5,10,0.5)');
+    const btnBd = soldOut ? '#33223344' : (canAfford ? '#aa882255' : '#33223344');
+    const btnCol = (soldOut || !canAfford) ? '#443333' : '#ffcc66';
+    const btnCur = (soldOut || !canAfford) ? 'default' : 'pointer';
+    const btnDis = (soldOut || !canAfford) ? 'disabled' : '';
+    const btnTxt = soldOut ? 'Sold' : 'Buy';
+    html += `<div style="display:flex;align-items:center;gap:6px;padding:5px 0;border-bottom:1px solid #22113322;">
+      <span style="font-size:13px;opacity:${soldOut?0.4:1}">${itm.ico}</span>
+      <span style="flex:1;font-size:11px;color:${rowCol};">${nameStr}${stockLabel}</span>
+      <span style="font-size:10px;color:#886633;">⚜ ${price}</span>
+      ${qtyHtml}
+      <button onclick="roamBuyItem('${s.id}',${price},${i})" ${btnDis}
+        style="font-size:9px;padding:3px 8px;background:${btnBg};border:1px solid ${btnBd};color:${btnCol};font-family:'Cinzel',serif;border-radius:3px;cursor:${btnCur};">${btnTxt}</button>
+    </div>`;
+  });
+  html += `<div style="font-size:10px;color:#443344;margin-top:6px;">Gold: ⚜ <span id="roam-gold-display">${G.ship.gold}</span></div>`;
+  resEl.innerHTML = html;
+}
+
 function roamBuyItem(itemId, price, stockIdx){
-  if(G.ship.gold < price) return;
+  const stock = G._roamStock?.items;
+  if(!stock) return;
+  const entry = stock[stockIdx];
+  if(!entry || entry.remaining <= 0) return;
   const itm = ITEMS[itemId]; if(!itm) return;
-  G.ship.gold -= price;
-  G.ship.inv.push({...itm, uid:'roam_'+Date.now()});
+  const qtyEl = document.getElementById(`roam-qty-${stockIdx}`);
+  const qty = qtyEl ? parseInt(qtyEl.value) || 1 : 1;
+  const totalCost = price * qty;
+  if(G.ship.gold < totalCost) { addLog('Not enough gold.', 'dmg'); return; }
+  G.ship.gold -= totalCost;
+  for(let q=0; q<qty; q++) G.ship.inv.push({...itm, uid:'roam_'+Date.now()+'_'+q});
+  entry.remaining -= qty;
+  if(!G._roamSavedStock) G._roamSavedStock = {};
+  if(!G._roamSavedStock[_roamFactionId]) G._roamSavedStock[_roamFactionId] = {};
+  G._roamSavedStock[_roamFactionId][itemId] = entry.remaining;
   updateUI();
-  // Update gold display
   const gd = document.getElementById('roam-gold-display');
   if(gd) gd.textContent = G.ship.gold;
-  // Disable that buy button
-  const btns = document.getElementById('roam-result').querySelectorAll('button');
-  if(btns[stockIdx]) btns[stockIdx].disabled = true;
-  addLog(`Purchased ${itm.n} for ${price} gold.`,'gd');
+  addLog(`Purchased ${qty > 1 ? qty+'× ' : ''}${itm.n} for ${totalCost} gold.`, 'gd');
   snd('purchase', 0.7);
+  const resEl = document.getElementById('roam-result');
+  if(resEl) _buildRoamShopHTML(FACTIONS[_roamFactionId], resEl);
 }
 function roamHail(){
   const fac = FACTIONS[_roamFactionId];
@@ -10027,14 +10162,25 @@ function showLqShop(npc) {
   stock.items.forEach(item => {
     // Hide upgrades the player already has
     if(item.act === 'upg' && G.ship.upgrades.includes(item.upg)) return;
+    // Hide weapons already owned
+    if((item.act === 'wpn' || item.wk) && G.ship.wpns.includes(item.wk || item.act)) return;
+    // Hide weapons where player already has something equal or better in the same family
+    const wKey = item.wk || (item.act === 'wpn' ? item.wpnKey : null);
+    if(wKey && wpnHasBetter(wKey, G.ship.wpns)) return;
     // Hide supplies that are already full
     if(item.act === 'hull40' && G.ship.hull >= G.ship.maxHull) return;
     if(item.act === 'air' && G.ship.air >= (G.ship.maxAir||12)) return;
     if(item.act === 'crew4' && G.ship.crew >= G.ship.maxCrew) return;
+    // Annotate weapon items with upgrade/replace info
+    let itemName = `${item.ico} ${item.name}`;
+    if(wKey) {
+      const replIdx = wpnReplaces(wKey, G.ship.wpns);
+      if(replIdx >= 0) itemName = `⬆ ${item.name} <span style="font-size:9px;color:#886644;">(replaces ${WPN[G.ship.wpns[replIdx]].n})</span>`;
+    }
     const canAfford = G.ship.gold >= item.cost;
     const d = document.createElement('div');
     d.className = 'lq-shop-item' + (canAfford ? '' : ' dis');
-    d.innerHTML = `<div class="lq-si-name">${item.ico} ${item.name}</div>
+    d.innerHTML = `<div class="lq-si-name">${itemName}</div>
       <div class="lq-si-desc">${item.desc}</div>
       <div class="lq-si-cost">⚜ ${item.cost}</div>`;
 
