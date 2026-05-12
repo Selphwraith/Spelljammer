@@ -1031,7 +1031,6 @@ body {
   <h1>⚓ Spelljammer<span class="hdr-long">: Voyage Through the Phlogiston</span></h1>
   <div style="display:flex;align-items:center;gap:8px;">
     <button onclick="showMainMenu()" style="font-family:'Cinzel',serif;font-size:0.625em;letter-spacing:1px;padding:4px 10px;border:1px solid #44118866;border-radius:3px;background:rgba(15,3,35,0.8);color:#9977cc;cursor:pointer;">☰ Menu</button>
-    <button onclick="showSaveOverlay()" style="font-family:'Cinzel',serif;font-size:0.625em;letter-spacing:1px;padding:4px 10px;border:1px solid #44118866;border-radius:3px;background:rgba(15,3,35,0.8);color:#9977cc;cursor:pointer;">💾 Save</button>
     <button id="mute-btn" onclick="toggleVolPanel(event)" style="font-family:'Cinzel',serif;font-size:0.625em;letter-spacing:1px;padding:4px 10px;border:1px solid #44118866;border-radius:3px;background:rgba(15,3,35,0.8);color:#9977cc;cursor:pointer;">🔊 Sound</button>
     <button onclick="showFontPanel()" style="font-family:'Cinzel',serif;font-size:0.625em;letter-spacing:1px;padding:4px 10px;border:1px solid #44118866;border-radius:3px;background:rgba(15,3,35,0.8);color:#9977cc;cursor:pointer;">🔠 Text</button>
     <div id="phase-tag">Navigation</div>
@@ -2830,7 +2829,8 @@ Anchoring now means full rest and a fresh helmsman at dawn. Pushing on risks fat
     const watchesRemaining = G.tvl?._watchesRemaining;
     const pausedPos  = G.ship.midLanePos;
     const pausedProg = G.tvl?._pausedProg;
-    if (toId) G._resumeTravel = { toId, watchesRemaining, pausedPos, pausedProg };
+    const laneOrigin = G.tvl?._laneOrigin;
+    if (toId) G._resumeTravel = { toId, watchesRemaining, pausedPos, pausedProg, laneOrigin };
     advanceWatch();
     addLog(`${timeStr(hour)} — Anchored. The crew rests. Underway again at 06:00.`, '');
     addJournalEntry(`Anchored at ${timeStr(hour)} after 8 hours underway. Full rest. The Phlogiston drifts past in the dark.`, '');
@@ -2849,7 +2849,7 @@ Anchoring now means full rest and a fresh helmsman at dawn. Pushing on risks fat
     const pausedPos  = G.ship.midLanePos;
     const pausedProg = G.tvl?._pausedProg;
     G.ship.midLanePos = null;
-    if (toId) startTravel(toId, watchesRemaining, pausedPos, pausedProg);
+    if (toId) startTravel(toId, watchesRemaining, pausedPos, pausedProg, G.tvl?._laneOrigin);
     else { G.phase = 'traveling'; G.tvl.timer = setInterval(travelTick, G.tvl.tickMs || 100); }
   };
 
@@ -2873,6 +2873,25 @@ The helmsman has been at the helm for 8 hours. Anchor here for the night, or pus
 function doRest() {
   if (G.watch?.restingPhase) return;
   if (G.phase === 'traveling') { clearInterval(G.tvl.timer); G.phase = 'map'; }
+
+  // Always snapshot mid-lane resume state when called during a journey
+  // This covers the sidebar button, port button, and anchor popup paths
+  if (!G._resumeTravel && G.tvl?.to && (G.tvl.prog||0) > 0 && (G.tvl.prog||0) < 100) {
+    const laneOrigin = G.tvl._laneOrigin || G.tvl.fromPos || {x:.5, y:.5};
+    const destSph = G.spheres?.find(s => s.id === G.tvl.to) || {x:.5, y:.5};
+    const pg = Math.max(0, Math.min(1, (G.tvl.prog||0) / 100));
+    const pausedPos = {
+      x: laneOrigin.x + (destSph.x - laneOrigin.x) * pg,
+      y: laneOrigin.y + (destSph.y - laneOrigin.y) * pg,
+    };
+    const pausedProg = G.tvl.prog;
+    const watchesRemaining = G.tvl._watchesRemaining || G.tvl._watchesLeft || 1;
+    G.ship.midLanePos = pausedPos;
+    G.tvl._pausedProg = pausedProg;
+    G.tvl._watchesRemaining = watchesRemaining;
+    G._resumeTravel = { toId: G.tvl.to, watchesRemaining, pausedPos, pausedProg, laneOrigin };
+  }
+
   G.watch.restingPhase = true;
 
   const overlay = document.getElementById('rest-overlay');
@@ -2917,7 +2936,7 @@ function doRest() {
         const dn = G.spheres?.find(s=>s.id===rt.toId)?.n || rt.toId;
         showMsg('⚓ Rested — Ready to Sail',
           `Day ${G.watch.day}, 06:00. ${dn} — ${rt.watchesRemaining} leg${rt.watchesRemaining>1?'s':''} remaining.`,
-          '⛵ Resume Course', () => startTravel(rt.toId, rt.watchesRemaining, rt.pausedPos, rt.pausedProg));
+          '⛵ Resume Course', () => startTravel(rt.toId, rt.watchesRemaining, rt.pausedPos, rt.pausedProg, rt.laneOrigin));
       } else if (G.tvl?.prog < 100 && (G.tvl?.to || G.tvl?.toWp || G.tvl?.toFragSite)) {
         const dn = G.tvl.to ? G.spheres?.find(s=>s.id===G.tvl.to)?.n : (G.tvl.toWp?.n||G.tvl.toFragSite?.n||'destination');
         showMsg('⚓ Rested — Ready to Sail', `${dn} awaits. Day ${G.watch.day}, 06:00.`,
@@ -4818,9 +4837,10 @@ function getShipPos(){
   return sph ? {x:sph.x, y:sph.y} : {x:.5,y:.5};
 }
 
-function startTravel(toId, _resumeWatchesLeft, _pausedPos, _pausedProg){
+function startTravel(toId, _resumeWatchesLeft, _pausedPos, _pausedProg, _savedLaneOrigin){
   if(G.phase!=='map')return;
-  if (!hasMovesRemaining()) {
+  // On resume (_pausedProg defined), skip the move budget check — advanceWatch already reset it
+  if (!_pausedProg && !hasMovesRemaining()) {
     showMsg('⚓ Watch Exhausted',
       `Your crew has completed a full watch underway. Rest before the next leg.\n\nFatigue: ${fatigueName()}`,
       'Understood', null);
@@ -4835,9 +4855,9 @@ function startTravel(toId, _resumeWatchesLeft, _pausedPos, _pausedProg){
 
   // ── Origin sphere position (always the true lane start, never mid-lane) ──
   const originSph = G.spheres.find(s=>s.id===fromId) || {x:.5, y:.5};
-  // On resume, recover _laneOrigin from the previous G.tvl if it exists
-  const laneOrigin = (_pausedProg !== undefined && G.tvl?._laneOrigin)
-    ? G.tvl._laneOrigin
+  // On resume: prefer saved laneOrigin > G.tvl._laneOrigin > origin sphere
+  const laneOrigin = (_pausedProg !== undefined)
+    ? (_savedLaneOrigin || G.tvl?._laneOrigin || {x: originSph.x, y: originSph.y})
     : {x: originSph.x, y: originSph.y};
 
   // Total watches for this lane — on resume, _resumeWatchesLeft is watches still needed
@@ -8677,10 +8697,17 @@ function showMainMenu() {
   el.classList.remove('hidden');
   const contBtn = document.getElementById('btn-continue');
   if (contBtn) contBtn.disabled = !_gameActive;
+  const saveBtn = document.getElementById('btn-save');
+  if (saveBtn) saveBtn.disabled = !_gameActive;
   drawMenuShip();
   setTag('Main Menu');
   if (_gameActive) _stopLoop();
   playTitle();
+}
+
+function menuShowSave() {
+  hideMainMenu(true);
+  showSaveOverlay();
 }
 
 function hideMainMenu(keepTitle) {
@@ -10211,6 +10238,33 @@ window.addEventListener('keydown', e=>{
   if(e.key==='`'&&e.target.tagName!=='INPUT'&&e.target.tagName!=='TEXTAREA'){
     e.preventDefault(); toggleDebugCon();
   }
+  if(e.key==='Escape'&&e.target.tagName!=='INPUT'&&e.target.tagName!=='TEXTAREA'){
+    e.preventDefault();
+    // Priority: close open overlays first, then open menu
+    const overlays = [
+      {id:'ov-inv',      close:()=>closeOverlay('inv')},
+      {id:'ov-wpn',      close:()=>closeOverlay('wpn')},
+      {id:'ov-shp',      close:()=>closeOverlay('shp')},
+      {id:'ov-qlog',     close:()=>closeOverlay('qlog')},
+      {id:'ov-journal',  close:()=>closeOverlay('journal')},
+      {id:'briefing-overlay', close:()=>document.getElementById('briefing-overlay').classList.add('hidden')},
+      {id:'save-overlay', close:()=>{ hideSaveOverlay(); if(_gameActive) showMainMenu(); }},
+      {id:'font-panel',  close:()=>document.getElementById('font-panel').style.display='none'},
+    ];
+    for(const ov of overlays){
+      const el=document.getElementById(ov.id);
+      if(el&&(el.classList.contains('on')||(!el.classList.contains('hidden')&&el.style.display!=='none'&&ov.id==='font-panel'))){
+        ov.close(); return;
+      }
+    }
+    // Nothing open — toggle the main menu
+    const menu=document.getElementById('main-menu');
+    if(menu&&!menu.classList.contains('hidden')){
+      if(_gameActive) hideMainMenu();
+    } else if(_gameActive || !_gameActive){
+      showMainMenu();
+    }
+  }
 });
 
 // ── Mobile 5-tap debug trigger ────────────────────────
@@ -10476,6 +10530,10 @@ document.addEventListener('DOMContentLoaded', () => {
     <button class="mm-btn" id="btn-continue" onclick="menuContinue()" disabled>
       <span class="mm-ico">⛵</span>
       <span><span>Continue</span><span class="mm-desc">Return to your active voyage</span></span>
+    </button>
+    <button class="mm-btn" id="btn-save" onclick="menuShowSave()" disabled>
+      <span class="mm-ico">💾</span>
+      <span><span>Save Game</span><span class="mm-desc">Save your current voyage to a manual slot</span></span>
     </button>
     <button class="mm-btn" onclick="menuShowLoad()">
       <span class="mm-ico">📜</span>
@@ -10756,7 +10814,7 @@ document.addEventListener('DOMContentLoaded', () => {
     <div style="font-family:'Cinzel',serif;font-size:9px;letter-spacing:2px;color:#6644aa;text-transform:uppercase;margin-bottom:6px;">Manual Saves</div>
     <div id="save-slots-list" style="flex:1;overflow-y:auto;"></div>
 
-    <button class="btn" onclick="hideSaveOverlay()" style="margin-top:12px;">← Close</button>
+    <button class="btn" onclick="hideSaveOverlay(); if(_gameActive) showMainMenu();" style="margin-top:12px;">← Back to Menu</button>
   </div>
 </div>
 
