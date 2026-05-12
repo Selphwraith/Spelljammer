@@ -1811,6 +1811,33 @@ const ENM = {
     ]},
 };
 
+// Caiphon — the true final boss, revealed mid-Elder Brain fight
+const CAIPHON = {
+  name: 'Caiphon',
+  sub:  'The Purple Star — Elder Evil of the Far Realm',
+  hp: 520, maxHp: 520, crew: 0, maxCrew: 0, // no crew — it is a star
+  g: [0, 0], col: '#7700cc', diff: 5,
+  _isCaiphon: true,
+  atk:[
+    { n:'Stellar Immolation',  d:[5,10], txt:'Caiphon burns with impossible purple fire — a gout of star-matter crosses the void and engulfs your hull!' },
+    { n:'Far Realm Gaze',      d:[4,8],  txt:'The star turns its attention upon you. Reality between you and it ceases to function correctly.', crew:2 },
+    { n:'Gravitational Pull',  d:[3,8],  txt:'Caiphon\'s gravity reaches across space — your hull buckles and two crew members are simply gone.', crew:1 }
+  ],
+  sp:{ n:'Stellar Nova Pulse', c:0.28,
+       txt:'Caiphon pulses with blinding purple light — a shockwave of stellar radiation strips your hull of 3 max points and deals heavy damage.',
+       fx:'nova', d:[4,8], maxhullshred:3, pierceres:true },
+  heal:{ n:'Stellar Reformation', c:0.20,
+         txt:'The star pulls itself back together, condensing stellar mass into coherence — HP restored.',
+         fx:'heal', amt:60, threshold:0.45 },
+  wpns:[
+    { n:'Stellar Immolation',  ico:'🟣', d:[5,10], cd:1, threat:5, txt:'Purple star-fire engulfs your hull.' },
+    { n:'Far Realm Gaze',      ico:'👁', d:[4,8],  cd:2, threat:5, txt:'DANGER: Reality malfunction. Deals damage AND removes 2 crew.', crew:2 },
+    { n:'Event Horizon Burst', ico:'⚫', d:[3,10], cd:3, threat:5, txt:'DANGER: Micro-singularity detonation — shreds 4 max hull, ignores resistance.', maxhullshred:4, pierceres:true }
+  ],
+  intro: "The Elder Brain Flagship shudders. Something above — no, from outside space — descends. A star. Purple. Wrong. It passes through the Elder Brain Flagship the way light passes through smoke. The Flagship simply ceases. What remains is Caiphon — the Purple Star, Elder Evil of the Far Realm, the false guide that has lured spelljammers to their doom for ten thousand years. It was never the Elder Brain. The Brain was the lure. This is the trap.",
+  defeat: "Caiphon dims. Not gone — it is too old to die the way things die — but it withdraws, its light guttering to something almost bearable. The Far Realm loses its eye in this region of space. Whatever ships it has been pulling off course for ten thousand years will sail free now.\n\nFor the first time in recorded history, the Purple Star blinks out."
+};
+
 const ITEMS = {
   psicry:    { n:'Psionic Crystal',        ico:'💎', type:'trade',     val:35,  desc:'Pulsing illithid crystal. Valued by sages and artificers.' },
   mftent:    { n:'Illithid Tentacle',      ico:'🪱', type:'trade',     val:18,  desc:'Preserved mind flayer tentacle — component in various dark rituals.' },
@@ -2735,6 +2762,7 @@ function watchExpiredMidJourney() {
   clearInterval(G.tvl.timer);
   G.phase = 'map';
   completeLeg();
+  stopTravelHum();
 
   const hour = currentHour();
   const lvl  = fatigueLevel();
@@ -2856,7 +2884,7 @@ function doRest() {
       } else if (G.tvl?.prog < 100 && (G.tvl?.to || G.tvl?.toWp || G.tvl?.toFragSite)) {
         const dn = G.tvl.to ? G.spheres?.find(s=>s.id===G.tvl.to)?.n : (G.tvl.toWp?.n||G.tvl.toFragSite?.n||'destination');
         showMsg('⚓ Rested — Ready to Sail', `${dn} awaits. Day ${G.watch.day}, 06:00.`,
-          '⛵ Resume Course', () => { G.phase='traveling'; G.tvl.timer=setInterval(travelTick,G.tvl.tickMs||100); });
+          '⛵ Resume Course', () => { G.phase='traveling'; startTravelHum(); G.tvl.timer=setInterval(travelTick,G.tvl.tickMs||100); });
       }
     }, 800);
   }, 2000);
@@ -3136,6 +3164,9 @@ const SOUND_DATA = {
   'ship_upgrade': 'sounds/ship_upgrade.mp3',
   'loot_open': 'sounds/loot_open.mp3',
   'title': 'sounds/title.mp3',
+  'travel_hum': 'sounds/travel_hum.mp3',       // looping engine hum during travel
+  'elder_theme': 'sounds/elder_theme.mp3',       // plays during Elder Brain / Caiphon fight
+  'caiphon_reveal': 'sounds/caiphon_reveal.mp3', // sting when Caiphon descends
 };
 
 // SOUND_FILES kept for reference but audio now loads from SOUND_DATA
@@ -3259,6 +3290,66 @@ function setAmbient(scene) {
 
 function _stopLoop() {
   if (_loopEl) { try { _loopEl.pause(); } catch(_) {} _loopEl = null; }
+}
+
+// ── Travel hum — looping engine sound during travel ────────
+let _travelHumEl = null;
+
+function startTravelHum() {
+  stopTravelHum();
+  if (_muted || !_SFX['travel_hum']) return;
+  try {
+    const a = _SFX['travel_hum'].cloneNode();
+    a.loop   = true;
+    a.volume = Math.min(1, 0.35 * (_VOL?.master||1) * (_VOL?.sfx||1));
+    a.play().catch(()=>{});
+    _travelHumEl = a;
+  } catch(_) {}
+}
+
+function stopTravelHum() {
+  if (_travelHumEl) {
+    try {
+      // Gentle fade out over 800ms
+      const el = _travelHumEl; _travelHumEl = null;
+      const step = el.volume / 8;
+      const fade = setInterval(()=>{
+        el.volume = Math.max(0, el.volume - step);
+        if (el.volume <= 0) { clearInterval(fade); try{el.pause();}catch(_){} }
+      }, 100);
+    } catch(_) {}
+  }
+}
+
+// ── Elder / Caiphon boss music ──────────────────────────────
+let _elderThemeEl = null;
+
+function startElderTheme() {
+  stopElderTheme();
+  if (_muted || !_SFX['elder_theme']) return;
+  try {
+    const a = _SFX['elder_theme'].cloneNode();
+    a.loop   = true;
+    a.volume = Math.min(1, 0.55 * (_VOL?.master||1) * (_VOL?.music||1));
+    a.play().catch(()=>{});
+    _elderThemeEl = a;
+  } catch(_) {}
+}
+
+function stopElderTheme() {
+  if (_elderThemeEl) {
+    try { _elderThemeEl.pause(); } catch(_) {}
+    _elderThemeEl = null;
+  }
+}
+
+function playCaiphonRevealSting() {
+  if (_muted || !_SFX['caiphon_reveal']) return;
+  try {
+    const a = _SFX['caiphon_reveal'].cloneNode();
+    a.volume = Math.min(1, 0.8 * (_VOL?.master||1) * (_VOL?.sfx||1));
+    a.play().catch(()=>{});
+  } catch(_) {}
 }
 
 // ── VOICE CHATTER SYSTEM ──────────────────────────────────────────────────
@@ -4319,6 +4410,73 @@ function drawElder(ctx,x,y,sz){
   ctx.restore();
 }
 
+// Caiphon — the Purple Star. Drawn as a realistically burning stellar body.
+function drawCaiphon(ctx, x, y, sz, t) {
+  ctx.save(); ctx.translate(x, y);
+  const r  = sz * 1.1;
+  const pulse = 1 + Math.sin((t || 0) * 1.4) * 0.06; // slow 6% pulsation
+
+  // Outermost corona glow
+  const corona = ctx.createRadialGradient(0,0,r*0.6,0,0,r*2.2*pulse);
+  corona.addColorStop(0,   'rgba(140,0,255,0.18)');
+  corona.addColorStop(0.4, 'rgba(80,0,180,0.10)');
+  corona.addColorStop(1,   'rgba(40,0,80,0)');
+  ctx.fillStyle = corona;
+  ctx.beginPath(); ctx.arc(0,0,r*2.2*pulse,0,Math.PI*2); ctx.fill();
+
+  // Mid chromosphere
+  const chromo = ctx.createRadialGradient(0,0,r*0.3,0,0,r*1.15*pulse);
+  chromo.addColorStop(0,   'rgba(220,160,255,0.55)');
+  chromo.addColorStop(0.5, 'rgba(150,0,255,0.40)');
+  chromo.addColorStop(1,   'rgba(80,0,180,0.12)');
+  ctx.fillStyle = chromo;
+  ctx.beginPath(); ctx.arc(0,0,r*1.15*pulse,0,Math.PI*2); ctx.fill();
+
+  // Stellar surface
+  const surf = ctx.createRadialGradient(-r*0.2,-r*0.2,r*0.05, 0,0,r*pulse);
+  surf.addColorStop(0,   '#f0d0ff');
+  surf.addColorStop(0.3, '#cc66ff');
+  surf.addColorStop(0.7, '#8800dd');
+  surf.addColorStop(1,   '#440088');
+  ctx.fillStyle = surf;
+  ctx.beginPath(); ctx.arc(0,0,r*pulse,0,Math.PI*2); ctx.fill();
+
+  // Surface granulation — tiny brighter spots
+  for(let i=0;i<14;i++){
+    const a = i/14*Math.PI*2 + (t||0)*0.05;
+    const d = r * (0.3 + (i%3)*0.18);
+    const sr = r * (0.04 + (i%5)*0.018);
+    ctx.globalAlpha = 0.25 + (i%3)*0.08;
+    ctx.fillStyle = i%2===0 ? '#e8b0ff' : '#aa44ee';
+    ctx.beginPath(); ctx.arc(Math.cos(a)*d, Math.sin(a)*d, sr, 0, Math.PI*2); ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+
+  // Solar flare prominences
+  for(let i=0;i<4;i++){
+    const a  = i/4*Math.PI*2 + (t||0)*0.08;
+    const fl = r * (0.22 + Math.sin((t||0)*0.7+i)*0.12);
+    ctx.strokeStyle = `rgba(200,100,255,${0.3+i*0.07})`;
+    ctx.lineWidth   = r * 0.07;
+    ctx.lineCap     = 'round';
+    ctx.beginPath();
+    ctx.moveTo(Math.cos(a)*r*0.9, Math.sin(a)*r*0.9);
+    ctx.quadraticCurveTo(
+      Math.cos(a+0.4)*(r+fl), Math.sin(a+0.4)*(r+fl),
+      Math.cos(a+0.7)*r,      Math.sin(a+0.7)*r
+    );
+    ctx.stroke();
+  }
+
+  // Central eye — the malevolent core
+  ctx.fillStyle = '#220033';
+  ctx.beginPath(); ctx.arc(0,0,r*0.22,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle = 'rgba(255,200,255,0.9)';
+  ctx.beginPath(); ctx.arc(0,0,r*0.08,0,Math.PI*2); ctx.fill();
+
+  ctx.restore();
+}
+
 // ╔══════════════════════════════════════════════════════╗
 // ║  CANVAS INTERACTION                                  ║
 // ╚══════════════════════════════════════════════════════╝
@@ -4695,6 +4853,7 @@ function startTravel(toId, _resumeWatchesLeft, _pausedPos, _pausedProg){
   }
 
   G.tvl.timer = setInterval(travelTick, tickMs);
+  startTravelHum();
 }
 
 function startWaypointTravel(wp){
@@ -4724,7 +4883,7 @@ function startWaypointTravel(wp){
   setTag(`Traveling → ${wp.n}`);
   snd('travel_begin', 0.7);
   addLog(`Setting course for waypoint ${wp.ico} ${wp.n}…`,'');
-  G.tvl.timer=setInterval(travelTick, wpTickMs);
+  G.tvl.timer=setInterval(travelTick, wpTickMs); startTravelHum();
 }
 
 function startFragSiteTravel(fs){
@@ -4879,6 +5038,7 @@ function travelTick(){
 
 function arrive(id){
   document.getElementById('tvlbar').classList.remove('on');
+  stopTravelHum();
   const sph=G.spheres.find(s=>s.id===id);
   G.ship.loc=id; G.phase='map'; G.ship.midLanePos=null;
   snd('sphere_arrive', 0.85);
@@ -5458,6 +5618,9 @@ function dismissGuardian(){
 }
 
 function startCombat(key){
+  // Elder Brain fight triggers the Caiphon reveal sequence
+  if(key === 'elder'){ startElderCaiphonSequence(); return; }
+
   G.phase='combat'; setTag('COMBAT');
   const t=ENM[key];
   const eWpns = (t.wpns||[]).map(w=>({...w}));
@@ -5478,6 +5641,99 @@ function startCombat(key){
   setTimeout(()=>setAmbient('combat'), 600);
   cLog(`A ${t.name} drops out of the void! Battle stations!`,'dmg');
   cLog(`Choose your action.`,'');
+}
+
+// ── Caiphon Reveal Sequence ────────────────────────────────
+async function startElderCaiphonSequence() {
+  G.phase = 'combat'; setTag('COMBAT — ELDER BRAIN');
+
+  // Phase 1: Start the Elder Brain fight normally
+  const eb  = ENM['elder'];
+  const eWpns = (eb.wpns||[]).map(w=>({...w}));
+  G.cbt = {
+    enemy: {...eb, hp:eb.maxHp, crew:eb.crew||0, burnLeft:0, stunsNext:false,
+            _key:'elder', _healUsed:false, _buffResist:0, _buffResistTurns:0, _buffAtk:0, _buffAtkTurns:0},
+    pStat:'normal', eStat:'normal', pTurn:true, cds:{}, linkedCd:0, volleyCd:0,
+    pendingLootKey:'elder', playerStunnedNext:false,
+    eWpns, eCds:eWpns.map(()=>0), eDisabled:eWpns.map(()=>0),
+    targeting:false, rageStacks:0, sigCd:0
+  };
+  G.ship.wpns.forEach((_,i)=>G.cbt.cds[i]=0);
+
+  document.getElementById('ov-combat').classList.add('on');
+  document.getElementById('ct-title').textContent = '⚔ ELDER BRAIN FLAGSHIP ⚔';
+  document.getElementById('ct-pname').textContent = G.ship.name;
+  document.getElementById('ct-ename').textContent = `${eb.name} · ${eb.sub}`;
+  updateCbtUI(); drawCbtShips('elder'); buildCbtPanels();
+  snd('combat_start', 0.9);
+  setTimeout(()=>{
+    _stopLoop(); // stop ambient
+    startElderTheme(); // start elder boss music
+  }, 600);
+
+  cLog('The Elder Brain Flagship fills every viewport. It begins its assault.', 'dmg');
+  cLog(`Choose your action.`, '');
+
+  // Phase 2: After a short delay (or when EB drops to 50% HP), trigger reveal
+  // We use a flag so the combat loop can trigger it at the right moment
+  G.cbt._caiphonReady = true; // triggers at 50% HP — see cbtWin check
+}
+
+// Called mid-fight when Elder Brain drops to 50% HP
+function triggerCaiphonReveal() {
+  if (!G.cbt?._caiphonReady) return;
+  G.cbt._caiphonReady = false;
+  G.cbt._caiphonReveal = true;
+
+  // Disable player actions during the cutscene
+  G.cbt.pTurn = false;
+  buildCbtBtns();
+
+  cLog('', '');
+  cLog('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'dmg');
+  cLog('Something descends from above the combat space.', 'dmg');
+
+  setTimeout(()=>{
+    cLog('The Elder Brain Flagship shudders. Its hull tears — from the outside.', 'dmg');
+  }, 1200);
+  setTimeout(()=>{
+    cLog('A star falls through it. Purple. Wrong. Impossible.', 'dmg');
+    playCaiphonRevealSting();
+  }, 2600);
+  setTimeout(()=>{
+    cLog('The Flagship ceases. It does not explode. It simply stops existing.', 'dmg');
+  }, 4200);
+  setTimeout(()=>{
+    cLog('What remains is something older than the Phlogiston.', 'dmg');
+    cLog('', '');
+    cLog('⭐ CAIPHON — THE PURPLE STAR — ELDER EVIL OF THE FAR REALM ⭐', 'imp');
+    cLog(CAIPHON.intro, 'dmg');
+  }, 5800);
+
+  setTimeout(()=>{
+    // Swap enemy to Caiphon
+    const cWpns = CAIPHON.wpns.map(w=>({...w}));
+    G.cbt.enemy = {
+      ...CAIPHON, hp:CAIPHON.maxHp, crew:0, burnLeft:0, stunsNext:false,
+      _key:'caiphon', _healUsed:false, _isCaiphon:true,
+      _buffResist:0, _buffResistTurns:0, _buffAtk:0, _buffAtkTurns:0
+    };
+    G.cbt.eWpns    = cWpns;
+    G.cbt.eCds     = cWpns.map(()=>0);
+    G.cbt.eDisabled= cWpns.map(()=>0);
+    G.cbt.pendingLootKey = 'elder'; // victory still goes to doVictory()
+    G.cbt._caiphonReveal = false;
+    G.cbt.pTurn = true;
+
+    document.getElementById('ct-title').textContent = '⭐ CAIPHON — THE PURPLE STAR ⭐';
+    document.getElementById('ct-ename').textContent = `${CAIPHON.name} · ${CAIPHON.sub}`;
+    updateCbtUI();
+    drawCbtShips('caiphon');
+    buildCbtBtns();
+    snd('combat_start', 1.0);
+    cLog('', '');
+    cLog('The Purple Star turns its attention toward you. Choose your action.', '');
+  }, 7500);
 }
 
 function startFragmentFight(site){
@@ -5604,6 +5860,7 @@ function drawCbtShips(key){
   else if(key==='blackfleet')_eF('blackfleet',true,()=>drawBlackFleetReaver(ec,60,44,28,true));
   else if(key==='nautiloid') _eF('nautiloid',false,()=>drawNautiloid(ec,60,44,28));
   else if(key==='elder')     _eF('elder',false,    ()=>drawElder(ec,60,44,28));
+  else if(key==='caiphon')   _eF('caiphon',false,  ()=>drawCaiphon(ec,60,44,28,performance.now()/1000));
   else if(key==='beholder')  _eF('beholder',false, ()=>drawBeholder(ec,60,44,28));
   else if(key==='leviathan') _eF('leviathan',false,()=>drawLeviathan(ec,60,44,28));
   else if(key==='githyanki') _eF('githyanki',false,()=>drawGithyanki(ec,60,44,28));
@@ -6243,6 +6500,12 @@ async function doAction(type, idx, itemUid) {
         const fatiguedTotalDmg = fatMult < 1.0 ? Math.max(1, Math.floor(totalDmg * fatMult)) : totalDmg;
         if(fatMult < 1.0) cLog(`⚠ Fatigued crew — damage reduced (×${fatMult})`, 'dmg');
         e.hp -= G._instakill ? e.hp : fatiguedTotalDmg;
+
+        // Caiphon reveal: trigger when Elder Brain drops to ≤50% HP
+        if(G.cbt?._caiphonReady && e._key === 'elder' && e.hp <= e.maxHp * 0.50){
+          if(checkEnemyDead()){ return; } // if instakilled, skip reveal
+          triggerCaiphonReveal(); return;
+        }
         // Apply cooldown — Rapid Reload System reduces by cdBonus (min 1 for weapons that have reload)
         const _cdBonus = G.ship.cdBonus||0;
         G.cbt.cds[idx] = w.cd > 0 ? Math.max(1, w.cd - _cdBonus) : 0;
@@ -7011,7 +7274,7 @@ function endCbt(won){
     setAmbient('map');
     if(won) addLog('Enemy destroyed. Resuming course to '+G.tvl.toFragSite.n+'…','gd');
     document.getElementById('tvlbar').classList.add('on');
-    G.tvl.timer=setInterval(travelTick, G.tvl.tickMs || 100);
+    G.tvl.timer=setInterval(travelTick, G.tvl.tickMs||100); startTravelHum();
     return;
   }
   if(!G.tvl.to){
@@ -7023,7 +7286,7 @@ function endCbt(won){
   setAmbient('map');
   if(won)addLog('Resuming voyage.','');
   document.getElementById('tvlbar').classList.add('on');
-  G.tvl.timer=setInterval(travelTick, G.tvl.tickMs || 100);
+  G.tvl.timer=setInterval(travelTick, G.tvl.tickMs||100); startTravelHum();
 }
 
 // ╔══════════════════════════════════════════════════════╗
@@ -7411,6 +7674,7 @@ function doDefeat(){
 function doVictory(){
   G.phase='victory';
   _stopLoop();
+  stopElderTheme();
   jlogElderBrain();
   setTimeout(()=>_playVictoryMusic(), 400);
   document.getElementById('ov-loot').classList.remove('on');
