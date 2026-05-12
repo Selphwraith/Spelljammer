@@ -811,6 +811,97 @@ body {
   font-family:'Cinzel',serif; letter-spacing:1px; z-index:5;
 }
 #lq-close:hover { border-color:#9966dd; color:#ddbbff; }
+
+/* ── WEAPON SLOT PICKER OVERLAY ───────────────────────────────── */
+#ov-wpnpicker {
+  position:fixed; inset:0; z-index:300;
+  display:none; align-items:center; justify-content:center;
+  background:rgba(2,0,8,0.92);
+  backdrop-filter:blur(4px);
+}
+#ov-wpnpicker.on { display:flex; }
+#wpnpicker-panel {
+  background:rgba(8,2,22,0.98); border:1px solid #6633aa55;
+  border-radius:10px; padding:22px 24px 20px;
+  max-width:680px; width:96%; max-height:92vh; overflow-y:auto;
+  box-shadow:0 0 60px #44008855, inset 0 0 40px rgba(20,0,50,0.4);
+  display:flex; flex-direction:column; gap:14px;
+}
+#wpnpicker-title {
+  font-family:'Cinzel',serif; font-size:13px; color:#cc99ff;
+  letter-spacing:2px; text-align:center; text-transform:uppercase;
+}
+#wpnpicker-new-card {
+  background:rgba(20,5,50,0.7); border:1px solid #8855cc44;
+  border-radius:6px; padding:10px 14px;
+}
+.wpnp-card-name { font-family:'Cinzel',serif; font-size:12px; color:#ffcc66; }
+.wpnp-card-stats { font-size:11px; color:#aa88cc; margin-top:4px; line-height:1.6; }
+.wpnp-card-special { font-size:10px; color:#ff9944; margin-top:3px; }
+#wpnpicker-ship-section { display:flex; flex-direction:column; align-items:center; gap:10px; }
+#wpnpicker-ship-label { font-family:'Cinzel',serif; font-size:10px; color:#554477; letter-spacing:2px; }
+#wpnpicker-canvas { border-radius:6px; border:1px solid #33115544; display:block; }
+#wpnpicker-slots {
+  display:flex; flex-wrap:wrap; gap:8px; justify-content:center;
+  width:100%;
+}
+.wpnp-slot {
+  flex:1; min-width:120px; max-width:200px;
+  background:rgba(10,3,28,0.8); border-radius:6px;
+  padding:9px 12px; cursor:pointer;
+  border:2px solid #33224455; transition:all 0.18s;
+  display:flex; flex-direction:column; gap:3px;
+}
+.wpnp-slot:hover { border-color:#8844cc; background:rgba(30,10,60,0.8); }
+.wpnp-slot.empty { border-color:#1a4422; }
+.wpnp-slot.empty:hover { border-color:#22aa44; background:rgba(5,25,10,0.8); }
+.wpnp-slot.occupied { border-color:#441122; }
+.wpnp-slot.occupied:hover { border-color:#cc2244; }
+.wpnp-slot.selected { border-color:#ffcc44 !important; background:rgba(40,30,5,0.9) !important; box-shadow:0 0 12px #ffcc4444; }
+.wpnp-slot-num { font-size:9px; color:#443355; letter-spacing:1px; font-family:'Cinzel',serif; }
+.wpnp-slot-name { font-family:'Cinzel',serif; font-size:10px; }
+.wpnp-slot-name.empty-label { color:#1a4422; font-style:italic; }
+.wpnp-slot-name.occupied-label { color:#cc6677; }
+.wpnp-slot-dmg { font-size:10px; color:#886699; }
+.wpnp-slot-badge {
+  font-size:8px; padding:2px 5px; border-radius:2px;
+  display:inline-block; margin-top:2px; width:fit-content;
+}
+.wpnp-slot-badge.open { background:#0a2210; color:#22aa44; border:1px solid #22aa4433; }
+.wpnp-slot-badge.in-use { background:#220a10; color:#cc2244; border:1px solid #cc224433; }
+#wpnpicker-compare {
+  display:none; background:rgba(5,1,15,0.8);
+  border:1px solid #5533aa33; border-radius:6px; padding:12px 14px;
+}
+#wpnpicker-compare.on { display:block; }
+.wpnp-compare-header { font-family:'Cinzel',serif; font-size:10px; color:#554477; letter-spacing:2px; margin-bottom:8px; }
+.wpnp-compare-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.wpnp-cmp-col { background:rgba(15,5,35,0.7); border-radius:5px; padding:9px 11px; }
+.wpnp-cmp-col.incoming { border:1px solid #8855cc55; }
+.wpnp-cmp-col.existing { border:1px solid #cc224455; }
+.wpnp-cmp-label { font-size:9px; letter-spacing:1px; font-family:'Cinzel',serif; margin-bottom:5px; }
+.wpnp-cmp-label.new-label { color:#8855cc; }
+.wpnp-cmp-label.old-label { color:#cc2244; }
+.wpnp-cmp-name { font-family:'Cinzel',serif; font-size:11px; color:#ddbbff; margin-bottom:4px; }
+.wpnp-cmp-stat { font-size:10px; color:#887799; line-height:1.7; }
+.wpnp-cmp-stat b { color:#ccaaff; }
+.wpnp-cmp-stat .better { color:#44ee88; }
+.wpnp-cmp-stat .worse  { color:#ff6655; }
+#wpnpicker-footer { display:flex; gap:10px; justify-content:flex-end; flex-wrap:wrap; }
+#wpnpicker-confirm-btn {
+  font-family:'Cinzel',serif; font-size:12px; padding:9px 20px;
+  background:rgba(20,40,5,0.9); border:1px solid #44aa2266;
+  color:#66ff44; border-radius:4px; cursor:pointer; transition:all 0.2s;
+  display:none;
+}
+#wpnpicker-confirm-btn:hover { background:rgba(30,60,10,0.9); border-color:#66ff4488; box-shadow:0 0 10px #44aa2244; }
+#wpnpicker-cancel-btn {
+  font-family:'Cinzel',serif; font-size:12px; padding:9px 20px;
+  background:rgba(20,5,5,0.9); border:1px solid #44001122;
+  color:#664455; border-radius:4px; cursor:pointer; transition:all 0.2s;
+}
+#wpnpicker-cancel-btn:hover { border-color:#cc224455; color:#cc8899; }
+
 /* IEN QM shop within local quest */
 #lq-shop {
   position:absolute; top:50%; right:20px; transform:translateY(-50%);
@@ -1319,6 +1410,49 @@ body {
     <div class="wpn-ship-label" id="wpn-ship-label">Pinnace — 2 Weapon Slots</div>
     <div class="wpn-grid" id="wpn-grid"></div>
     <div style="font-size:11px;color:#5544aa;font-style:italic;max-width:560px;text-align:center;">Weapons can be swapped at any port. Cooldowns track rounds remaining until reload complete.</div>
+  </div>
+
+  <!-- WEAPON SLOT PICKER — shown when buying a weapon at port -->
+  <div id="ov-wpnpicker">
+    <div id="wpnpicker-panel">
+      <div id="wpnpicker-title">⚔ Install Weapon — Choose Slot</div>
+
+      <!-- Incoming weapon card -->
+      <div id="wpnpicker-new-card">
+        <div class="wpnp-card-name" id="wpnp-new-name">—</div>
+        <div class="wpnp-card-stats" id="wpnp-new-stats"></div>
+        <div class="wpnp-card-special" id="wpnp-new-special"></div>
+      </div>
+
+      <!-- Ship diagram + slot circles -->
+      <div id="wpnpicker-ship-section">
+        <div id="wpnpicker-ship-label">SELECT A SLOT</div>
+        <canvas id="wpnpicker-canvas" width="320" height="180"></canvas>
+        <div id="wpnpicker-slots"></div>
+      </div>
+
+      <!-- Side-by-side comparison (shown when an occupied slot is selected) -->
+      <div id="wpnpicker-compare">
+        <div class="wpnp-compare-header">— COMPARISON —</div>
+        <div class="wpnp-compare-grid">
+          <div class="wpnp-cmp-col incoming">
+            <div class="wpnp-cmp-label new-label">▲ INCOMING</div>
+            <div id="wpnp-cmp-new-name" class="wpnp-cmp-name"></div>
+            <div id="wpnp-cmp-new-stats" class="wpnp-cmp-stat"></div>
+          </div>
+          <div class="wpnp-cmp-col existing">
+            <div class="wpnp-cmp-label old-label">▼ REPLACING</div>
+            <div id="wpnp-cmp-old-name" class="wpnp-cmp-name"></div>
+            <div id="wpnp-cmp-old-stats" class="wpnp-cmp-stat"></div>
+          </div>
+        </div>
+      </div>
+
+      <div id="wpnpicker-footer">
+        <button id="wpnpicker-cancel-btn" onclick="wpnPickerCancel()">✕ Cancel</button>
+        <button id="wpnpicker-confirm-btn" onclick="wpnPickerConfirm()">⚔ Install Weapon</button>
+      </div>
+    </div>
   </div>
 
   <!-- SHIP DETAILS -->
@@ -5550,6 +5684,310 @@ function shopItems(stock){
   return items;
 }
 
+
+// ╔══════════════════════════════════════════════════════════════╗
+// ║  WEAPON SLOT PICKER                                          ║
+// ╚══════════════════════════════════════════════════════════════╝
+
+// Slot marker positions on the canvas (cx,cy) as fractions of canvas size
+// Tuned per ship type to sit on weapon hardpoints
+const WPN_SLOT_POS = {
+  pinnace: [ [0.38,0.45], [0.62,0.45] ],
+  squid:   [ [0.30,0.40], [0.50,0.55], [0.70,0.40] ],
+  hammer:  [ [0.22,0.42], [0.40,0.40], [0.60,0.40], [0.78,0.42] ],
+  manow:   [ [0.18,0.44], [0.34,0.38], [0.50,0.55], [0.66,0.38], [0.82,0.44] ],
+};
+
+let _wpnPickerItem  = null; // the shop item being purchased
+let _wpnPickerSlot  = null; // currently selected slot index (or null)
+let _wpnPickerFrom  = null; // 'shop' | 'lq'  — which buy path triggered this
+
+function wpnPickerOpen(item, from) {
+  _wpnPickerItem = item;
+  _wpnPickerSlot = null;
+  _wpnPickerFrom = from || 'shop';
+
+  const w = WPN[item.wk];
+  if (!w) { console.warn('wpnPickerOpen: unknown weapon', item.wk); return; }
+
+  // Fill incoming weapon card
+  document.getElementById('wpnp-new-name').textContent = w.n;
+  document.getElementById('wpnp-new-stats').innerHTML  = _wpnStatHtml(w);
+  document.getElementById('wpnp-new-special').textContent = _wpnSpecialText(w, item.wk);
+
+  // Update confirm button cost label
+  const btn = document.getElementById('wpnpicker-confirm-btn');
+  btn.textContent = `⚔ Install — ⚜ ${item.cost}`;
+  btn.style.display = 'none';
+
+  document.getElementById('wpnpicker-compare').classList.remove('on');
+  document.getElementById('ov-wpnpicker').classList.add('on');
+
+  _wpnPickerBuildSlots();
+  _wpnPickerDrawCanvas();
+}
+
+function wpnPickerCancel() {
+  _wpnPickerItem = null;
+  _wpnPickerSlot = null;
+  document.getElementById('ov-wpnpicker').classList.remove('on');
+}
+
+function wpnPickerConfirm() {
+  if (_wpnPickerSlot === null || !_wpnPickerItem) return;
+  const item = _wpnPickerItem;
+  const slotIdx = _wpnPickerSlot;
+  const s = G.ship;
+
+  if (s.gold < item.cost) { addLog('Not enough gold.', 'dmg'); return; }
+
+  // Remove old weapon from that slot (refund hull penalty if it had one)
+  const oldKey = s.wpns[slotIdx];
+  if (oldKey) {
+    const oldW = WPN[oldKey];
+    if (oldW && oldW.hullPenalty > 0) {
+      s.maxHull += oldW.hullPenalty;
+      s.hull = Math.min(s.hull, s.maxHull);
+    }
+  }
+
+  // Charge gold
+  s.gold -= item.cost;
+
+  // Ensure wpns array has entries up to this slot
+  while (s.wpns.length <= slotIdx) s.wpns.push(null);
+
+  // Install new weapon in chosen slot
+  s.wpns[slotIdx] = item.wk;
+
+  // Apply hull penalty of new weapon
+  const newW = WPN[item.wk];
+  if (newW.hullPenalty > 0) {
+    s.maxHull = Math.max(10, s.maxHull - newW.hullPenalty);
+    s.hull    = Math.min(s.hull, s.maxHull);
+    addLog(`⚠ ${newW.n} destabilizes hull — max hull −${newW.hullPenalty}.`, 'dmg');
+  }
+
+  snd('ship_upgrade', 0.9);
+  if (oldKey) {
+    addLog(`⚔ ${newW.n} installed in slot ${slotIdx + 1} — replaces ${WPN[oldKey]?.n || oldKey}.`, 'gd');
+  } else {
+    addLog(`⚔ ${newW.n} installed in slot ${slotIdx + 1}.`, 'gd');
+  }
+
+  // Apply cd bonus if player has Rapid Reload System
+  if (s.cdBonus && s.cdBonus > 0) {
+    // cdBonus is applied at combat time per weapon; no action needed here
+  }
+
+  updateUI();
+  buildShop();
+  if (document.getElementById('pt-gold')) document.getElementById('pt-gold').textContent = s.gold;
+  // Refresh LQ shop if we came from there
+  if (_wpnPickerFrom === 'lq' && typeof showLqShop === 'function' && LQ?.selectedNpc) {
+    showLqShop(LQ.selectedNpc);
+  }
+  if (document.getElementById('lq-qm-gold')) document.getElementById('lq-qm-gold').textContent = s.gold;
+
+  wpnPickerCancel();
+}
+
+function _wpnPickerSelectSlot(idx) {
+  _wpnPickerSlot = idx;
+  const s = G.ship;
+  const slots = SHIP_TYPES[s.type].slots;
+  const oldKey = s.wpns[idx];
+  const newW   = WPN[_wpnPickerItem.wk];
+
+  // Update slot button highlight
+  document.querySelectorAll('.wpnp-slot').forEach((el, i) => {
+    el.classList.toggle('selected', i === idx);
+  });
+
+  // Show/hide comparison panel
+  const cmp = document.getElementById('wpnpicker-compare');
+  if (oldKey) {
+    const oldW = WPN[oldKey];
+    cmp.classList.add('on');
+    document.getElementById('wpnp-cmp-new-name').textContent = newW.n;
+    document.getElementById('wpnp-cmp-old-name').textContent = oldW.n;
+    document.getElementById('wpnp-cmp-new-stats').innerHTML  = _wpnCompareStatHtml(newW, oldW, true);
+    document.getElementById('wpnp-cmp-old-stats').innerHTML  = _wpnCompareStatHtml(oldW, newW, false);
+  } else {
+    cmp.classList.remove('on');
+  }
+
+  // Show confirm button
+  const btn = document.getElementById('wpnpicker-confirm-btn');
+  btn.style.display = 'block';
+  if (oldKey) {
+    btn.textContent = `⚔ Replace ${WPN[oldKey].n} — ⚜ ${_wpnPickerItem.cost}`;
+  } else {
+    btn.textContent = `⚔ Install in Slot ${idx + 1} — ⚜ ${_wpnPickerItem.cost}`;
+  }
+
+  // Redraw canvas with selection
+  _wpnPickerDrawCanvas(idx);
+}
+
+function _wpnPickerBuildSlots() {
+  const s     = G.ship;
+  const slots = SHIP_TYPES[s.type].slots;
+  const grid  = document.getElementById('wpnpicker-slots');
+  grid.innerHTML = '';
+
+  for (let i = 0; i < slots; i++) {
+    const wk = s.wpns[i];
+    const div = document.createElement('div');
+    const isEmpty = !wk;
+    div.className = 'wpnp-slot ' + (isEmpty ? 'empty' : 'occupied');
+    div.dataset.slot = i;
+
+    if (isEmpty) {
+      div.innerHTML = `
+        <div class="wpnp-slot-num">SLOT ${i + 1}</div>
+        <div class="wpnp-slot-name empty-label">— Empty —</div>
+        <div class="wpnp-slot-dmg" style="color:#1a4422;">Free mount</div>
+        <span class="wpnp-slot-badge open">● OPEN</span>`;
+    } else {
+      const w = WPN[wk];
+      const avgDmg = ((w.d[0] + 1) / 2 * w.d[1]).toFixed(1);
+      div.innerHTML = `
+        <div class="wpnp-slot-num">SLOT ${i + 1}</div>
+        <div class="wpnp-slot-name occupied-label">${w.n}</div>
+        <div class="wpnp-slot-dmg">${w.d[0]}d${w.d[1]} · ${w.cd === 0 ? 'no CD' : w.cd + '-rd CD'}</div>
+        <span class="wpnp-slot-badge in-use">● IN USE</span>`;
+    }
+    div.onclick = () => _wpnPickerSelectSlot(i);
+    grid.appendChild(div);
+  }
+}
+
+function _wpnPickerDrawCanvas(selectedIdx) {
+  const canvas = document.getElementById('wpnpicker-canvas');
+  const ctx    = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  const s = G.ship;
+  const slots = SHIP_TYPES[s.type].slots;
+
+  ctx.clearRect(0, 0, W, H);
+
+  // Deep space background
+  ctx.fillStyle = 'rgba(3,0,10,0.95)';
+  ctx.fillRect(0, 0, W, H);
+  // Starfield
+  for (let i = 0; i < 60; i++) {
+    const alpha = Math.random() * 0.35 + 0.08;
+    ctx.fillStyle = `rgba(255,255,255,${alpha})`;
+    ctx.beginPath();
+    ctx.arc(Math.random() * W, Math.random() * H, Math.random() * 1.1 + 0.2, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Draw ship — centered
+  const [sw, sh] = shipSz(s.type, 120, 72);
+  drawShipImg(s.type, ctx, W / 2, H / 2, sw, sh, false, () => {
+    if      (s.type === 'pinnace') drawPinnace(ctx, W/2, H/2, 44, false);
+    else if (s.type === 'squid')   drawSquid(ctx, W/2, H/2, 44, false);
+    else if (s.type === 'hammer')  drawHammer(ctx, W/2, H/2, 44, false);
+    else                           drawManow(ctx, W/2, H/2, 50, false);
+  });
+
+  // Draw slot circles
+  const positions = WPN_SLOT_POS[s.type] || [];
+  for (let i = 0; i < slots; i++) {
+    const pos = positions[i] || [0.2 + i * 0.15, 0.5];
+    const cx = pos[0] * W;
+    const cy = pos[1] * H;
+    const r  = 13;
+    const isSelected = (i === selectedIdx);
+    const isOccupied = !!s.wpns[i];
+
+    // Outer glow
+    const glowCol = isSelected ? '#ffcc44' : isOccupied ? '#cc2244' : '#22aa44';
+    ctx.save();
+    ctx.shadowBlur  = isSelected ? 20 : 12;
+    ctx.shadowColor = glowCol;
+
+    // Circle fill
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.fillStyle = isSelected
+      ? 'rgba(80,60,0,0.85)'
+      : isOccupied
+        ? 'rgba(60,5,15,0.85)'
+        : 'rgba(5,40,15,0.85)';
+    ctx.fill();
+
+    // Circle border
+    ctx.strokeStyle = glowCol;
+    ctx.lineWidth   = isSelected ? 2.5 : 1.8;
+    ctx.stroke();
+    ctx.restore();
+
+    // Slot number label
+    ctx.fillStyle   = isSelected ? '#ffcc44' : isOccupied ? '#ff6677' : '#44ee88';
+    ctx.font        = `bold 10px 'Cinzel', serif`;
+    ctx.textAlign   = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(i + 1, cx, cy);
+  }
+}
+
+// Build a readable stat block for one weapon
+function _wpnStatHtml(w) {
+  const avgDmg = ((w.d[0] + 1) / 2 * w.d[1]).toFixed(1);
+  const cdStr  = w.cd === 0 ? 'No cooldown — fires every round' : `${w.cd}-round reload`;
+  const drawback = w.farRealm ? `⚠ Far Realm — ${w.drawback || 'drawback'}` : '';
+  const hull = w.hullPenalty > 0 ? `⚠ −${w.hullPenalty} max hull while equipped` : '';
+  return [
+    `<b>Damage:</b> ${w.d[0]}d${w.d[1]} (avg ${avgDmg})`,
+    `<b>Cooldown:</b> ${cdStr}`,
+    w.info,
+    drawback, hull
+  ].filter(Boolean).join('<br>');
+}
+
+function _wpnSpecialText(w, wk) {
+  const parts = [];
+  if (w.special === 'burn')   parts.push('★ Burns target (DoT, 2 turns)');
+  if (w.psistun)              parts.push('★ Stuns helmsman on hit');
+  if (w.nullify)              parts.push('★ Disables enemy special ability');
+  if (w.seeking)              parts.push('★ Cannot be dodged');
+  if (w.nether)               parts.push('★ Phases through shields');
+  if (w.fires > 1)            parts.push(`★ Fires ${w.fires}× per action`);
+  if (w.drawback === 'backfire')   parts.push('⚠ 15% backfire risk');
+  if (w.drawback === 'crew2')      parts.push('⚠ Costs 2 crew per shot');
+  if (w.drawback === 'crewfeed')   parts.push('⚠ −1 your crew per shot (feedback)');
+  if (w.drawback === 'jam20')      parts.push('⚠ 20% jam chance');
+  if (w.drawback === 'backshoot')  parts.push('⚠ 15% chance fires backward');
+  if (w.drawback === 'hullmax5')   parts.push('⚠ −5 max hull while equipped');
+  if (w.drawback === 'corrode')    parts.push('⚠ −2 your max hull per shot fired');
+  return parts.join('  ');
+}
+
+// Compare stat block: for the weapon being evaluated, highlight better/worse vs opponent
+function _wpnCompareStatHtml(w, vs, isNew) {
+  const myAvg   = ((w.d[0] + 1) / 2 * w.d[1]);
+  const vsAvg   = ((vs.d[0] + 1) / 2 * vs.d[1]);
+  const dmgBetter  = myAvg > vsAvg;
+  const dmgWorse   = myAvg < vsAvg;
+  const cdBetter   = isNew ? (w.cd < vs.cd) : (w.cd < vs.cd);
+  const cdWorse    = isNew ? (w.cd > vs.cd) : (w.cd > vs.cd);
+
+  const dmgCls  = dmgBetter ? 'better' : dmgWorse ? 'worse' : '';
+  const cdCls   = cdBetter  ? 'better' : cdWorse  ? 'worse' : '';
+
+  const cdStr = w.cd === 0 ? 'No cooldown' : `${w.cd}-round reload`;
+  const spTxt = _wpnSpecialText(w, null);
+
+  return `<span class="${dmgCls}"><b>Dmg:</b> ${w.d[0]}d${w.d[1]} (avg ${myAvg.toFixed(1)})</span><br>`
+       + `<span class="${cdCls}"><b>CD:</b> ${cdStr}</span><br>`
+       + `<b>Info:</b> ${w.info}`
+       + (spTxt ? `<br><span style="color:#ff9944;font-size:9px;">${spTxt}</span>` : '')
+       + (w.hullPenalty > 0 ? `<br><span style="color:#ff5533;">−${w.hullPenalty} max hull equipped</span>` : '');
+}
+
 function buy(item){
   if(G.ship.gold<item.cost)return;
   // Hard guard: re-check ownership before any purchase goes through
@@ -5559,6 +5997,13 @@ function buy(item){
   if(item.act==='sig' && G.ship.sigTier >= item.sigTier){
     addLog(`Signature ability already at this tier or higher.`,''); return;
   }
+
+  // Weapons open the slot picker — no gold deducted yet
+  if(item.act==='wpn' && item.wk){
+    wpnPickerOpen(item, 'shop');
+    return;
+  }
+
   G.ship.gold-=item.cost;
   const s=G.ship;
   switch(item.act){
@@ -5566,6 +6011,7 @@ function buy(item){
     case 'crew':    s.crew=s.maxCrew; snd('purchase',0.7); addLog('Crew hired to full.','gd'); break;
     case 'air':     s.air=s.maxAir||12; snd('purchase',0.7); addLog('Air supply refilled.','gd'); break;
     case 'wpn': {
+      // Fallback (shouldn't reach here) — direct install
       const ri = wpnReplaces(item.wk, s.wpns);
       if(ri >= 0) {
         const oldKey = s.wpns[ri];
@@ -8238,7 +8684,7 @@ The Far Realm still whispers at the edges of reality. Perhaps one day a new thre
   ), 800);
 }
 function restart(){
-  ['ov-combat','ov-port','ov-waypoint','ov-loot','ov-inv','ov-wpn','ov-shp','ov-qlog','ov-journal','ov-dockmaster','ov-localquest','scr-defeat','scr-win','scr-farwin','tvlbar','msgbox','save-overlay'].forEach(id=>{
+  ['ov-wpnpicker','ov-combat','ov-port','ov-waypoint','ov-loot','ov-inv','ov-wpn','ov-shp','ov-qlog','ov-journal','ov-dockmaster','ov-localquest','scr-defeat','scr-win','scr-farwin','tvlbar','msgbox','save-overlay'].forEach(id=>{
     const el=document.getElementById(id); if(el)el.classList.remove('on','active');
   });
   const _fr=document.getElementById('ov-faction-rep'); if(_fr) _fr.style.display='none';
@@ -9157,7 +9603,7 @@ function hideMainMenu() {
 function menuNewGame() {
   hideMainMenu(true); // keep title playing through cinematic
   // Full teardown so combat/port/loot overlays don't linger from an in-progress game
-  ['ov-combat','ov-port','ov-waypoint','ov-loot','ov-inv','ov-wpn','ov-shp','ov-qlog','ov-journal','ov-dockmaster','ov-localquest','scr-defeat','scr-win','scr-farwin','tvlbar','msgbox','save-overlay'].forEach(id=>{
+  ['ov-wpnpicker','ov-combat','ov-port','ov-waypoint','ov-loot','ov-inv','ov-wpn','ov-shp','ov-qlog','ov-journal','ov-dockmaster','ov-localquest','scr-defeat','scr-win','scr-farwin','tvlbar','msgbox','save-overlay'].forEach(id=>{
     const el=document.getElementById(id); if(el)el.classList.remove('on','active');
   });
   const _fr=document.getElementById('ov-faction-rep'); if(_fr) _fr.style.display='none';
@@ -9312,7 +9758,7 @@ function _applyLoad(save) {
     if (G.tvl && G.tvl.timer) clearInterval(G.tvl.timer);
     if (G.animId) cancelAnimationFrame(G.animId);
     _stopLoop();
-    ['ov-combat','ov-port','ov-waypoint','ov-loot','ov-inv','ov-wpn','ov-shp','ov-qlog','ov-journal','ov-dockmaster','ov-localquest','ov-faction-rep','scr-defeat','scr-win','scr-farwin','tvlbar','msgbox','save-overlay'].forEach(id=>{
+    ['ov-wpnpicker','ov-combat','ov-port','ov-waypoint','ov-loot','ov-inv','ov-wpn','ov-shp','ov-qlog','ov-journal','ov-dockmaster','ov-localquest','ov-faction-rep','scr-defeat','scr-win','scr-farwin','tvlbar','msgbox','save-overlay'].forEach(id=>{
       const el=document.getElementById(id); if(el)el.classList.remove('on','active');
     });
     G = {
@@ -10213,6 +10659,11 @@ function showLqShop(npc) {
     if(canAfford) {
       d.onclick = () => {
         if(G.ship.gold < item.cost) return;
+        // Weapons go through slot picker — no gold deducted yet
+        if(item.wk && WPN[item.wk]) {
+          wpnPickerOpen({...item, act:'wpn'}, 'lq');
+          return;
+        }
         G.ship.gold -= item.cost;
         let msg = '';
         if(item.act === 'hull40') {
@@ -10690,6 +11141,7 @@ window.addEventListener('keydown', e=>{
     e.preventDefault();
     // Priority: close open overlays first, then open menu
     const overlays = [
+      {id:'ov-wpnpicker', close:()=>wpnPickerCancel()},
       {id:'ov-inv',      close:()=>closeOverlay('inv')},
       {id:'ov-wpn',      close:()=>closeOverlay('wpn')},
       {id:'ov-shp',      close:()=>closeOverlay('shp')},
