@@ -6955,6 +6955,8 @@ const KBNav = (() => {
 // Called at the start of the keydown handler; returns true if consumed.
 function kbNavKey(e) {
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return false;
+  // Don't intercept arrow/enter keys during travel sequence — no UI to navigate
+  if (TS?.active && G.phase === 'traveling') return false;
 
   if (e.key === 'ArrowDown' || e.key === 'ArrowRight') {
     if (KBNav.moveDown()) { e.preventDefault(); return true; }
@@ -7483,18 +7485,22 @@ function tsQueueWaypoint(ws) {
 }
 
 // Skip: fast-forwards travelTick (not called when skipBlocked)
+let _tsSkipping = false; // re-entrancy guard
+
 function tsSkip() {
   if (TS.skipBlocked) return;
-  // Fast-forward travelTick until next event or arrival
-  // We inject ticks manually at 10× speed until prog changes or an event fires
-  const maxFastTicks = 400; // safety cap
+  if (_tsSkipping) return; // already running — ignore repeat calls
+  if (G.phase !== 'traveling') return;
+  _tsSkipping = true;
+
+  const maxFastTicks = 400;
   let ticks = 0;
   const origTimer = G.tvl?.timer;
   if (origTimer) clearInterval(origTimer);
 
   const runFast = () => {
     if (!TS.active || G.phase !== 'traveling' || ticks >= maxFastTicks) {
-      // Restore timer at normal speed if we're still traveling
+      _tsSkipping = false;
       if (G.phase === 'traveling' && G.tvl) {
         G.tvl.timer = setInterval(travelTick, G.tvl.tickMs || 100);
       }
@@ -7502,8 +7508,8 @@ function tsSkip() {
     }
     travelTick();
     ticks++;
-    // Stop fast-forward if an event was triggered (phase changed or events appeared)
     if (G.phase !== 'traveling' || TS.events.length > 0) {
+      _tsSkipping = false;
       if (G.phase === 'traveling' && G.tvl && TS.events.length === 0) {
         G.tvl.timer = setInterval(travelTick, G.tvl.tickMs || 100);
       }
@@ -13533,6 +13539,9 @@ window.addEventListener('keydown', e=>{
 
   // ── ENTER — trigger primary confirm for whatever is on top ──
   if(e.key==='Enter'){
+    // During travel sequence with no overlay open — Enter does nothing
+    if(TS?.active && G.phase==='traveling') return;
+
     // Weapon slot picker — confirm if slot is selected
     if(document.getElementById('ov-wpnpicker')?.classList.contains('on')){
       const btn=document.getElementById('wpnpicker-confirm-btn');
