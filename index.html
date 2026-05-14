@@ -13243,17 +13243,47 @@ function _dbTap(){
 // ── OPENING CINEMATIC ─────────────────────────────────────
 const CIN_SLIDES = [
   { chapter:'1492 Dale Reckoning · Realmspace',
-    body:'The Phlogiston connects all things.\n\nFor centuries, the spelljamming lanes have been the arteries of civilization — carrying trade, war, diplomacy, and knowledge between the Crystal Spheres. The Imperial Elven Navy has kept those lanes navigable. Mostly.' },
+    body:'The Phlogiston connects all things.\n\nFor centuries, the spelljamming lanes have been the arteries of civilization — carrying trade, war, diplomacy, and knowledge between the Crystal Spheres. The Imperial Elven Navy has kept those lanes navigable. Mostly.',
+    voice:'sounds/vo_cin_01_phlogiston.mp3' },
   { chapter:'Six Months Ago · The Phlogiston',
-    body:'It appeared without warning.\n\nA new Crystal Sphere — massive, dark, and silent — materialized in the far phlogiston. No approach. No origin vector. Cartographers argued about whether it had always been there, hidden, or whether it had arrived from somewhere else entirely.\n\nThey named it Elder Space.' },
+    body:'It appeared without warning.\n\nA new Crystal Sphere — massive, dark, and silent — materialized in the far phlogiston. No approach. No origin vector. Cartographers argued about whether it had always been there, hidden, or whether it had arrived from somewhere else entirely.\n\nThey named it Elder Space.',
+    voice:'sounds/vo_cin_02_elder_space.mp3' },
   { chapter:'The Disappearances',
-    body:'At first, it was ships.\n\nA scout that never returned. A merchant convoy that missed its window. A patrol that went silent on a lane that had been safe for forty years.\n\nThen it was ports. Crew members vanished from berths mid-cycle. Dockmasters reported things moving in the phlogiston that had no ship behind them.' },
+    body:'At first, it was ships.\n\nA scout that never returned. A merchant convoy that missed its window. A patrol that went silent on a lane that had been safe for forty years.\n\nThen it was ports. Crew members vanished from berths mid-cycle. Dockmasters reported things moving in the phlogiston that had no ship behind them.',
+    voice:'sounds/vo_cin_03_disappearances.mp3' },
   { chapter:'Strange Creatures in the Lanes',
-    body:'The reports grew stranger.\n\nThings that were not ships were moving through the lanes. Travelers described vessels of flesh and chitin. Crews spoke of hearing thoughts that were not their own. Navigators found their charts rewritten in the night, in no alphabet anyone recognized.\n\nThe IEN could no longer ignore it.' },
+    body:'The reports grew stranger.\n\nThings that were not ships were moving through the lanes. Travelers described vessels of flesh and chitin. Crews spoke of hearing thoughts that were not their own. Navigators found their charts rewritten in the night, in no alphabet anyone recognized.\n\nThe IEN could no longer ignore it.',
+    voice:'sounds/vo_cin_04_strange_creatures.mp3' },
   { chapter:'Your Orders · IEN Scout Division',
-    body:"You are a Scout.\n\nYour orders are simple: investigate the lanes surrounding Elder Space, make contact with local sphere dockmasters, recover any Astral Chart Fragments that can help triangulate the Elder Sphere's origin — and if possible, find what is at the center of it.\n\nYour comet is fueled. Your orders are signed.\n\nSail, Captain." },
+    body:"You are a Scout.\n\nYour orders are simple: investigate the lanes surrounding Elder Space, make contact with local sphere dockmasters, recover any Astral Chart Fragments that can help triangulate the Elder Sphere's origin — and if possible, find what is at the center of it.\n\nYour comet is fueled. Your orders are signed.\n\nSail, Captain.",
+    voice:'sounds/vo_cin_05_your_orders.mp3' },
 ];
 let _cinSlide=0, _cinCanvas=null, _cinCtx=null, _cinAnimId=null;
+
+// ── Cinematic voice-over player ──────────────────────────────────────────────
+// Each slide carries a `voice` filename. We use a plain <audio> element so
+// the browser handles streaming/decoding; no pitch randomisation — these are
+// narrated lines and should play exactly as recorded.
+let _cinVoiceAudio = null;
+
+function playCinVoice(file) {
+  stopCinVoice();                          // cut any line still playing
+  if (!file) return;
+  if (_muted || _VOL.master === 0 || _VOL.voice === 0) return;
+  const a = new Audio(file);
+  a.volume = Math.min(1, Math.max(0, _VOL.master * _VOL.voice));
+  a.play().catch(() => {});                // silently ignore missing files
+  _cinVoiceAudio = a;
+}
+
+function stopCinVoice() {
+  if (_cinVoiceAudio) {
+    _cinVoiceAudio.pause();
+    _cinVoiceAudio.src = '';
+    _cinVoiceAudio = null;
+  }
+}
+// ─────────────────────────────────────────────────────────────────────────────
 
 function showCinematic(){
   const ov=document.getElementById('cin-ovl');
@@ -13265,12 +13295,14 @@ function showCinematic(){
 }
 function skipCinematic(){
   if(_cinAnimId){ cancelAnimationFrame(_cinAnimId); _cinAnimId=null; }
+  stopCinVoice();                          // stop any playing narration
   document.getElementById('cin-ovl').style.display='none';
   _gameActive = true;
   stopTitle();   // stop just before game audio takes over
   initGame();
 }
 function nextCinSlide(){
+  stopCinVoice();                          // cut current narration before advancing
   _cinSlide++;
   if(_cinSlide>=CIN_SLIDES.length){ skipCinematic(); return; }
   renderCinSlide();
@@ -13290,11 +13322,12 @@ function renderCinSlide(){
     d.style.cssText=`width:6px;height:6px;border-radius:50%;background:${i===_cinSlide?'#aa88ff':'#223'};transition:background 0.3s;`;
     dots.appendChild(d);
   });
-  // Fade in text after brief delay
+  // Fade in text after brief delay, then start voice-over
   setTimeout(()=>{
     chEl.textContent=slide.chapter;
     bdEl.innerHTML=slide.body.replace(/\n\n/g,'<br><br>').replace(/\n/g,'<br>');
     chEl.style.opacity='1'; bdEl.style.opacity='1';
+    playCinVoice(slide.voice);             // play narration for this slide
   }, 350);
   // Draw canvas illustration for this slide
   drawCinCanvas(_cinSlide);
