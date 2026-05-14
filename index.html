@@ -5915,6 +5915,7 @@ function startTravel(toId, _resumeWatchesLeft, _pausedPos, _pausedProg, _savedLa
     _progEnd:       progEnd,
     _watchPct:      watchPct,
     _totalWatches:  totalWatches,
+    _sphereQueued:  false,   // true once crystal sphere approach visual has been queued
     };
 
   document.getElementById('tvlbar').classList.add('on');
@@ -6024,7 +6025,17 @@ function travelTick(){
   G.tvl.prog = Math.min(G.tvl.prog, segEnd);
   document.getElementById('tvlf').style.width = G.tvl.prog + '%';
 
-  // ── Encounters: 2 checks per watch segment ────────────────
+  // ── Crystal sphere approach — queue on final watch at 80% prog ──────────
+  // Fires for sphere destinations only (not waypoints — those are mid-void)
+  if (TS.active && !G.tvl._sphereQueued && G.tvl.to) {
+    const isLastWatch = G.tvl._watchesLeft <= 1;
+    const threshold = isLastWatch ? (segEnd - watchPct * 0.2) : 95; // 80% into last leg, or 95% if only 1 leg total
+    if (isLastWatch && G.tvl.prog >= threshold) {
+      G.tvl._sphereQueued = true;
+      const destName = G.spheres?.find(s => s.id === G.tvl.to)?.n || G.tvl.to;
+      tsQueueSphere(destName);
+    }
+  }
   const lane = G.tvl.lane || getLane(G.tvl.from, G.tvl.to);
   const e1 = segStart + (segEnd - segStart) * 0.38;
   const e2 = segStart + (segEnd - segStart) * 0.72;
@@ -6109,10 +6120,17 @@ function travelTick(){
     if(factionId && FACTIONS[factionId]){
       if((G.rep[factionId]||0) <= -50){
         clearInterval(G.tvl.timer);
+        stopLiveClock();
         addLog(`⚠ ${FACTIONS[factionId].n} forces intercept your vessel — HOSTILE!`,'dmg');
         startCombat(FACTIONS[factionId].shipKey); return;
       } else {
-        clearInterval(G.tvl.timer); triggerRoamingEncounter(factionId); return;
+        clearInterval(G.tvl.timer);
+        stopLiveClock();
+        if (TS.active) {
+          tsQueueRoam(factionId);
+          return;
+        }
+        triggerRoamingEncounter(factionId); return;
       }
     }
   }
@@ -7196,6 +7214,9 @@ function tsRender(timestamp) {
     TS._spawnTimer = Math.max(0.4, (1.8 - tier * 0.15) + Math.random() * 1.2);
   }
 
+  // ── Crystal sphere approach — renders over the lane, behind objects/ship ──
+  tsRenderSphere(ctx, W, H, dt);
+
   // ── Draw & update scene objects ───────────────────────────────────────
   TS.objects = TS.objects.filter(obj => {
     obj.y += TS.scrollSpeed * obj.parallax * dt;
@@ -7390,6 +7411,23 @@ function tsDrawEvent(ctx, ev, W, H) {
     ctx.font = `bold 10px 'Cinzel', serif`; ctx.fillStyle = '#88ccff';
     ctx.fillText(ev.label, 0, 38);
     ctx.restore();
+  } else if (ev.type === 'roam') {
+    // Friendly faction ship descending — drawn in faction color
+    ctx.save();
+    ctx.translate(W / 2 + (ev._jitterX || 0), ev.y);
+    ctx.rotate(Math.PI / 2);
+    const [ew, eh] = [75, 48];
+    ctx.shadowColor = ev.col || '#88ccff'; ctx.shadowBlur = 16;
+    drawShipImg(ev.key, ctx, 0, 0, ew, eh, false, () => drawCorsairSloop(ctx, 0, 0, 20, false));
+    ctx.shadowBlur = 0;
+    ctx.restore();
+    ctx.save();
+    ctx.translate(W / 2 + (ev._jitterX || 0), ev.y + 52);
+    ctx.fillStyle = (ev.col || '#88ccff') + 'cc';
+    ctx.font = `bold 11px 'Cinzel', serif`;
+    ctx.textAlign = 'center';
+    ctx.fillText(ev.label || '📡 HAILING', 0, 0);
+    ctx.restore();
   }
 }
 
@@ -7424,6 +7462,15 @@ function tsResolveEvent(ev) {
       }
       showWaystationOffer(ev.ws);
     }, 500);
+  } else if (ev.type === 'roam') {
+    const alertEl = document.getElementById('ts-alert');
+    if (alertEl) { alertEl.textContent = '📡 HAILING'; alertEl.className = 'show waypoint'; }
+    setTimeout(() => {
+      if (alertEl) alertEl.className = '';
+      // Travel sequence keeps running in background — roam overlay sits on top
+      // (no tsClose needed — roamContinue will restart travelTick and tsOpen)
+      triggerRoamingEncounter(ev.factionId);
+    }, 500);
   }
 }
 
@@ -7439,6 +7486,7 @@ function tsOpen(lane) {
   TS.skipBlocked = false;
   TS._spawnTimer = 0.3;
   TS._lastTs   = 0;
+  _CS.active   = false; // reset sphere approach on new travel segment
 
   tsPreloadImgs();
 
@@ -7478,6 +7526,21 @@ function tsQueueEnemy(enemyKey) {
   const alertEl = document.getElementById('ts-alert');
   if (alertEl) { alertEl.textContent = '⚠ ENEMY APPROACHING'; alertEl.className = 'show'; }
   setTimeout(() => { if (alertEl && alertEl.textContent === '⚠ ENEMY APPROACHING') alertEl.className = ''; }, 2500);
+}
+
+// Queue a roaming friendly encounter — ship descends from top like an enemy but in faction color
+function tsQueueRoam(factionId) {
+  const fac = FACTIONS[factionId];
+  const shipKey = fac?.shipKey || 'corsair';
+  TS.events.push({
+    type: 'roam', key: shipKey, factionId,
+    label: (fac?.n || 'Vessel') + ' HAILS',
+    col: fac?.col || '#88ccff',
+    y: -90, alpha: 0, triggered: false,
+  });
+  const alertEl = document.getElementById('ts-alert');
+  if (alertEl) { alertEl.textContent = `📡 ${fac?.n || 'VESSEL'} HAILING`; alertEl.className = 'show waypoint'; }
+  setTimeout(() => { if (alertEl) alertEl.className = ''; }, 2200);
 }
 
 // Queue a waypoint approach event (called from travelTick intercept)
@@ -7671,6 +7734,276 @@ function _cbtAddDrag(el, section) {
     inv.splice(toIdx, 0, moved);
     buildCbtInvOverlay();
   });
+}
+
+
+// ╔══════════════════════════════════════════════════════════════════════════╗
+// ║  CRYSTAL SPHERE APPROACH — Travel Sequence Visual                        ║
+// ║  A colossal curved glass wall grows to fill the screen as you approach  ║
+// ╚══════════════════════════════════════════════════════════════════════════╝
+
+const _CS = {
+  active:   false,
+  name:     '',
+  t:        0,       // elapsed time since queued (seconds)
+  duration: 28,      // total seconds of approach before it's "reached"
+  alpha:    0,       // master fade-in
+  _stars:   [],      // interior star field (generated once)
+  _nebulae: [],      // interior nebulae blobs
+  _worlds:  [],      // faint world silhouettes
+};
+
+function tsQueueSphere(name) {
+  _CS.active   = true;
+  _CS.name     = name;
+  _CS.t        = 0;
+  _CS.alpha    = 0;
+  // Duration: sphere fills screen over the last 20% of travel
+  // We use wall-clock time rather than game time so it always looks good
+  // regardless of ship speed. 18 seconds = enough to be dramatic.
+  _CS.duration = 18;
+
+  // Generate a unique interior for this sphere — stable across frames
+  const seed = name.split('').reduce((a,c) => a + c.charCodeAt(0), 0);
+  const rng = (s) => { const x = Math.sin(s * 9301 + 49297) * 233280; return x - Math.floor(x); };
+
+  _CS._stars = Array.from({length: 200}, (_, i) => ({
+    x: rng(seed + i * 3.7),
+    y: rng(seed + i * 5.1),
+    r: rng(seed + i * 2.3) * 1.8 + 0.3,
+    b: rng(seed + i * 7.9),  // brightness
+    tw: rng(seed + i * 11.3) * 3 + 1, // twinkle speed
+    tp: rng(seed + i * 13.7) * Math.PI * 2, // twinkle phase
+  }));
+
+  _CS._nebulae = Array.from({length: 6}, (_, i) => ({
+    x: rng(seed + i * 17 + 100) * 0.8 + 0.1,
+    y: rng(seed + i * 19 + 200) * 0.8 + 0.1,
+    r: rng(seed + i * 23 + 300) * 0.25 + 0.08,
+    h: Math.floor(rng(seed + i * 31) * 360), // hue
+    a: rng(seed + i * 37) * 0.18 + 0.04,
+  }));
+
+  _CS._worlds = Array.from({length: 3 + Math.floor(rng(seed) * 4)}, (_, i) => ({
+    x: rng(seed + i * 41 + 400) * 0.7 + 0.15,
+    y: rng(seed + i * 43 + 500) * 0.7 + 0.15,
+    r: rng(seed + i * 47 + 600) * 0.035 + 0.012,
+    col: `hsl(${Math.floor(rng(seed + i * 53) * 360)},40%,50%)`,
+    ring: rng(seed + i * 59) > 0.6, // some have rings
+    ringAngle: rng(seed + i * 61) * 0.6 - 0.3,
+  }));
+
+  addLog(`📡 Crystal sphere wall detected ahead — ${name} approaching.`, '');
+}
+
+function tsRenderSphere(ctx, W, H, dt) {
+  if (!_CS.active) return;
+
+  _CS.t    += dt;
+  _CS.alpha = Math.min(1, _CS.t / 3); // 3-second fade in
+
+  if (_CS.t >= _CS.duration) {
+    _CS.active = false; // sphere reached — arrival handles it
+    return;
+  }
+
+  // ── Approach progress: 0 = far away (small arc), 1 = filling screen ──
+  const p = Math.min(1, _CS.t / _CS.duration);
+  const eased = p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2; // ease-in-out quad
+
+  // The sphere is so vast that we only ever see a tiny arc of it.
+  // Its "centre" is far above the screen — the visible wall is the bottom edge.
+  // As we approach: radius shrinks (wall curves more), arc fills more of the screen.
+
+  const cx = W / 2;
+  // Sphere centre starts 8× screen height above, descends to 1.2× screen height
+  const cy = -H * (8 - eased * 6.8);
+  // Radius: starts huge (barely curved arc), grows slightly as we get closer
+  const sphereR = W * (12 - eased * 7); // 12W → 5W
+
+  // ── How much of the arc is visible ───────────────────────────────────────
+  // At start: tiny sliver at top. At end: fills the top 70% of screen.
+  const arcHalfAngle = Math.PI * (0.04 + eased * 0.42); // 4% → 46% of circle
+
+  // ── Interior clip region ──────────────────────────────────────────────────
+  ctx.save();
+  ctx.globalAlpha = _CS.alpha;
+
+  // Clip to the sphere interior (arc area)
+  ctx.beginPath();
+  ctx.arc(cx, cy, sphereR, Math.PI / 2 - arcHalfAngle, Math.PI / 2 + arcHalfAngle);
+  ctx.lineTo(cx, cy); // back to centre
+  ctx.closePath();
+  ctx.clip();
+
+  // ── Interior: deep space background ──────────────────────────────────────
+  const innerR = sphereR * 0.99;
+  const innerGrad = ctx.createRadialGradient(cx, cy, innerR * 0.2, cx, cy, innerR);
+  innerGrad.addColorStop(0, '#000005');
+  innerGrad.addColorStop(0.5, '#02000e');
+  innerGrad.addColorStop(1, '#060020');
+  ctx.fillStyle = innerGrad;
+  ctx.beginPath();
+  ctx.arc(cx, cy, sphereR, 0, Math.PI * 2);
+  ctx.fill();
+
+  // ── Interior: nebulae ─────────────────────────────────────────────────────
+  // Map nebula positions from [0,1] to sphere interior projected onto screen
+  const projW = sphereR * arcHalfAngle * 2 * 0.6;
+  const projH = sphereR * arcHalfAngle * 0.4;
+  const projCx = cx;
+  const projCy = cy + sphereR;
+
+  _CS._nebulae.forEach(neb => {
+    const nx = projCx + (neb.x - 0.5) * projW;
+    const ny = projCy - neb.y * projH;
+    const nr = neb.r * Math.min(projW, projH);
+    const g = ctx.createRadialGradient(nx, ny, 0, nx, ny, nr);
+    g.addColorStop(0, `hsla(${neb.h},60%,40%,${neb.a * _CS.alpha})`);
+    g.addColorStop(1, 'transparent');
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(nx, ny, nr, 0, Math.PI * 2); ctx.fill();
+  });
+
+  // ── Interior: stars ───────────────────────────────────────────────────────
+  _CS._stars.forEach(s => {
+    const sx = projCx + (s.x - 0.5) * projW;
+    const sy = projCy - s.y * projH;
+    const twinkle = 0.4 + 0.6 * Math.sin(_CS.t * s.tw + s.tp);
+    const a = s.b * twinkle * 0.85;
+    ctx.fillStyle = `rgba(255,255,255,${a})`;
+    ctx.beginPath(); ctx.arc(sx, sy, s.r * (0.6 + eased * 0.4), 0, Math.PI * 2);
+    ctx.fill();
+  });
+
+  // ── Interior: worlds ─────────────────────────────────────────────────────
+  _CS._worlds.forEach(w => {
+    const wx = projCx + (w.x - 0.5) * projW;
+    const wy = projCy - w.y * projH;
+    const wr = w.r * Math.min(projW, projH) * (0.3 + eased * 0.7);
+    if (wr < 1) return;
+    // World body
+    ctx.fillStyle = w.col;
+    ctx.beginPath(); ctx.arc(wx, wy, wr, 0, Math.PI * 2); ctx.fill();
+    // Atmosphere glow
+    const atm = ctx.createRadialGradient(wx, wy, wr * 0.7, wx, wy, wr * 1.6);
+    atm.addColorStop(0, w.col.replace('50%)', '70%,0.15)').replace('hsl(', 'hsla('));
+    atm.addColorStop(1, 'transparent');
+    ctx.fillStyle = atm;
+    ctx.beginPath(); ctx.arc(wx, wy, wr * 1.6, 0, Math.PI * 2); ctx.fill();
+    // Ring if applicable
+    if (w.ring) {
+      ctx.save();
+      ctx.translate(wx, wy);
+      ctx.rotate(w.ringAngle);
+      ctx.scale(1, 0.25);
+      ctx.strokeStyle = w.col.replace('hsl(', 'hsla(').replace(')', ',0.45)');
+      ctx.lineWidth = wr * 0.5;
+      ctx.beginPath(); ctx.arc(0, 0, wr * 1.9, 0, Math.PI * 2); ctx.stroke();
+      ctx.restore();
+    }
+    // Terminator shadow
+    ctx.fillStyle = 'rgba(0,0,8,0.55)';
+    ctx.beginPath();
+    ctx.arc(wx + wr * 0.3, wy - wr * 0.1, wr * 0.92, 0, Math.PI * 2);
+    ctx.fill();
+  });
+
+  ctx.restore(); // end interior clip
+
+  // ── Crystal wall itself ────────────────────────────────────────────────────
+  ctx.save();
+  ctx.globalAlpha = _CS.alpha;
+
+  // Wall thickness — increases as we approach
+  const wallThick = Math.max(4, W * (0.008 + eased * 0.04));
+
+  // Outer edge: glowing cyan-white rim
+  const outerGlow = ctx.createRadialGradient(cx, cy, sphereR - wallThick * 3, cx, cy, sphereR + wallThick * 2);
+  outerGlow.addColorStop(0, 'rgba(200,240,255,0.0)');
+  outerGlow.addColorStop(0.4, 'rgba(180,230,255,0.25)');
+  outerGlow.addColorStop(0.75, 'rgba(220,245,255,0.55)');
+  outerGlow.addColorStop(0.9, 'rgba(255,255,255,0.85)');
+  outerGlow.addColorStop(1, 'rgba(200,240,255,0.0)');
+
+  ctx.strokeStyle = outerGlow;
+  ctx.lineWidth = wallThick * 4;
+  ctx.beginPath();
+  ctx.arc(cx, cy, sphereR, Math.PI / 2 - arcHalfAngle - 0.01, Math.PI / 2 + arcHalfAngle + 0.01);
+  ctx.stroke();
+
+  // Main wall: thick translucent crystal band
+  // Multiple layered strokes for depth
+  const wallColors = [
+    { r: sphereR - wallThick * 0.5, lw: wallThick * 1.8, col: 'rgba(180,230,255,0.12)' },
+    { r: sphereR,                    lw: wallThick * 1.2, col: 'rgba(210,245,255,0.22)' },
+    { r: sphereR + wallThick * 0.3,  lw: wallThick * 0.8, col: 'rgba(240,255,255,0.35)' },
+    { r: sphereR + wallThick * 0.8,  lw: wallThick * 0.4, col: 'rgba(255,255,255,0.5)' },
+  ];
+  wallColors.forEach(wc => {
+    ctx.strokeStyle = wc.col;
+    ctx.lineWidth = wc.lw;
+    ctx.beginPath();
+    ctx.arc(cx, cy, wc.r, Math.PI / 2 - arcHalfAngle, Math.PI / 2 + arcHalfAngle);
+    ctx.stroke();
+  });
+
+  // ── Inner surface shimmer: hexagonal crystal facets (implied) ──────────────
+  // Subtle caustic-light shimmer moving along the wall
+  const shimmer = 0.5 + 0.5 * Math.sin(_CS.t * 1.8);
+  const shimmerGrad = ctx.createLinearGradient(
+    cx + Math.cos(_CS.t * 0.4) * W * 0.3, cy,
+    cx - Math.cos(_CS.t * 0.4) * W * 0.3, cy
+  );
+  shimmerGrad.addColorStop(0, 'transparent');
+  shimmerGrad.addColorStop(0.3 + shimmer * 0.2, `rgba(200,240,255,${0.08 + shimmer * 0.12})`);
+  shimmerGrad.addColorStop(0.6, 'transparent');
+  ctx.strokeStyle = shimmerGrad;
+  ctx.lineWidth = wallThick * 2;
+  ctx.beginPath();
+  ctx.arc(cx, cy, sphereR - wallThick * 0.2, Math.PI / 2 - arcHalfAngle + 0.05, Math.PI / 2 + arcHalfAngle - 0.05);
+  ctx.stroke();
+
+  // ── Name text curved along the outer arc ──────────────────────────────────
+  const name = _CS.name.toUpperCase();
+  const textR = sphereR + wallThick * 3.5 + 8;
+  const textAlpha = Math.min(1, (_CS.t - 1) / 2) * _CS.alpha;
+
+  if (textAlpha > 0.01) {
+    ctx.font = `bold ${Math.max(10, Math.min(18, W * 0.025))}px 'Cinzel', serif`;
+    ctx.fillStyle = `rgba(200,240,255,${textAlpha * 0.9})`;
+    ctx.shadowColor = 'rgba(150,220,255,0.5)';
+    ctx.shadowBlur = 8;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // Measure total arc span needed for text
+    const totalChars = name.length;
+    const charSpacing = Math.min(0.022, arcHalfAngle * 1.6 / totalChars);
+    const textStartAngle = Math.PI / 2 - (totalChars / 2) * charSpacing;
+
+    for (let i = 0; i < totalChars; i++) {
+      const angle = textStartAngle + i * charSpacing;
+      const charX = cx + textR * Math.sin(angle);
+      const charY = cy + textR * Math.cos(angle);
+      ctx.save();
+      ctx.translate(charX, charY);
+      ctx.rotate(-angle + Math.PI); // face outward
+      ctx.fillText(name[i], 0, 0);
+      ctx.restore();
+    }
+    ctx.shadowBlur = 0;
+  }
+
+  // ── Edge vignette: dark frame so sphere wall contrasts with phlogiston ────
+  // Very faint darkening at edges to separate the sphere wall from background
+  const vig = ctx.createRadialGradient(cx, H * 0.1, 0, cx, H * 0.1, W * 0.7);
+  vig.addColorStop(0, 'transparent');
+  vig.addColorStop(1, 'rgba(0,0,4,0.25)');
+  ctx.fillStyle = vig;
+  ctx.fillRect(0, 0, W, H);
+
+  ctx.restore();
 }
 
 function buy(item){
@@ -11300,10 +11633,10 @@ function roamAttack(){
   const fac = FACTIONS[_roamFactionId];
   document.getElementById('ov-roam').style.display='none';
   applyRep(_roamFactionId, -20);
-  // Also slight rep hit with allied factions
   if(_roamFactionId==='ien') applyRep('merchant',-5);
   if(_roamFactionId==='merchant') applyRep('ien',-5);
   addLog(`You open fire on the ${fac.shipName}!`,'dmg');
+  G.phase = 'map'; // ensure startCombat can fire
   startCombat(fac.shipKey);
 }
 function roamTrade(){
@@ -11453,8 +11786,15 @@ function roamContinue(){
   document.getElementById('ov-roam').style.display='none';
   _roamFactionId = null;
   // Resume travel
-  if(G.phase==='traveling'&&G.tvl){
+  if(G.phase==='traveling' && G.tvl){
     G.tvl.timer = setInterval(travelTick, G.tvl.tickMs||100);
+    startLiveClock(); resetLiveClock();
+    // Reopen travel sequence if it was active
+    if (TS.active) {
+      // Already open — just restart the live clock
+    } else if (G.tvl.to || G.tvl.toFragSite) {
+      tsOpen(G.tvl.lane);
+    }
   }
 }
 
