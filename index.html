@@ -935,6 +935,96 @@ body {
 }
 #wpnpicker-cancel-btn:hover { border-color:#cc224455; color:#cc8899; }
 
+
+/* ══════════════════════════════════════════════════════════════════
+   PHLOGISTON TRAVEL SEQUENCE OVERLAY
+   ══════════════════════════════════════════════════════════════════ */
+#ov-travel-seq {
+  position: fixed; inset: 0; z-index: 250;
+  display: none; flex-direction: column;
+  background: #030008;
+  overflow: hidden;
+}
+#ov-travel-seq.on { display: flex; }
+
+/* Main travel canvas fills the screen */
+#ts-canvas {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  display: block;
+}
+
+/* HUD overlay — destination, progress, speed controls */
+#ts-hud {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  padding: 10px 16px 14px;
+  background: linear-gradient(transparent, rgba(2,0,10,0.92));
+  display: flex; align-items: flex-end; gap: 12px;
+  pointer-events: none; z-index: 5;
+}
+#ts-dest-label {
+  font-family: 'Cinzel', serif; font-size: 11px;
+  color: #9966dd; letter-spacing: 2px; flex: 1;
+  pointer-events: none;
+}
+#ts-prog-bar-wrap {
+  flex: 2; height: 6px; background: rgba(80,40,120,0.3);
+  border-radius: 3px; overflow: hidden;
+}
+#ts-prog-bar {
+  height: 100%; width: 0%; border-radius: 3px;
+  background: linear-gradient(90deg, #4488ff, #9966dd);
+  transition: width 0.3s linear;
+}
+#ts-watch-label {
+  font-family: 'Cinzel', serif; font-size: 10px;
+  color: #554477; letter-spacing: 1px;
+  pointer-events: none;
+}
+
+/* Skip / Speed buttons — top right */
+#ts-controls {
+  position: absolute; top: 12px; right: 14px;
+  display: flex; gap: 8px; z-index: 6;
+}
+#ts-skip-btn, #ts-speed-btn {
+  font-family: 'Cinzel', serif; font-size: 10px;
+  padding: 6px 14px; border-radius: 4px; cursor: pointer;
+  letter-spacing: 1px; transition: all 0.15s;
+}
+#ts-skip-btn {
+  background: rgba(20,8,50,0.9); border: 1px solid #6633aa66;
+  color: #9966dd;
+}
+#ts-skip-btn:hover { border-color: #9966dd; color: #ddaaff; }
+#ts-skip-btn:disabled { opacity: 0.3; cursor: default; }
+#ts-speed-btn {
+  background: rgba(5,3,18,0.9); border: 1px solid #33225544;
+  color: #554477;
+}
+#ts-speed-btn:hover { border-color: #7755aa; color: #9977cc; }
+#ts-speed-btn.fast { border-color: #44ff88; color: #44ff88;
+  background: rgba(0,20,8,0.9); }
+
+/* Event alert banner — appears when enemy/waypoint approaches */
+#ts-alert {
+  position: absolute; top: 16px; left: 50%;
+  transform: translateX(-50%);
+  background: rgba(60,5,5,0.95); border: 1px solid #ff442255;
+  border-radius: 5px; padding: 8px 20px;
+  font-family: 'Cinzel', serif; font-size: 12px; color: #ff8844;
+  letter-spacing: 2px; text-align: center;
+  display: none; z-index: 6;
+  animation: ts-pulse 1s ease-in-out infinite;
+}
+#ts-alert.show { display: block; }
+#ts-alert.waypoint { background: rgba(5,30,60,0.95);
+  border-color: #4488ff55; color: #88ccff; }
+@keyframes ts-pulse {
+  0%,100%{ box-shadow: 0 0 8px #ff442200; }
+  50%    { box-shadow: 0 0 18px #ff442244; }
+}
+
 /* IEN QM shop within local quest */
 #lq-shop {
   position:absolute; top:50%; right:20px; transform:translateY(-50%);
@@ -1068,7 +1158,7 @@ body {
   position:absolute; top:10px; left:50%; transform:translateX(-50%);
   background:rgba(4,0,14,0.94); border:1px solid #44118866; border-radius:6px;
   padding:6px 14px; display:none; flex-direction:column; align-items:center; gap:3px;
-  z-index:8; min-width:210px; pointer-events:none;
+  z-index:260; min-width:210px; pointer-events:none;
 }
 #watch-hud.on { display:flex; }
 .wh-row { display:flex; align-items:center; gap:8px; }
@@ -1564,6 +1654,24 @@ body {
 
   <!-- TRAVEL BAR -->
   <div id="tvlbar"><div id="tvllabel">Navigating the Phlogiston…</div><div id="tvlw"><div id="tvlf" style="width:0%"></div></div></div>
+
+  <!-- ══ PHLOGISTON TRAVEL SEQUENCE OVERLAY ══════════════════════════ -->
+  <div id="ov-travel-seq">
+    <canvas id="ts-canvas"></canvas>
+
+    <div id="ts-controls">
+      <button id="ts-speed-btn" onclick="tsToggleSpeed()">▶▶ Fast</button>
+      <button id="ts-skip-btn" onclick="tsSkip()">⏭ Skip to Next</button>
+    </div>
+
+    <div id="ts-alert"></div>
+
+    <div id="ts-hud">
+      <div id="ts-dest-label">PHLOGISTON</div>
+      <div id="ts-prog-bar-wrap"><div id="ts-prog-bar"></div></div>
+      <div id="ts-watch-label"></div>
+    </div>
+  </div>
 
   <!-- WATCH HUD — shows during travel -->
   <div id="watch-hud">
@@ -2203,24 +2311,39 @@ const ITEMS = {
   clutchsig: { n:'Clutch-Mother Sigil',      ico:'🪲', type:'equip',     val:100, desc:'Install: The thri-kreen clutch bond — adds +4 max crew as bonded soldiers.', use:'crew4p' },
   murecho:   { n:'Murmur Echo',              ico:'🌀', type:'artifact',  val:200, desc:"A resonance crystal that still vibrates with The Murmur's frequency. Scholars will ruin themselves acquiring this." },
   scrbanner: { n:'Scro Warlord Banner',      ico:'🚩', type:'artifact',  val:160, desc:"Warlord Grex's personal battle-standard. Proof of the most dangerous kill in the Far Realm region." },
+  // ── Phlogiston Predator Harvests ──────────────────────────────────────────
+  phlogmem:  { n:'Phlogiston Membrane',      ico:'🌊', type:'component', val:28,  desc:'Flexible membrane harvested from a phlogiston creature. Burns brilliantly — alchemists prize it.' },
+  phlogcore: { n:'Phlogiston Core Crystal',  ico:'🔸', type:'component', val:55,  desc:'The dense core of a phlogiston predator, still radiating heat. Potent fuel source.' },
+  voidclaw:  { n:'Void Predator Claw',       ico:'🦴', type:'component', val:32,  desc:'A razor-edged claw from a void predator. Holds a permanent magical edge.' },
+  predblood: { n:'Predator Ichor Vial',      ico:'🩸', type:'usable',   val:40,  desc:'Use: Applies caustic predator ichor to your hull — next hit deals +8 reflected damage to attacker.', use:'reflect8' },
+  sharkskn:  { n:'Void Shark Hide',          ico:'🦈', type:'component', val:48,  desc:'Thick hide from a void shark. Near-impervious to phlogiston erosion. Shipwrights pay well.' },
+  sharkfin:  { n:'Void Shark Fin',           ico:'🦴', type:'component', val:35,  desc:'Dried fin from a void shark — navigators use them as luck charms on long void crossings.' },
+  jellystem: { n:'Medusa Jellyfish Stinger',  ico:'🪼', type:'component', val:38,  desc:'Crystallised phlogiston stinger. Alchemists use it in paralytic compound synthesis.' },
+  vinespore: { n:'Vinecrawler Spore Pod',    ico:'🌿', type:'component', val:30,  desc:'Sealed spore pod from a phlogiston vinecrawler. Plant scholars pay absurd sums for living specimens.' },
+  flamequil: { n:'Flamewing Quill',          ico:'🔥', type:'component', val:42,  desc:'A crystalline quill shed by a phlogiston flamewing. Still holds a charge of phlogiston fire.' },
+  moteash:   { n:'Mote Swarm Ash',           ico:'✨', type:'component', val:15,  desc:'Fine ash residue left by a phlogiston mote swarm. Trace alchemical components remain.' },
+  gobteeth:  { n:'Goblin Tooth Necklace',    ico:'🦷', type:'trade',     val:12,  desc:"A string of goblin teeth. Goblins consider it an insult. Their chieftains consider it a declaration of war." },
+  gobsack:   { n:'Goblin Plunder Sack',      ico:'💼', type:'trade',     val:20,  desc:"A jumbled sack of stolen trinkets and tools. Mostly junk but there's always something worth keeping." },
+  scrodogtag:{ n:'Scro Soldier Dog-Tag',     ico:'🔖', type:'artifact',  val:30,  desc:"An engraved scro identification disc. IEN intelligence pays a bounty per confirmed scro kill." },
+
   vodncore:  { n:'Vodoni Navigation Core',   ico:'⚙️', type:'equip',     val:85,  desc:'Install: Vodoni helm-core integrates into your spelljammer — adds +1 speed.', use:'speed1' },
 };
 
 const LOOT = {
   // ── Tier 0 — Goblin Ships ──────────────────────────────────────────────────
-  goblin_cutter:     [{id:'plunder',c:0.70},{id:'repkit',c:0.40},{id:'crewmead',c:0.35},{id:'corskit',c:0.30}],
-  goblin_rocketer:   [{id:'plunder',c:0.65},{id:'repkit',c:0.35},{id:'crewmead',c:0.30},{id:'corskit',c:0.25}],
-  goblin_shaman_boat:[{id:'plunder',c:0.60},{id:'crewmead',c:0.40},{id:'psiamp',c:0.12},{id:'repkit',c:0.30}],
+  goblin_cutter:     [{id:'gobsack',c:0.80},{id:'gobteeth',c:0.55},{id:'repkit',c:0.30},{id:'crewmead',c:0.25}],
+  goblin_rocketer:   [{id:'gobsack',c:0.75},{id:'gobteeth',c:0.50},{id:'repkit',c:0.25}],
+  goblin_shaman_boat:[{id:'gobsack',c:0.70},{id:'gobteeth',c:0.45},{id:'psiamp',c:0.15},{id:'crewmead',c:0.20}],
   // ── Tier 0-1 — Scro Ships ─────────────────────────────────────────────────
-  scro_patrol:   [{id:'plunder',c:0.75},{id:'crewmead',c:0.40},{id:'repkit',c:0.35},{id:'corskit',c:0.45},{id:'scrtrophy',c:0.30}],
-  scro_enforcer: [{id:'plunder',c:0.70},{id:'corskit',c:0.55},{id:'repkit',c:0.40},{id:'crewmead',c:0.35},{id:'scrtrophy',c:0.40},{id:'starcoin',c:0.20}],
-  scro_slaver:   [{id:'plunder',c:0.80},{id:'crewmead',c:0.55},{id:'corskit',c:0.50},{id:'scrtrophy',c:0.50},{id:'repkit',c:0.35},{id:'starcoin',c:0.25},{id:'stimpack',c:0.15}],
-  // ── Phlogiston Creatures ───────────────────────────────────────────────────
-  phlog_mote:        [{id:'plunder',c:0.50},{id:'repkit',c:0.25}],
-  phlog_jellyfish:   [{id:'plunder',c:0.65},{id:'repkit',c:0.45},{id:'crewmead',c:0.30},{id:'corskit',c:0.25},{id:'almend',c:0.15}],
-  phlog_flamewing:   [{id:'plunder',c:0.60},{id:'repkit',c:0.40},{id:'crewmead',c:0.25},{id:'corskit',c:0.35},{id:'almend',c:0.20}],
-  phlog_vinecrawler: [{id:'plunder',c:0.65},{id:'repkit',c:0.45},{id:'crewmead',c:0.30},{id:'spidsweb',c:0.50},{id:'voidsalve',c:0.18}],
-  void_shark:        [{id:'levscal',c:0.55},{id:'repkit',c:0.50},{id:'crewmead',c:0.30},{id:'plunder',c:0.60},{id:'almend',c:0.20}],
+  scro_patrol:   [{id:'scrtrophy',c:0.70},{id:'scrodogtag',c:0.65},{id:'crewmead',c:0.30},{id:'repkit',c:0.25},{id:'corskit',c:0.20}],
+  scro_enforcer: [{id:'scrtrophy',c:0.75},{id:'scrodogtag',c:0.70},{id:'corskit',c:0.35},{id:'crewmead',c:0.30},{id:'starcoin',c:0.20}],
+  scro_slaver:   [{id:'scrtrophy',c:0.80},{id:'scrodogtag',c:0.75},{id:'crewmead',c:0.50},{id:'corskit',c:0.30},{id:'starcoin',c:0.25},{id:'stimpack',c:0.15}],
+  // ── Phlogiston Creatures — natural harvests, no ship loot ──────────────────
+  phlog_mote:        [{id:'moteash',c:0.70},{id:'phlogmem',c:0.30}],
+  phlog_jellyfish:   [{id:'jellystem',c:0.75},{id:'phlogmem',c:0.55},{id:'phlogcore',c:0.30},{id:'predblood',c:0.20}],
+  phlog_flamewing:   [{id:'flamequil',c:0.75},{id:'phlogcore',c:0.60},{id:'phlogmem',c:0.40},{id:'predblood',c:0.25}],
+  phlog_vinecrawler: [{id:'vinespore',c:0.75},{id:'phlogmem',c:0.55},{id:'voidclaw',c:0.35},{id:'predblood',c:0.20}],
+  void_shark:        [{id:'sharkskn',c:0.80},{id:'sharkfin',c:0.70},{id:'voidclaw',c:0.50},{id:'predblood',c:0.35},{id:'phlogcore',c:0.20}],
   corsair:   [{id:'plunder',c:0.80},{id:'cargobale',c:0.65},{id:'repkit',c:0.35},{id:'crewmead',c:0.25},{id:'corskit',c:0.40}],
   plunderer: [{id:'plunder',c:0.75},{id:'starcoin',c:0.55},{id:'corskit',c:0.55},{id:'repkit',c:0.28},{id:'cargobale',c:0.70},{id:'crewmead',c:0.20}],
   blackfleet:[{id:'starcoin',c:0.70},{id:'bfmanif',c:0.45},{id:'arccore',c:0.30},{id:'astsil',c:0.50},{id:'levblood',c:0.22},{id:'psiamp',c:0.18},{id:'beacon',c:0.12}],
@@ -3155,9 +3278,9 @@ function hasMovesRemaining() { return true; } // moves always available; fatigue
 // D&D fatigue: Fresh → Fatigued → Exhausted
 function fatigueLevel() {
   const pushed = G.watch?.legsPushed || 0;
-  if (pushed === 0) return 0; // Fresh
-  if (pushed === 1) return 2; // Fatigued
-  return 3;                   // Exhausted
+  if (pushed <= 1) return 0; // Fresh — up to 16 hrs travel
+  if (pushed === 2) return 2; // Fatigued — 24 hrs
+  return 3;                   // Exhausted — 32+ hrs
 }
 function fatigueName()        { return ['Fresh','','Fatigued','Exhausted'][fatigueLevel()]; }
 function fatigueMoveClass()   { return ['fresh','fresh','fatigued','exhausted'][fatigueLevel()]; }
@@ -3176,9 +3299,17 @@ function watchExpiredMidJourney() {
   G.watch._pauseShown = true;
   clearInterval(G.tvl.timer);
   G.phase = 'map';
-  tickLeg(); // 8 hours pass — day/air update if 06:00 crossed
+  tickLeg();
   stopTravelHum();
+  tsClose(); // pause travel sequence — reopens when travel resumes
 
+  // Auto-rest: silently anchor without showing the popup
+  if (G._autoRest) {
+    G.watch._pauseShown = false;
+    addLog('⚓ Auto-rest: anchoring for the night.', '');
+    doRest();
+    return;
+  }
   const hour = currentHour();
   const lvl  = fatigueLevel();
   const destName = G.tvl?.to ? G.spheres?.find(s=>s.id===G.tvl.to)?.n
@@ -3189,11 +3320,11 @@ function watchExpiredMidJourney() {
   const pushNote = lvl === 0
     ? `
 
-Anchoring now means full rest and a fresh helmsman at dawn. Pushing on risks fatigue.`
+Anchoring now means full rest and a fresh helmsman at dawn. The crew can safely push one more watch before fatigue sets in.`
     : lvl === 2
     ? `
 
-⚠ FATIGUED — helmsman is already compromised. Another push risks exhaustion and hull damage.`
+⚠ FATIGUED — helmsman reached 16+ hours. Another push risks exhaustion and hull damage.`
     : `
 
 ⚠ EXHAUSTED — the helmsman is dangerously overextended. Hull damage likely if you push further.`;
@@ -3230,10 +3361,10 @@ Anchoring now means full rest and a fresh helmsman at dawn. Pushing on risks fat
   };
 
   showMsg(
-    `${icon} ${timeStr(hour)} — 8 Hours Underway`,
+    `${icon} ${timeStr(hour)} — Watch Complete`,
     `${destName} is ${pct}% of the way across.
 
-The helmsman has been at the helm for 8 hours. Anchor here for the night, or push on?${pushNote}`,
+The helmsman has completed an 8-hour watch. The crew stays Fresh through two consecutive watches (16 hrs total). Anchor here or push on?${pushNote}`,
     lvl >= 2 ? '⚓ Anchor Now!' : '⚓ Anchor & Rest',
     anchorCb,
     lvl >= 2 ? '➤ Push On (Risky)' : '➤ Push On Through the Night',
@@ -3242,6 +3373,24 @@ The helmsman has been at the helm for 8 hours. Anchor here for the night, or pus
   setTimeout(() => {
     const b = document.getElementById('msgbtn2');
     if (b) b.classList.toggle('muted', lvl >= 2);
+    const box = document.getElementById('msgbox');
+    if (box && !box.querySelector('#auto-rest-row')) {
+      const row = document.createElement('div');
+      row.id = 'auto-rest-row';
+      row.style.cssText = 'margin-top:8px;font-size:10px;display:flex;align-items:center;gap:6px;justify-content:center;';
+      const isOn = !!G._autoRest;
+      row.innerHTML = `<label style="display:flex;align-items:center;gap:5px;cursor:pointer;color:${isOn?'#aa88cc':'#554477'};">
+        <input type="checkbox" id="auto-rest-chk" ${isOn?'checked':''} style="cursor:pointer;accent-color:#8855cc;">
+        <span>Auto-rest at every anchor point</span>
+      </label>`;
+      const chk = row.querySelector('#auto-rest-chk');
+      chk.addEventListener('change', e => {
+        G._autoRest = e.target.checked;
+        row.querySelector('label').style.color = e.target.checked ? '#aa88cc' : '#554477';
+        if (G._autoRest) anchorCb();
+      });
+      box.appendChild(row);
+    }
   }, 0);
 }
 
@@ -3627,10 +3776,44 @@ const SOUND_DATA = {
   'ship_upgrade': 'sounds/ship_upgrade.mp3',
   'loot_open': 'sounds/loot_open.mp3',
   'title': 'sounds/title.mp3',
-  'travel_hum': 'sounds/travel_hum.mp3',       // looping engine hum during travel
-  'elder_theme': 'sounds/elder_theme.mp3',       // plays during Elder Brain fight
-  'caiphon_reveal': 'sounds/caiphon_reveal.mp3', // sting when Caiphon descends
-  'caiphon_theme': 'sounds/caiphon_theme.mp3',   // full replacement track for Caiphon fight
+  'travel_hum': 'sounds/travel_hum.mp3',
+  'elder_theme': 'sounds/elder_theme.mp3',
+  'caiphon_reveal': 'sounds/caiphon_reveal.mp3',
+  'caiphon_theme': 'sounds/caiphon_theme.mp3',
+
+  // ── Special Ability Sounds ────────────────────────────────────────────────
+  // Drop your .mp3 files in sounds/ matching these keys
+  'ability_mind_blast':    'sounds/ability_mind_blast.mp3',    // Nautiloid / Illithid psionic blast
+  'ability_web':           'sounds/ability_web.mp3',           // Neogi / spider web cannon
+  'ability_psi_stun':      'sounds/ability_psi_stun.mp3',      // Psionic lance stun
+  'ability_grapple':       'sounds/ability_grapple.mp3',       // Chain harpoon / tentacle grapple
+  'ability_dimension_step':'sounds/ability_dimension_step.mp3',// Githyanki Dimension Step dodge
+  'ability_void_breath':   'sounds/ability_void_breath.mp3',   // Leviathan Void Breath
+  'ability_disintegrate':  'sounds/ability_disintegrate.mp3',  // Beholder Disintegration Ray
+  'ability_corrosion':     'sounds/ability_corrosion.mp3',     // Neogi / acid corrosion
+  'ability_rage_cannon':   'sounds/ability_rage_cannon.mp3',   // Rage Cannon escalating
+  'ability_phase':         'sounds/ability_phase.mp3',         // Phase shift / plane walk
+  'ability_spawn':         'sounds/ability_spawn.mp3',         // Summon minion / spawn
+  'ability_heal':          'sounds/ability_heal.mp3',          // Enemy self-repair
+  'ability_crew_steal':    'sounds/ability_crew_steal.mp3',    // Boarding / crew capture
+
+  // ── Creature Attack Sounds ────────────────────────────────────────────────
+  'creature_phlog_fire':   'sounds/creature_phlog_fire.mp3',   // Phlogiston fire attacks
+  'creature_phlog_swarm':  'sounds/creature_phlog_swarm.mp3',  // Mote swarm attacks
+  'creature_void_shark':   'sounds/creature_void_shark.mp3',   // Void shark bite/ram
+  'creature_vine_grab':    'sounds/creature_vine_grab.mp3',    // Vinecrawler tendril grab
+  'creature_roar':         'sounds/creature_roar.mp3',         // Generic creature roar/cry
+  'creature_screech':      'sounds/creature_screech.mp3',      // Goblin screech / shaman wail
+
+  // ── Ship-class Attack Sounds ──────────────────────────────────────────────
+  'wpn_rocket':            'sounds/wpn_rocket.mp3',            // Goblin rockets / fire missiles
+  'wpn_chain_harpoon':     'sounds/wpn_chain_harpoon.mp3',     // Scro chain harpoon
+  'wpn_shock_net':         'sounds/wpn_shock_net.mp3',         // Scro shock net
+  'wpn_hex_bolt':          'sounds/wpn_hex_bolt.mp3',          // Goblin shaman hex
+  'wpn_tentacle':          'sounds/wpn_tentacle.mp3',          // Nautiloid tentacle array
+  'wpn_beholder_eye':      'sounds/wpn_beholder_eye.mp3',      // Beholder eye-ray
+  'wpn_leviathan_breath':  'sounds/wpn_leviathan_breath.mp3',  // Leviathan void breath
+  'wpn_silver_sword':      'sounds/wpn_silver_sword.mp3',      // Githyanki silver sword strike
 };
 
 // SOUND_FILES kept for reference but audio now loads from SOUND_DATA
@@ -3748,6 +3931,28 @@ function snd(key, vol = 1.0) {
     c.volume = Math.min(1, Math.max(0, vol * _VOL.master * _VOL.sfx));
     c.play().catch(() => {});
   } catch(_) {}
+}
+
+// sndCreature — plays a creature-specific sound if available, else falls back to a generic one.
+// Used so adding sounds/creature_X.mp3 files automatically gets picked up in combat.
+function sndCreature(enemyKey, vol = 0.85) {
+  const CREATURE_SND = {
+    'phlog_mote':        'creature_phlog_swarm',
+    'phlog_jellyfish':   'creature_phlog_fire',
+    'phlog_flamewing':   'creature_phlog_fire',
+    'phlog_vinecrawler': 'creature_vine_grab',
+    'void_shark':        'creature_void_shark',
+    'goblin_cutter':     'creature_screech',
+    'goblin_rocketer':   'wpn_rocket',
+    'goblin_shaman_boat':'wpn_hex_bolt',
+    'neogi':             'ability_web',
+    'nautiloid':         'ability_mind_blast',
+    'githyanki':         'wpn_silver_sword',
+    'beholder':          'wpn_beholder_eye',
+    'leviathan':         'wpn_leviathan_breath',
+  };
+  const key = CREATURE_SND[enemyKey];
+  if (key && _SFX[key]) { snd(key, vol); } else { snd('enemy_hit', vol * 0.8); }
 }
 
 // Start an ambient loop (stops the previous one with a short fade)
@@ -5494,6 +5699,13 @@ function startTravel(toId, _resumeWatchesLeft, _pausedPos, _pausedProg, _savedLa
 
   G.tvl.timer = setInterval(travelTick, tickMs);
   startTravelHum();
+  // Open the phlogiston travel sequence visual
+  if (!_pausedProg) {
+    tsOpen(lane);
+  } else {
+    // Resuming mid-journey — reopen sequence with existing lane
+    tsOpen(lane);
+  }
 }
 
 function startWaypointTravel(wp){
@@ -5554,6 +5766,7 @@ function startFragSiteTravel(fs){
   snd('travel_begin', 0.75);
   addLog(`Setting course for ${fs.n}. Leaving the marked lanes…`, 'imp');
   G.tvl.timer = setInterval(travelTick, fsTickMs);
+  tsOpen(lane); // open travel sequence for frag site approach
 }
 
 function travelTick(){
@@ -5584,7 +5797,14 @@ function travelTick(){
       const chance = (lane.rate || 0.200) * (fatigueLevel() >= 2 ? 1.3 : 1.0);
       if(Math.random() < chance){
         clearInterval(G.tvl.timer);
-        startCombat((lane.pool||['nautiloid','neogi'])[Math.floor(Math.random()*(lane.pool||['nautiloid','neogi']).length)]);
+        const enemyKey = (lane.pool||['nautiloid','neogi'])[Math.floor(Math.random()*(lane.pool||['nautiloid','neogi']).length)];
+        // Show enemy approaching in travel sequence before triggering combat
+        if (TS.active) {
+          tsQueueEnemy(enemyKey);
+          // Don't call startCombat yet — tsResolveEvent handles it when enemy reaches ship
+          return;
+        }
+        startCombat(enemyKey);
         return;
       }
     }
@@ -5598,18 +5818,29 @@ function travelTick(){
     if(ws && G.tvl.prog >= 45 && G.tvl.prevProg < 45){
       G.tvl._wpHit = true;
       clearInterval(G.tvl.timer);
-      stopTravelHum();
-      G.phase = 'map';
-      document.getElementById('tvlbar').classList.remove('on');
-      // Store resume state
+
+      // Build resume state now (before anything changes)
       const laneOrigin = G.tvl._laneOrigin || G.tvl.fromPos || {x:.5,y:.5};
       const destSph = G.spheres.find(s=>s.id===G.tvl.to) || {x:.5,y:.5};
       const pg = G.tvl.prog / 100;
       const pausedPos = { x: laneOrigin.x + (destSph.x-laneOrigin.x)*pg, y: laneOrigin.y + (destSph.y-laneOrigin.y)*pg };
+      G._resumeTravel = { toId:G.tvl.to, watchesRemaining:G.tvl._watchesLeft||0, pausedPos, pausedProg:G.tvl.prog, laneOrigin };
+
+      if (TS.active) {
+        // Queue beacon approach — tsResolveEvent will handle stopping travel and showing offer
+        tsQueueWaypoint(ws);
+        // Keep timer stopped but keep phase as 'traveling' so tsRender stays live
+        // tsResolveEvent will call tsStopAndOffer(ws) which does the full stop
+        return;
+      }
+
+      // Non-TS path (fallback): stop travel and show offer immediately
+      stopTravelHum();
+      G.phase = 'map';
+      document.getElementById('tvlbar').classList.remove('on');
       G.ship.midLanePos = pausedPos;
       G.tvl._pausedProg = G.tvl.prog;
       G.tvl._watchesRemaining = G.tvl._watchesLeft || 0;
-      G._resumeTravel = { toId:G.tvl.to, watchesRemaining:G.tvl._watchesLeft||0, pausedPos, pausedProg:G.tvl.prog, laneOrigin };
       showWaystationOffer(ws);
       return;
     }
@@ -5664,6 +5895,7 @@ function travelTick(){
       // ─ ARRIVED — tick the final leg (day/air via tickLeg inside advanceWatch) ─
       advanceWatch();
       document.getElementById('tvlbar').classList.remove('on');
+      tsClose(); // close travel sequence on arrival
       if(G.tvl.toWp)          arriveAtWaypoint(G.tvl.toWp);
       else if(G.tvl.toFragSite) arriveAtFragSite(G.tvl.toFragSite);
       else                    arrive(G.tvl.to);
@@ -6538,6 +6770,535 @@ document.addEventListener('wheel', e => {
 // ── Reset KBNav when overlays close ─────────────────────────────────────────
 function _kbNavResetOnClose() { KBNav.reset(); }
 
+
+// ╔══════════════════════════════════════════════════════════════════════╗
+// ║  PHLOGISTON TRAVEL SEQUENCE                                          ║
+// ║  Visual corridor view while travelTick() runs underneath             ║
+// ╚══════════════════════════════════════════════════════════════════════╝
+
+const TS = {
+  active:    false,
+  animId:    null,
+  t:         0,          // elapsed seconds
+  speed:     1.0,        // 1 = normal, 3 = fast
+  scrollY:   0,          // master scroll position (px, resets per segment)
+  scrollSpeed: 80,       // px/sec at speed 1.0
+  objects:   [],         // floating scene objects
+  events:    [],         // queued events (enemy approach, waypoint approach)
+  skipBlocked: false,    // true when an unresolved event is on screen
+  lane:      null,       // current lane data
+  _spawnTimer: 0,        // seconds until next random object spawn
+  _imgs:     {},         // preloaded env images keyed by filename stem
+};
+
+// ── Image preload registry ──────────────────────────────────────────────
+const TS_IMGS = [
+  'env_asteroid','env_crystal_spire','env_void_boulder','env_rock_ring',
+  'env_wreck_hull','env_wreck_prow','env_debris_field',
+  'env_void_jellyfish','env_mote_cluster','env_leviathan_bones',
+  'env_beacon_buoy','env_cargo_drift','env_nav_marker',
+  'env_elven_ruin','env_void_vault','env_phlog_eddy',
+];
+
+function tsPreloadImgs() {
+  TS_IMGS.forEach(key => {
+    if (TS._imgs[key]) return;
+    const img = new Image();
+    img.src = `images/${key}.png`;
+    img.onload = () => { TS._imgs[key] = img; };
+    img.onerror = () => { TS._imgs[key] = null; }; // mark as missing — use fallback
+  });
+}
+
+// ── Object spawn catalog ─────────────────────────────────────────────────
+// Each entry: { key, side ('L'|'R'|'C'), weight, rare }
+// side L/R = flanking objects; C = center-ish (wrecks, beacons)
+const TS_CATALOG = [
+  { key:'env_asteroid',      side:'LR', weight:8 },
+  { key:'env_crystal_spire', side:'LR', weight:6 },
+  { key:'env_void_boulder',  side:'LR', weight:7 },
+  { key:'env_rock_ring',     side:'LR', weight:4 },
+  { key:'env_wreck_hull',    side:'C',  weight:3 },
+  { key:'env_wreck_prow',    side:'C',  weight:3 },
+  { key:'env_debris_field',  side:'LR', weight:5 },
+  { key:'env_void_jellyfish',side:'C',  weight:3 },
+  { key:'env_mote_cluster',  side:'LR', weight:4 },
+  { key:'env_leviathan_bones',side:'C', weight:1, rare:true },
+  { key:'env_beacon_buoy',   side:'LR', weight:2 },
+  { key:'env_cargo_drift',   side:'C',  weight:3 },
+  { key:'env_nav_marker',    side:'LR', weight:3 },
+  { key:'env_elven_ruin',    side:'C',  weight:1, rare:true },
+  { key:'env_void_vault',    side:'C',  weight:1, rare:true },
+  { key:'env_phlog_eddy',    side:'LR', weight:5 },
+];
+
+// weight-based random pick, scaling rare objects up on high-danger lanes
+function tsPick(tier) {
+  const catalog = TS_CATALOG.filter(e => tier >= 3 || !e.rare);
+  const wrecks  = ['env_wreck_hull','env_wreck_prow','env_debris_field','env_leviathan_bones'];
+  const boosted = catalog.map(e => ({
+    ...e,
+    w: wrecks.includes(e.key) ? e.weight * Math.max(1, tier - 1) : e.weight
+  }));
+  const total = boosted.reduce((s,e) => s + e.w, 0);
+  let r = Math.random() * total;
+  for (const e of boosted) { r -= e.w; if (r <= 0) return e; }
+  return boosted[0];
+}
+
+// ── Spawn a new scene object ──────────────────────────────────────────────
+function tsSpawnObject(cv, forced) {
+  const tier = TS.lane?.d || 1;
+  const entry = forced || tsPick(tier);
+  const W = cv.width, H = cv.height;
+
+  // x placement: L = left third, R = right third, C = middle with scatter
+  let xMin, xMax;
+  const side = entry.side === 'LR' ? (Math.random() < 0.5 ? 'L' : 'R') : entry.side;
+  if (side === 'L')      { xMin = 0.02;  xMax = 0.32; }
+  else if (side === 'R') { xMin = 0.68;  xMax = 0.98; }
+  else                   { xMin = 0.25;  xMax = 0.75; }
+
+  const x = (xMin + Math.random() * (xMax - xMin)) * W;
+  const scale = 0.55 + Math.random() * 0.7;  // 0.55–1.25×
+  const rot   = Math.random() * Math.PI * 2;
+  const rotSpd = (Math.random() - 0.5) * 0.4; // slow tumble
+
+  TS.objects.push({
+    key: entry.key,
+    x, y: -80,           // start just above the screen
+    scale, rot, rotSpd,
+    alpha: 0,            // fade in
+    w: 200 * scale,
+    h: 120 * scale,
+    parallax: 0.85 + Math.random() * 0.3, // slight depth variation
+  });
+}
+
+// ── Spawn a queued event object (enemy ship or waypoint beacon) ──────────
+function tsSpawnEvent(type, label, key) {
+  TS.events.push({ type, label, key, y: -120, alpha: 0, triggered: false });
+}
+
+// ── Lane atmosphere colors ────────────────────────────────────────────────
+const TS_LANE_COLS = [
+  { fog:'#0a2240', bank:'#0a3a5a', glow:'#44ffee', particle:'rgba(68,255,238,' },  // tier 1
+  { fog:'#0a1840', bank:'#0a2060', glow:'#4488ff', particle:'rgba(68,136,255,' },  // tier 2
+  { fog:'#201008', bank:'#3a1808', glow:'#ff8844', particle:'rgba(255,136,68,' },  // tier 3
+  { fog:'#280808', bank:'#3a0808', glow:'#ff4422', particle:'rgba(255,68,34,' },   // tier 4
+  { fog:'#1a0404', bank:'#2a0404', glow:'#cc2222', particle:'rgba(200,34,34,' },   // tier 5
+];
+
+// ── Main render loop ──────────────────────────────────────────────────────
+function tsRender(timestamp) {
+  if (!TS.active) return;
+  TS.animId = requestAnimationFrame(tsRender);
+
+  const cv  = document.getElementById('ts-canvas');
+  const ctx = cv.getContext('2d');
+  cv.width  = cv.offsetWidth  || window.innerWidth;
+  cv.height = cv.offsetHeight || window.innerHeight;
+  const W = cv.width, H = cv.height;
+
+  // Delta time (capped)
+  if (!TS._lastTs) TS._lastTs = timestamp;
+  const dt = Math.min(0.1, (timestamp - TS._lastTs) / 1000) * TS.speed;
+  TS._lastTs = timestamp;
+  TS.t += dt;
+
+  const tier = TS.lane?.d || 1;
+  const col  = TS_LANE_COLS[Math.min(tier - 1, TS_LANE_COLS.length - 1)];
+
+  // ── Background: deep void ─────────────────────────────────────────────
+  ctx.fillStyle = col.fog;
+  ctx.fillRect(0, 0, W, H);
+
+  // ── Phlogiston river banks (left/right gradient walls) ───────────────
+  const bankW = W * 0.18;
+  [[0, true], [W, false]].forEach(([bx, isLeft]) => {
+    const gx = isLeft ? bx : bx - bankW;
+    const g = ctx.createLinearGradient(isLeft ? gx : gx + bankW, 0,
+                                       isLeft ? gx + bankW : gx, 0);
+    g.addColorStop(0, col.bank + 'ee');
+    g.addColorStop(0.6, col.bank + '66');
+    g.addColorStop(1, col.fog + '00');
+    ctx.fillStyle = g;
+    ctx.fillRect(gx, 0, bankW, H);
+
+    // Bank edge glow
+    const ex = isLeft ? bx + bankW * 0.55 : bx - bankW * 0.55;
+    for (let i = 0; i < 3; i++) {
+      const ew = 2 + i * 2;
+      const ea = (0.15 - i * 0.04) * (0.6 + 0.4 * Math.sin(TS.t * 0.8 + i));
+      ctx.strokeStyle = col.glow + Math.round(ea * 255).toString(16).padStart(2,'0');
+      ctx.lineWidth = ew;
+      ctx.beginPath(); ctx.moveTo(ex, 0); ctx.lineTo(ex, H); ctx.stroke();
+    }
+  });
+
+  // ── Scrolling flow particles along the river channel ─────────────────
+  const scrollAmt = (TS.scrollY += TS.scrollSpeed * dt);
+  const channelX = W * 0.18, channelW = W * 0.64;
+  for (let i = 0; i < 14; i++) {
+    const seed = i * 1.618;
+    const px = channelX + (((seed * 137.5) % 1)) * channelW;
+    const rawY = ((seed * 73.1 + scrollAmt * 0.4) % H);
+    const py = rawY < 0 ? rawY + H : rawY;
+    const a = 0.08 + 0.12 * Math.abs(Math.sin(TS.t * 1.1 + seed));
+    const r = 1.5 + 2 * Math.abs(Math.sin(TS.t * 0.7 + seed * 0.5));
+    const grad = ctx.createRadialGradient(px, py, 0, px, py, r * 2.5);
+    grad.addColorStop(0, col.particle + (a * 2).toFixed(2) + ')');
+    grad.addColorStop(1, col.particle + '0)');
+    ctx.fillStyle = grad;
+    ctx.beginPath(); ctx.arc(px, py, r * 2.5, 0, Math.PI * 2); ctx.fill();
+  }
+
+  // ── Spawn timer for scene objects ────────────────────────────────────
+  TS._spawnTimer -= dt;
+  if (TS._spawnTimer <= 0) {
+    tsSpawnObject(cv);
+    // Higher tier lanes: more frequent spawns (more debris)
+    TS._spawnTimer = Math.max(0.4, (1.8 - tier * 0.15) + Math.random() * 1.2);
+  }
+
+  // ── Draw & update scene objects ───────────────────────────────────────
+  TS.objects = TS.objects.filter(obj => {
+    obj.y += TS.scrollSpeed * obj.parallax * dt;
+    obj.rot += obj.rotSpd * dt;
+    obj.alpha = Math.min(1, obj.alpha + dt * 1.5); // fade in
+
+    if (obj.y > H + 100) return false; // gone off bottom
+
+    const img = TS._imgs[obj.key];
+    ctx.save();
+    ctx.globalAlpha = obj.alpha * 0.82;
+    ctx.translate(obj.x, obj.y);
+    ctx.rotate(obj.rot);
+    if (img) {
+      ctx.drawImage(img, -obj.w / 2, -obj.h / 2, obj.w, obj.h);
+    } else {
+      tsFallbackDraw(ctx, obj.key, obj.w, obj.h, col.glow);
+    }
+    ctx.restore();
+    return true;
+  });
+
+  // ── Draw & update event objects (enemy/waypoint) ──────────────────────
+  TS.skipBlocked = false;
+  TS.events = TS.events.filter(ev => {
+    ev.y += TS.scrollSpeed * 0.9 * dt;
+    ev.alpha = Math.min(1, ev.alpha + dt * 1.2);
+
+    const triggerY = H * 0.52; // when event reaches ship position
+
+    if (!ev.triggered && ev.y >= triggerY) {
+      ev.triggered = true;
+      tsResolveEvent(ev);
+      return false; // remove from array
+    }
+
+    if (!ev.triggered) TS.skipBlocked = true; // block skip while event approaching
+
+    // Draw the event object
+    ctx.save();
+    ctx.globalAlpha = ev.alpha;
+    tsDrawEvent(ctx, ev, W, H);
+    ctx.restore();
+
+    return !ev.triggered;
+  });
+
+  // ── Draw your ship (centered, bobbing) ─────────────────────────────────
+  const shipX = W / 2;
+  const shipY = H * 0.55;
+  const bob   = Math.sin(TS.t * 1.4) * 5 * (1 + (tier - 1) * 0.4);  // more turbulence at higher tier
+  const sway  = Math.sin(TS.t * 0.9) * 3 * (1 + (tier - 1) * 0.3);
+  const tilt  = Math.sin(TS.t * 1.1) * 0.04;
+
+  ctx.save();
+  ctx.save();
+  ctx.translate(shipX + sway, shipY + bob);
+  // Rotate ship to face UP — ships are drawn nose-right, so -90° points nose upward
+  ctx.rotate(-Math.PI / 2 + tilt);
+
+  const sType = G.ship?.type || 'pinnace';
+  const [sw, sh] = shipSz(sType, 100, 60);
+  drawShipImg(sType, ctx, 0, 0, sw, sh, false, () => {
+    if      (sType === 'pinnace') drawPinnace(ctx, 0, 0, 34, false);
+    else if (sType === 'squid')   drawSquid(ctx, 0, 0, 34, false);
+    else if (sType === 'hammer')  drawHammer(ctx, 0, 0, 34, false);
+    else                          drawManow(ctx, 0, 0, 42, false);
+  });
+
+  // Engine trail — fires from the STERN (negative X in ship space = below on screen after rotation)
+  const trailLen = 40 + tier * 5;
+  for (let i = 0; i < 5; i++) {
+    const tx = -sw * 0.4 - i * trailLen / 5;  // stern is at negative X in ship local space
+    const ta = (0.5 - i * 0.09) * 0.7;
+    const tr = (4 - i * 0.6) * (0.7 + 0.3 * Math.sin(TS.t * 3 + i));
+    const tg = ctx.createRadialGradient(tx, 0, 0, tx, 0, tr * 2);
+    tg.addColorStop(0, `rgba(160,80,255,${ta})`);
+    tg.addColorStop(1, 'transparent');
+    ctx.fillStyle = tg; ctx.beginPath(); ctx.arc(tx, 0, tr * 2, 0, Math.PI*2); ctx.fill();
+  }
+  ctx.restore();
+
+  // ── Update progress HUD ───────────────────────────────────────────────
+  if (G.tvl) {
+    const pct = G.tvl.prog || 0;
+    document.getElementById('ts-prog-bar').style.width = pct + '%';
+    const wl = G.tvl._watchesLeft || 0;
+    document.getElementById('ts-watch-label').textContent =
+      wl > 0 ? `${wl} leg${wl !== 1 ? 's' : ''} remaining` : 'approaching…';
+  }
+
+  // Update skip button disabled state
+  const skipBtn = document.getElementById('ts-skip-btn');
+  if (skipBtn) skipBtn.disabled = TS.skipBlocked;
+}
+
+// ── Fallback procedural draw when PNG is missing ──────────────────────────
+function tsFallbackDraw(ctx, key, w, h, glowCol) {
+  ctx.strokeStyle = glowCol + '55';
+  ctx.lineWidth = 1.5;
+  if (key.includes('asteroid') || key.includes('boulder')) {
+    ctx.fillStyle = '#1a1a2a'; ctx.beginPath();
+    ctx.ellipse(0, 0, w*0.4, h*0.38, 0.3, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+    // Craters
+    ctx.fillStyle = '#111120';
+    ctx.beginPath(); ctx.ellipse(-w*0.1, -h*0.05, w*0.1, h*0.09, 0, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(w*0.12, h*0.1, w*0.07, h*0.06, 0, 0, Math.PI*2); ctx.fill();
+  } else if (key.includes('crystal') || key.includes('spire')) {
+    ctx.fillStyle = glowCol + '22';
+    ctx.beginPath(); ctx.moveTo(0,-h*0.45); ctx.lineTo(w*0.15,h*0.3);
+    ctx.lineTo(-w*0.15,h*0.3); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(w*0.12,-h*0.25); ctx.lineTo(w*0.25,h*0.3);
+    ctx.lineTo(-w*0.01,h*0.3); ctx.closePath(); ctx.fill(); ctx.stroke();
+  } else if (key.includes('wreck') || key.includes('debris')) {
+    ctx.fillStyle = '#111118';
+    ctx.beginPath(); ctx.moveTo(-w*0.4,-h*0.1); ctx.lineTo(w*0.35,-h*0.05);
+    ctx.lineTo(w*0.3,h*0.12); ctx.lineTo(-w*0.38,h*0.08); ctx.closePath();
+    ctx.fill(); ctx.stroke();
+    // Broken bits
+    ctx.strokeStyle = '#33334455'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(-w*0.2,-h*0.08); ctx.lineTo(-w*0.05,h*0.06); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(w*0.1,-h*0.04); ctx.lineTo(w*0.25,h*0.1); ctx.stroke();
+  } else if (key.includes('jellyfish') || key.includes('mote')) {
+    ctx.fillStyle = glowCol + '18';
+    const rg = ctx.createRadialGradient(0, 0, 0, 0, 0, w*0.35);
+    rg.addColorStop(0, glowCol + '44'); rg.addColorStop(1, 'transparent');
+    ctx.fillStyle = rg; ctx.beginPath(); ctx.arc(0, 0, w*0.35, 0, Math.PI*2); ctx.fill();
+    // Tentacles
+    ctx.strokeStyle = glowCol + '33'; ctx.lineWidth = 1;
+    for (let i = 0; i < 5; i++) {
+      const a = (i/5)*Math.PI*2; const r = w*0.3;
+      ctx.beginPath(); ctx.moveTo(Math.cos(a)*r*0.5, Math.sin(a)*r*0.5);
+      ctx.lineTo(Math.cos(a)*r, Math.sin(a)*r); ctx.stroke();
+    }
+  } else if (key.includes('eddy') || key.includes('phlog')) {
+    const rg = ctx.createRadialGradient(0, 0, 0, 0, 0, w*0.4);
+    rg.addColorStop(0, glowCol + '33'); rg.addColorStop(1, 'transparent');
+    ctx.fillStyle = rg; ctx.beginPath(); ctx.arc(0, 0, w*0.4, 0, Math.PI*2); ctx.fill();
+  } else if (key.includes('beacon') || key.includes('marker') || key.includes('buoy')) {
+    ctx.fillStyle = '#223344';
+    ctx.beginPath(); ctx.rect(-w*0.08, -h*0.3, w*0.16, h*0.6); ctx.fill();
+    ctx.fillStyle = '#88aacc'; ctx.beginPath(); ctx.arc(0, -h*0.3, w*0.1, 0, Math.PI*2); ctx.fill();
+    const bg = ctx.createRadialGradient(0,-h*0.3,0,0,-h*0.3,w*0.2);
+    bg.addColorStop(0,'rgba(136,170,204,0.3)'); bg.addColorStop(1,'transparent');
+    ctx.fillStyle=bg; ctx.beginPath(); ctx.arc(0,-h*0.3,w*0.2,0,Math.PI*2); ctx.fill();
+  } else {
+    // Generic: glowing cloud
+    const rg = ctx.createRadialGradient(0,0,0,0,0,w*0.3);
+    rg.addColorStop(0, '#ffffff11'); rg.addColorStop(1,'transparent');
+    ctx.fillStyle=rg; ctx.beginPath(); ctx.arc(0,0,w*0.3,0,Math.PI*2); ctx.fill();
+  }
+}
+
+// ── Draw incoming event (enemy ship or waypoint indicator) ────────────────
+function tsDrawEvent(ctx, ev, W, H) {
+  if (ev.type === 'enemy') {
+    ctx.save();
+    ctx.translate(W / 2 + (ev._jitterX || 0), ev.y);
+    // Rotate to face DOWN — ships drawn nose-right, so +90° points nose downward toward player
+    ctx.rotate(Math.PI / 2);
+    const eKey = ev.key;
+    const [ew, eh] = [80, 50];
+    ctx.shadowColor = '#ff4422'; ctx.shadowBlur = 20;
+    drawShipImg(eKey, ctx, 0, 0, ew, eh, false, () => drawCorsairSloop(ctx, 0, 0, 22, false));
+    ctx.shadowBlur = 0;
+    ctx.restore();
+    // Label drawn AFTER restore so it's in screen space (not rotated)
+    ctx.save();
+    ctx.translate(W / 2 + (ev._jitterX || 0), ev.y + 55);
+    ctx.fillStyle = '#ff4422cc';
+    ctx.font = `bold 11px 'Cinzel', serif`;
+    ctx.textAlign = 'center';
+    ctx.fillText(ev.label || '⚠ ENEMY SIGHTED', 0, 0);
+    ctx.restore();
+  } else if (ev.type === 'waypoint') {
+    // Waypoint icon descending from top
+    ctx.save();
+    ctx.translate(W / 2, ev.y);
+    const pulse = 1 + 0.12 * Math.sin(TS.t * 3);
+    ctx.scale(pulse, pulse);
+    // Glow halo
+    const rg = ctx.createRadialGradient(0, 0, 0, 0, 0, 45);
+    rg.addColorStop(0, 'rgba(68,136,255,0.4)'); rg.addColorStop(1, 'transparent');
+    ctx.fillStyle = rg; ctx.beginPath(); ctx.arc(0, 0, 45, 0, Math.PI*2); ctx.fill();
+    // Icon circle
+    ctx.fillStyle = 'rgba(10,25,60,0.9)';
+    ctx.strokeStyle = '#4488ff88'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(0, 0, 24, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+    ctx.font = '22px serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(ev.icon || '📡', 0, 1);
+    ctx.textBaseline = 'alphabetic';
+    ctx.font = `bold 10px 'Cinzel', serif`; ctx.fillStyle = '#88ccff';
+    ctx.fillText(ev.label, 0, 38);
+    ctx.restore();
+  }
+}
+
+// ── Resolve event when it reaches the ship ────────────────────────────────
+function tsResolveEvent(ev) {
+  if (ev.type === 'enemy') {
+    const alertEl = document.getElementById('ts-alert');
+    if (alertEl) { alertEl.textContent = '⚔ INTERCEPT'; alertEl.className = 'show'; }
+    setTimeout(() => {
+      if (alertEl) alertEl.className = '';
+      // Set phase back to map so startCombat's phase check passes
+      // (we left it as 'traveling' while the enemy was approaching)
+      G.phase = 'map';
+      startCombat(ev.key);
+    }, 600);
+  } else if (ev.type === 'waypoint') {
+    const alertEl = document.getElementById('ts-alert');
+    if (alertEl) { alertEl.textContent = '⚓ WAYSTATION'; alertEl.className = 'show waypoint'; }
+    setTimeout(() => {
+      if (alertEl) alertEl.className = '';
+      // Fully stop travel state before showing the waystation offer
+      tsClose();
+      stopTravelHum();
+      G.phase = 'map';
+      document.getElementById('tvlbar').classList.remove('on');
+      if (G.tvl) {
+        const laneOrigin = G.tvl._laneOrigin || G.tvl.fromPos || {x:.5,y:.5};
+        const destSph = G.spheres?.find(s=>s.id===G.tvl.to) || {x:.5,y:.5};
+        const pg = (G.tvl.prog || 45) / 100;
+        const pausedPos = { x: laneOrigin.x + (destSph.x-laneOrigin.x)*pg, y: laneOrigin.y + (destSph.y-laneOrigin.y)*pg };
+        G.ship.midLanePos = pausedPos;
+      }
+      showWaystationOffer(ev.ws);
+    }, 500);
+  }
+}
+
+// ── Public API ────────────────────────────────────────────────────────────
+function tsOpen(lane) {
+  TS.active    = true;
+  TS.lane      = lane;
+  TS.t         = 0;
+  TS.speed     = 1.0;
+  TS.scrollY   = 0;
+  TS.objects   = [];
+  TS.events    = [];
+  TS.skipBlocked = false;
+  TS._spawnTimer = 0.3;
+  TS._lastTs   = 0;
+
+  tsPreloadImgs();
+
+  const ov = document.getElementById('ov-travel-seq');
+  ov.classList.add('on');
+
+  // Update destination label
+  const destId = G.tvl?.to;
+  const destName = G.spheres?.find(s=>s.id===destId)?.n || 'Unknown';
+  const lane_d = lane?.d || 1;
+  const col = TS_LANE_COLS[Math.min(lane_d - 1, TS_LANE_COLS.length - 1)];
+  document.getElementById('ts-dest-label').textContent = `→ ${destName.toUpperCase()} · ${lane?.flowName || lane?.label || 'PHLOGISTON'}`;
+  document.getElementById('ts-dest-label').style.color = col.glow;
+
+  TS.animId = requestAnimationFrame(tsRender);
+}
+
+function tsClose() {
+  TS.active = false;
+  if (TS.animId) { cancelAnimationFrame(TS.animId); TS.animId = null; }
+  TS._lastTs = 0;
+  const ov = document.getElementById('ov-travel-seq');
+  ov.classList.remove('on');
+  document.getElementById('ts-speed-btn').classList.remove('fast');
+  document.getElementById('ts-alert').className = '';
+}
+
+// Queue an enemy approach event (called from travelTick intercept)
+function tsQueueEnemy(enemyKey) {
+  const ev = {
+    type: 'enemy', key: enemyKey,
+    label: ENM[enemyKey]?.name || 'Unknown',
+    y: -90, alpha: 0, triggered: false,
+    _jitterX: (Math.random() - 0.5) * 60,
+  };
+  TS.events.push(ev);
+  const alertEl = document.getElementById('ts-alert');
+  if (alertEl) { alertEl.textContent = '⚠ ENEMY APPROACHING'; alertEl.className = 'show'; }
+  setTimeout(() => { if (alertEl && alertEl.textContent === '⚠ ENEMY APPROACHING') alertEl.className = ''; }, 2500);
+}
+
+// Queue a waypoint approach event (called from travelTick intercept)
+function tsQueueWaypoint(ws) {
+  TS.events.push({
+    type: 'waypoint', key: ws.id,
+    label: ws.n, icon: ws.ico, ws,
+    y: -90, alpha: 0, triggered: false,
+  });
+  const alertEl = document.getElementById('ts-alert');
+  if (alertEl) { alertEl.textContent = '📡 WAYSTATION AHEAD'; alertEl.className = 'show waypoint'; }
+  setTimeout(() => { if (alertEl) alertEl.className = ''; }, 2000);
+}
+
+// Skip: fast-forwards travelTick (not called when skipBlocked)
+function tsSkip() {
+  if (TS.skipBlocked) return;
+  // Fast-forward travelTick until next event or arrival
+  // We inject ticks manually at 10× speed until prog changes or an event fires
+  const maxFastTicks = 400; // safety cap
+  let ticks = 0;
+  const origTimer = G.tvl?.timer;
+  if (origTimer) clearInterval(origTimer);
+
+  const runFast = () => {
+    if (!TS.active || G.phase !== 'traveling' || ticks >= maxFastTicks) {
+      // Restore timer at normal speed if we're still traveling
+      if (G.phase === 'traveling' && G.tvl) {
+        G.tvl.timer = setInterval(travelTick, G.tvl.tickMs || 100);
+      }
+      return;
+    }
+    travelTick();
+    ticks++;
+    // Stop fast-forward if an event was triggered (phase changed or events appeared)
+    if (G.phase !== 'traveling' || TS.events.length > 0) {
+      if (G.phase === 'traveling' && G.tvl && TS.events.length === 0) {
+        G.tvl.timer = setInterval(travelTick, G.tvl.tickMs || 100);
+      }
+      return;
+    }
+    setTimeout(runFast, 8);
+  };
+  runFast();
+}
+
+// Fast/normal speed toggle for the animation (doesn't affect travelTick rate)
+function tsToggleSpeed() {
+  TS.speed = TS.speed > 1 ? 1.0 : 3.0;
+  const btn = document.getElementById('ts-speed-btn');
+  if (btn) {
+    btn.classList.toggle('fast', TS.speed > 1);
+    btn.textContent = TS.speed > 1 ? '▶ Normal' : '▶▶ Fast';
+  }
+}
+
 function buy(item){
   if(G.ship.gold<item.cost)return;
   // Hard guard: re-check ownership before any purchase goes through
@@ -6995,6 +7756,8 @@ function startCombat(key){
   if(key === 'elder'){ startElderCaiphonSequence(); return; }
 
   G.phase='combat'; setTag('COMBAT');
+  stopTravelHum(); // mute engine hum — combat music takes over
+  tsClose();       // close travel sequence — reopens when travel resumes
   document.getElementById('watch-hud')?.classList.remove('on'); // hide time HUD during combat
   const t=ENM[key];
   const eWpns = (t.wpns||[]).map(w=>({...w}));
@@ -8944,6 +9707,7 @@ async function enemyTurn() {
         const healed = Math.min(healDef.amt, e.maxHp - e.hp);
         e.hp = Math.min(e.maxHp, e.hp + healDef.amt);
         if(healDef.once) e._healUsed = true;
+        snd('ability_heal', 0.75);
         floatDmg(eCV(), healed, true, '🔧 HULL REPAIRED');
         cLog(`${healDef.txt} (+${healed} HP — now ${e.hp}/${e.maxHp})`, 'dmg');
       } else if(healDef.fx === 'nova'){
@@ -9010,25 +9774,28 @@ async function enemyTurn() {
     switch (e.sp.fx) {
       case 'stun':
         G.cbt.playerStunnedNext = true;
-        snd('stun', 0.9);
+        snd('ability_psi_stun', 0.85); snd('stun', 0.9);
         cLog(e.sp.txt + ' Your crew will be disoriented next round!', 'dmg');
         triggerAnim(pCV(), 'anim-shake');
         await sleep(500);
         break;
       case 'dodge':
         G.cbt.eStat = 'dodging';
+        snd('ability_dimension_step', 0.8);
         floatText(eCV(), '🌀 EVADING', '#88ccff', 10);
         cLog(e.sp.txt, 'dmg');
         await sleep(400);
         break;
       case 'phase':
         G.cbt.eStat = 'phased';
+        snd('ability_phase', 0.8);
         floatText(eCV(), '👻 PHASING', '#cc88ff', 10);
         cLog(e.sp.txt, 'dmg');
         await sleep(400);
         break;
       case 'crew': {
         const stolen = e.sp.crewSteal || 2;
+        snd('ability_crew_steal', 0.85);
         G.ship.crew = Math.max(0, G.ship.crew - stolen);
         // Stolen crew added to enemy crew count (thralls put to work)
         if(e.crew !== undefined) { e.crew = Math.min(e.maxCrew || 99, e.crew + stolen); }
@@ -9105,7 +9872,9 @@ async function enemyTurn() {
         if(w.special==='rage'){ G.cbt.rageStacks=(G.cbt.rageStacks||0)+1; dmg+=G.cbt.rageStacks*2; cLog(`🔥 Rage stack ${G.cbt.rageStacks} — +${G.cbt.rageStacks*2} bonus damage!`,'dmg'); }
         if(ev) G.cbt.pStat='normal';
         if(!G._godMode) G.ship.hull-=dmg;
-        triggerAnim(pCV(),'anim-shake'); snd('player_hit',0.95); floatDmg(pCV(),G._godMode?0:dmg,false);
+        triggerAnim(pCV(),'anim-shake');
+        sndCreature(e._key, 0.75); // creature-specific attack sound (falls back to enemy_hit)
+        snd('player_hit',0.95); floatDmg(pCV(),G._godMode?0:dmg,false);
         cLog(G._godMode?`${e.name} — ${w.n}: GODMODE`:`${e.name} — ${w.n}: ${dmg} damage!${res>0?` [${res} resisted]`:''} ${w.txt}`,'dmg');
 
         // Crew loss
@@ -9762,7 +10531,7 @@ The Far Realm still whispers at the edges of reality. Perhaps one day a new thre
   ), 800);
 }
 function restart(){
-  ['ov-wpnpicker','ov-combat','ov-port','ov-waypoint','ov-loot','ov-inv','ov-wpn','ov-shp','ov-qlog','ov-journal','ov-dockmaster','ov-localquest','scr-defeat','scr-win','scr-farwin','tvlbar','msgbox','save-overlay'].forEach(id=>{
+  ['ov-travel-seq','ov-wpnpicker','ov-combat','ov-port','ov-waypoint','ov-loot','ov-inv','ov-wpn','ov-shp','ov-qlog','ov-journal','ov-dockmaster','ov-localquest','scr-defeat','scr-win','scr-farwin','tvlbar','msgbox','save-overlay'].forEach(id=>{
     const el=document.getElementById(id); if(el)el.classList.remove('on','active');
   });
   const _fr=document.getElementById('ov-faction-rep'); if(_fr) _fr.style.display='none';
@@ -10762,7 +11531,7 @@ function hideMainMenu() {
 function menuNewGame() {
   hideMainMenu(true); // keep title playing through cinematic
   // Full teardown so combat/port/loot overlays don't linger from an in-progress game
-  ['ov-wpnpicker','ov-combat','ov-port','ov-waypoint','ov-loot','ov-inv','ov-wpn','ov-shp','ov-qlog','ov-journal','ov-dockmaster','ov-localquest','scr-defeat','scr-win','scr-farwin','tvlbar','msgbox','save-overlay'].forEach(id=>{
+  ['ov-travel-seq','ov-wpnpicker','ov-combat','ov-port','ov-waypoint','ov-loot','ov-inv','ov-wpn','ov-shp','ov-qlog','ov-journal','ov-dockmaster','ov-localquest','scr-defeat','scr-win','scr-farwin','tvlbar','msgbox','save-overlay'].forEach(id=>{
     const el=document.getElementById(id); if(el)el.classList.remove('on','active');
   });
   const _fr=document.getElementById('ov-faction-rep'); if(_fr) _fr.style.display='none';
@@ -10917,7 +11686,7 @@ function _applyLoad(save) {
     if (G.tvl && G.tvl.timer) clearInterval(G.tvl.timer);
     if (G.animId) cancelAnimationFrame(G.animId);
     _stopLoop();
-    ['ov-wpnpicker','ov-combat','ov-port','ov-waypoint','ov-loot','ov-inv','ov-wpn','ov-shp','ov-qlog','ov-journal','ov-dockmaster','ov-localquest','ov-faction-rep','scr-defeat','scr-win','scr-farwin','tvlbar','msgbox','save-overlay'].forEach(id=>{
+    ['ov-travel-seq','ov-wpnpicker','ov-combat','ov-port','ov-waypoint','ov-loot','ov-inv','ov-wpn','ov-shp','ov-qlog','ov-journal','ov-dockmaster','ov-localquest','ov-faction-rep','scr-defeat','scr-win','scr-farwin','tvlbar','msgbox','save-overlay'].forEach(id=>{
       const el=document.getElementById(id); if(el)el.classList.remove('on','active');
     });
     G = {
@@ -12758,12 +13527,19 @@ document.addEventListener('DOMContentLoaded', () => {
       <div class="b-section">
         <div class="b-head">🗺 Navigation &amp; The Map</div>
         <div class="b-body">
-          The main screen shows the <strong>Phlogiston</strong> — the flammable sea between Crystal Spheres. Spheres appear as glowing circles.<br><br>
+          The main screen shows the <strong>Phlogiston</strong> — the flammable sea between Crystal Spheres. Spheres appear as glowing circles. <strong>Lanes</strong> connect them as glowing lines across the void.<br><br>
           <strong>To travel:</strong> tap any sphere to chart a course. Your ship animates across the Phlogiston.<br>
           <strong>To dock:</strong> tap your <em>current sphere</em> (the one you're already at) to enter port.<br>
           <strong>Locked spheres</strong> show a lock icon — some require story progress or Fragments to reach.<br><br>
-          <strong>Waypoints</strong> — small icons scattered across the Phlogiston — are supply caches, relay stations, and derelict vessels drifting on void currents. Tap one to intercept it for supplies, air, or crew. They're reachable from any heading since your ship can adjust course mid-void.<br><br>
-          <strong>Air Supply</strong> counts down during travel. If it hits zero your crew suffocates — you lose. Refill air at any port before long journeys. The <em>Air Recycler</em> upgrade doubles how long your air lasts.
+
+          <strong>Phlogiston Flow Rivers</strong> — the lanes are not static. Each one carries a <em>current</em> called a <strong>Flow River</strong>, animated as glowing particles drifting along the lane.<br><br>
+          &nbsp;&nbsp;• <strong>Watch which way the particles drift</strong> — that is the direction the river flows. Travelling <em>with</em> the current (in the direction particles move) is faster and costs fewer travel days. Travelling <em>against</em> it takes longer and costs more.<br>
+          &nbsp;&nbsp;• <strong>Bidirectional lanes</strong> show particles drifting <em>both ways</em> — these lanes have no dominant current and are equally fast in either direction.<br>
+          &nbsp;&nbsp;• <strong>Particle colour</strong> indicates danger — cyan for safe lanes, shifting through blue and orange to red for the most hostile routes.<br>
+          &nbsp;&nbsp;• You can adjust particle density (or turn them off entirely) in the <strong>⚙ Sound &amp; Display</strong> panel via the ✦ Density slider.<br><br>
+
+          <strong>Waypoints</strong> — small icons scattered across the Phlogiston — are supply caches, relay stations, and derelict vessels. Tap one to intercept it for supplies, air, or crew.<br><br>
+          <strong>Air Supply</strong> counts down during travel. If it hits zero your crew suffocates — you lose. Refill at any port before long journeys. The <em>Air Recycler</em> upgrade doubles how long your air lasts.
         </div>
       </div>
 
