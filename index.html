@@ -3504,16 +3504,22 @@ function _restAutoCountdown(cb, seconds) {
   _restCountdownTimer = setInterval(() => {
     remaining--;
     const b = document.getElementById('msgbtn');
-    // If msgbox was closed or button replaced, abort
-    if (!b || !document.getElementById('msgbox')?.classList.contains('on')) {
+    const box = document.getElementById('msgbox');
+    // If msgbox was closed, abort
+    if (!box?.classList.contains('on')) {
       clearInterval(_restCountdownTimer); _restCountdownTimer = null; return;
     }
     if (remaining > 0) {
-      b.textContent = `⛵ Resume Course (${remaining})`;
+      if (b) b.textContent = `⛵ Resume Course (${remaining})`;
     } else {
       clearInterval(_restCountdownTimer); _restCountdownTimer = null;
-      b.textContent = orig;
-      b.click(); // fires dismissMsg which runs the callback
+      // Directly close msgbox and fire callback — don't simulate click (avoids guard issues)
+      box.classList.remove('on');
+      const btn2 = document.getElementById('msgbtn2');
+      if (btn2) btn2.style.display = 'none';
+      G._msgCb = null;
+      G._msgCb2 = null;
+      cb();
     }
   }, 1000);
 }
