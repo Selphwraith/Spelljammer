@@ -3381,11 +3381,19 @@ function startLiveClock() {
     const hud = document.getElementById('watch-hud');
     if (!hud?.classList.contains('on')) return;
 
-    const watchMs = typeof getWatchRealMs === 'function' ? getWatchRealMs() : 6000;
-    const elapsed = performance.now() - _clockLegStart;
-    const hoursElapsed = Math.min(LEG_HOURS - 0.01, (elapsed / watchMs) * LEG_HOURS);
-    const totalH = _clockLegHours + hoursElapsed;
-    const hour = Math.floor((6 + totalH) % 24);
+    let hour;
+    // Only interpolate while travelTick timer is actively running
+    // When stopped (event approaching, waystation popup pending), show static ticked time
+    if (G.tvl?.timer) {
+      const watchMs = typeof getWatchRealMs === 'function' ? getWatchRealMs() : 6000;
+      const elapsed = performance.now() - _clockLegStart;
+      const hoursElapsed = Math.min(LEG_HOURS - 0.01, (elapsed / watchMs) * LEG_HOURS);
+      const totalH = _clockLegHours + hoursElapsed;
+      hour = Math.floor((6 + totalH) % 24);
+    } else {
+      // travelTick stopped — show exact ticked time, no interpolation
+      hour = Math.floor((6 + (G.watch?.totalHours || 0)) % 24);
+    }
     document.getElementById('wh-day').textContent = `Day ${G.watch.day} — ${timeStr(hour)}`;
   }, 1000);
 }
