@@ -8113,7 +8113,7 @@ function tsRenderSphere(ctx, W, H, dt) {
   ctx.save();
   ctx.globalAlpha = a;
 
-  const wallThick = Math.max(8, H * (0.018 + eased * 0.045)); // 1.8% → 6.3% screen height
+  const wallThick = Math.max(3, H * (0.006 + eased * 0.016)); // 0.6% → 2.2% screen height (less than half of before)
 
   // Helper: draw the wall curve as a path
   const wallCurve = () => {
@@ -8122,51 +8122,36 @@ function tsRenderSphere(ctx, W, H, dt) {
     ctx.quadraticCurveTo(W / 2, wallY + curveDepth * 0.3, W, wallY - curveDepth);
   };
 
-  // Layer 1: deep outer glow below the wall (the crystal illuminates the space below)
+  // Layer 1: single soft outer glow (was 5 passes — now 2)
   ctx.save();
-  for (let gi=0; gi<5; gi++) {
-    const gy = wallY - curveDepth + wallThick * (0.5 + gi * 0.8);
-    ctx.strokeStyle = `rgba(140,210,255,${(0.18 - gi*0.03) * a})`;
-    ctx.lineWidth = wallThick * (2 - gi * 0.25);
+  for (let gi = 0; gi < 2; gi++) {
+    const gy = wallY - curveDepth + wallThick * (0.5 + gi * 1.2);
+    ctx.strokeStyle = `rgba(140,210,255,${(0.12 - gi * 0.05) * a})`;
+    ctx.lineWidth = wallThick * (2.5 - gi * 0.8);
     ctx.beginPath();
     ctx.moveTo(0, gy);
-    ctx.quadraticCurveTo(W/2, gy + curveDepth * 0.3 + gi*2, W, gy);
+    ctx.quadraticCurveTo(W/2, gy + curveDepth * 0.3 + gi, W, gy);
     ctx.stroke();
   }
   ctx.restore();
 
-  // Layer 2: Main wall body — thick, opaque, icy blue-white
-  ctx.lineWidth = wallThick * 2.2;
-  ctx.strokeStyle = `rgba(215,240,255,${0.92 * a})`;
+  // Layer 2: Main wall body — crisp, icy blue-white
+  ctx.lineWidth = wallThick * 2.0;
+  ctx.strokeStyle = `rgba(215,240,255,${0.90 * a})`;
   wallCurve(); ctx.stroke();
 
   // Layer 3: bright top edge — pure white highlight
-  ctx.lineWidth = wallThick * 0.55;
-  ctx.strokeStyle = `rgba(255,255,255,${0.98 * a})`;
+  ctx.lineWidth = wallThick * 0.5;
+  ctx.strokeStyle = `rgba(255,255,255,${0.95 * a})`;
   ctx.beginPath();
-  ctx.moveTo(0, wallY - curveDepth - wallThick * 0.6);
-  ctx.quadraticCurveTo(W/2, wallY + curveDepth*0.3 - wallThick*0.6, W, wallY - curveDepth - wallThick*0.6);
+  ctx.moveTo(0, wallY - curveDepth - wallThick * 0.5);
+  ctx.quadraticCurveTo(W/2, wallY + curveDepth*0.3 - wallThick*0.5, W, wallY - curveDepth - wallThick*0.5);
   ctx.stroke();
 
-  // Layer 4: inner face highlight (slightly below the top edge — the glass thickness)
-  ctx.lineWidth = wallThick * 0.35;
-  ctx.strokeStyle = `rgba(180,230,255,${0.75 * a})`;
-  ctx.beginPath();
-  ctx.moveTo(0, wallY - curveDepth + wallThick * 0.5);
-  ctx.quadraticCurveTo(W/2, wallY + curveDepth*0.3 + wallThick*0.5, W, wallY - curveDepth + wallThick*0.5);
-  ctx.stroke();
-
-  // Layer 5: animated shimmer ripple along the wall surface
+  // Layer 4: shimmer — single pass, no gradient (was expensive linear gradient stroke)
   const shim = 0.5 + 0.5 * Math.sin(t * 2.5);
-  const shimX = W * (0.1 + shim * 0.8); // ripple moves left to right
-  const shimG = ctx.createLinearGradient(shimX - W*0.2, 0, shimX + W*0.2, 0);
-  shimG.addColorStop(0,   'transparent');
-  shimG.addColorStop(0.3, `rgba(255,255,255,${0.45 * a})`);
-  shimG.addColorStop(0.5, `rgba(220,245,255,${0.65 * a})`);
-  shimG.addColorStop(0.7, `rgba(255,255,255,${0.45 * a})`);
-  shimG.addColorStop(1,   'transparent');
-  ctx.lineWidth = wallThick * 1.1;
-  ctx.strokeStyle = shimG;
+  ctx.lineWidth = wallThick * 0.8;
+  ctx.strokeStyle = `rgba(255,255,255,${shim * 0.3 * a})`;
   wallCurve(); ctx.stroke();
 
   // ── SPHERE NAME curved along the wall ──────────────────────────────────
