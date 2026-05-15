@@ -7392,23 +7392,41 @@ function tsRender(timestamp) {
     return true;
   });
 
-  // ── Draw & update event objects (enemy/waypoint) ──────────────────────
+  // ── Draw & update event objects (enemy/waypoint/roam) ────────────────────
+  const shipCX = W / 2; // ship centre X for enemy targeting
+  const shipCY = H * 0.55;
   TS.skipBlocked = false;
   TS.events = TS.events.filter(ev => {
-    ev.y += TS.scrollSpeed * 0.9 * dt;
     ev.alpha = Math.min(1, ev.alpha + dt * 1.2);
 
-    const triggerY = H * 0.52; // when event reaches ship position
+    if (ev.type === 'enemy') {
+      // Move diagonally: sweep toward ship position
+      // vx controls horizontal direction, vy tracks vertical descent
+      const speed = TS.scrollSpeed * 1.1;
+      const dx = shipCX - ev.x;
+      const dy = shipCY - ev.y;
+      const dist = Math.max(1, Math.sqrt(dx*dx + dy*dy));
+      ev.x += (dx / dist) * speed * dt * 60;
+      ev.y += (dy / dist) * speed * dt * 60;
 
-    if (!ev.triggered && ev.y >= triggerY) {
-      ev.triggered = true;
-      tsResolveEvent(ev);
-      return false; // remove from array
+      // Trigger when close enough to ship
+      if (!ev.triggered && Math.abs(ev.x - shipCX) < 55 && Math.abs(ev.y - shipCY) < 55) {
+        ev.triggered = true;
+        tsResolveEvent(ev);
+        return false;
+      }
+    } else {
+      // Waypoints and roam ships descend straight down from top as before
+      ev.y += TS.scrollSpeed * 0.9 * dt;
+      if (!ev.triggered && ev.y >= H * 0.52) {
+        ev.triggered = true;
+        tsResolveEvent(ev);
+        return false;
+      }
     }
 
-    if (!ev.triggered) TS.skipBlocked = true; // block skip while event approaching
+    if (!ev.triggered) TS.skipBlocked = true;
 
-    // Draw the event object
     ctx.save();
     ctx.globalAlpha = ev.alpha;
     tsDrawEvent(ctx, ev, W, H);
@@ -7718,28 +7736,30 @@ function tsFallbackDraw(ctx, key, w, h, glowCol) {
 // ── Draw incoming event (enemy ship or waypoint indicator) ────────────────
 function tsDrawEvent(ctx, ev, W, H) {
   if (ev.type === 'enemy') {
+    const shipCX = W / 2;
+    const shipCY = H * 0.55;
+    // Angle toward ship centre
+    const angle = Math.atan2(shipCY - ev.y, shipCX - ev.x);
     ctx.save();
-    ctx.translate(W / 2 + (ev._jitterX || 0), ev.y);
-    // Rotate to face DOWN — ships drawn nose-right, so +90° points nose downward toward player
-    ctx.rotate(Math.PI / 2);
-    const eKey = ev.key;
+    ctx.translate(ev.x, ev.y);
+    // Ships are drawn nose-right so rotate by angle directly
+    ctx.rotate(angle);
     const [ew, eh] = [80, 50];
     ctx.shadowColor = '#ff4422'; ctx.shadowBlur = 20;
-    drawShipImg(eKey, ctx, 0, 0, ew, eh, false, () => drawCorsairSloop(ctx, 0, 0, 22, false));
+    drawShipImg(ev.key, ctx, 0, 0, ew, eh, false, () => drawCorsairSloop(ctx, 0, 0, 22, false));
     ctx.shadowBlur = 0;
     ctx.restore();
-    // Label drawn AFTER restore so it's in screen space (not rotated)
+    // Label in screen space
     ctx.save();
-    ctx.translate(W / 2 + (ev._jitterX || 0), ev.y + 55);
+    ctx.translate(ev.x, ev.y - 42);
     ctx.fillStyle = '#ff4422cc';
     ctx.font = `bold 11px 'Cinzel', serif`;
     ctx.textAlign = 'center';
     ctx.fillText(ev.label || '⚠ ENEMY SIGHTED', 0, 0);
     ctx.restore();
   } else if (ev.type === 'waypoint') {
-    // Waypoint icon descending from top
     ctx.save();
-    ctx.translate(W / 2, ev.y);
+    ctx.translate(ev.x ?? W / 2, ev.y);
     const pulse = 1 + 0.12 * Math.sin(TS.t * 3);
     ctx.scale(pulse, pulse);
     // Glow halo
@@ -7757,17 +7777,18 @@ function tsDrawEvent(ctx, ev, W, H) {
     ctx.fillText(ev.label, 0, 38);
     ctx.restore();
   } else if (ev.type === 'roam') {
-    // Friendly faction ship descending — drawn in faction color
+    // Friendly faction ship descends from ahead — pulls alongside to hail
+    const rx = ev.x ?? W / 2;
     ctx.save();
-    ctx.translate(W / 2 + (ev._jitterX || 0), ev.y);
-    ctx.rotate(Math.PI / 2);
+    ctx.translate(rx, ev.y);
+    ctx.rotate(Math.PI / 2); // nose down toward player
     const [ew, eh] = [75, 48];
     ctx.shadowColor = ev.col || '#88ccff'; ctx.shadowBlur = 16;
     drawShipImg(ev.key, ctx, 0, 0, ew, eh, false, () => drawCorsairSloop(ctx, 0, 0, 20, false));
     ctx.shadowBlur = 0;
     ctx.restore();
     ctx.save();
-    ctx.translate(W / 2 + (ev._jitterX || 0), ev.y + 52);
+    ctx.translate(rx, ev.y + 52);
     ctx.fillStyle = (ev.col || '#88ccff') + 'cc';
     ctx.font = `bold 11px 'Cinzel', serif`;
     ctx.textAlign = 'center';
@@ -7876,11 +7897,18 @@ function tsClose() {
 
 // Queue an enemy approach event (called from travelTick intercept)
 function tsQueueEnemy(enemyKey) {
+  // Pick a random side to ambush from — left or right edge
+  const fromLeft = Math.random() < 0.5;
   const ev = {
     type: 'enemy', key: enemyKey,
     label: ENM[enemyKey]?.name || 'Unknown',
-    y: -90, alpha: 0, triggered: false,
-    _jitterX: (Math.random() - 0.5) * 60,
+    // Start off-screen to one side, vertically near the ship
+    x:  fromLeft ? -120 : W + 120,
+    y:  H * 0.18 + Math.random() * H * 0.15, // appear in upper portion
+    vx: fromLeft ? 1 : -1, // direction of travel: +1 = rightward (left ambush), -1 = leftward
+    alpha: 0,
+    triggered: false,
+    _fromLeft: fromLeft,
   };
   TS.events.push(ev);
   const alertEl = document.getElementById('ts-alert');
@@ -7896,6 +7924,7 @@ function tsQueueRoam(factionId) {
     type: 'roam', key: shipKey, factionId,
     label: (fac?.n || 'Vessel') + ' HAILS',
     col: fac?.col || '#88ccff',
+    x: W / 2 + (Math.random() - 0.5) * 60,
     y: -90, alpha: 0, triggered: false,
   });
   const alertEl = document.getElementById('ts-alert');
@@ -7908,6 +7937,7 @@ function tsQueueWaypoint(ws) {
   TS.events.push({
     type: 'waypoint', key: ws.id,
     label: ws.n, icon: ws.ico, ws,
+    x: W / 2,
     y: -90, alpha: 0, triggered: false,
   });
   const alertEl = document.getElementById('ts-alert');
