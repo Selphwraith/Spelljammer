@@ -918,10 +918,9 @@ body {
   background:linear-gradient(180deg,rgba(2,0,16,0.85) 0%,transparent 100%);
 }
 @media (max-width:700px) {
-  #ls-hud { padding:6px 120px 6px 8px; flex-wrap:wrap; gap:2px; }
+  #ls-hud { padding:6px 14px; flex-wrap:wrap; gap:2px; }
   #ls-hud-title { font-size:0.625em; }
   #ls-hud-stats { font-size:0.563em; gap:8px; }
-  #ls-close { font-size:0.625em; padding:5px 8px; top:6px; right:6px; }
 }
 #ls-hud-title {
   font-family:'Cinzel',serif; font-size:0.875em; color:#4488ff;
@@ -968,6 +967,16 @@ body {
   font-family:'Cinzel',serif; letter-spacing:1px; z-index:20;
 }
 #ls-close:hover { border-color:#ffaa55; color:#ffcc88; background:rgba(70,28,8,0.9); }
+@media (max-width:700px) {
+  #ls-close {
+    top: auto;
+    bottom: 8px;
+    right: 50%;
+    transform: translateX(50%);
+    font-size:0.625em;
+    padding: 6px 18px;
+  }
+}
 
 /* ── NPC interaction panel (floats over canvas when near NPC) ── */
 #ls-interact-panel {
