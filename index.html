@@ -6761,12 +6761,12 @@ function portTab(tab,el){
 
 function buildCargoSell(){
   const grid=document.getElementById('shopgrid'); grid.innerHTML='';
-  const sellable=G.ship.inv.filter(i=>['trade','component','usable','equip','artifact'].includes(i.type));
+  const sellable=G.ship.inv.filter(i=>['trade','component','usable','equip','artifact','weapon'].includes(i.type));
   if(sellable.length===0){
     const d=document.createElement('div'); d.style.cssText='color:#5544aa;font-style:italic;font-size:13px;grid-column:1/-1;text-align:center;padding:20px';
     d.textContent='No sellable items in hold.'; grid.appendChild(d); return;
   }
-  // Sell All button — trade/component/artifact only (never auto-sells potions or equip)
+  // Sell All button — trade/component/artifact only (never auto-sells potions, equip, or weapons)
   const bulkSellable=G.ship.inv.filter(i=>i.type==='trade'||i.type==='component'||i.type==='artifact');
   if(bulkSellable.length){
     const all=document.createElement('div'); all.className='sitem'; all.style.borderColor='#44ee8866';
@@ -6775,8 +6775,10 @@ function buildCargoSell(){
     all.onclick=()=>sellAllTrade(); grid.appendChild(all);
   }
   sellable.forEach(item=>{
+    const isWpn = item.type==='weapon';
     const d=document.createElement('div'); d.className='sitem';
-    d.innerHTML=`<div style="font-size:18px">${item.ico}</div><div class="siname">${item.n}</div><div class="sicost">⚜ ${item.val}</div>`;
+    if(isWpn) d.style.borderColor='#aa882255';
+    d.innerHTML=`<div style="font-size:18px">${item.ico}</div><div class="siname"${isWpn?' style="color:#ffcc88"':''}>${item.n}${isWpn?' <span style="font-size:9px;color:#665533;">[weapon]</span>':''}</div><div class="sicost">⚜ ${item.val}</div>`;
     d.onclick=()=>{ G.ship.gold+=item.val; G.ship.inv=G.ship.inv.filter(i=>i.uid!==item.uid); addLog(`Sold ${item.n} for ${item.val} gold.`,'gd'); updateUI(); buildShop(); document.getElementById('pt-gold').textContent=G.ship.gold; };
     grid.appendChild(d);
   });
@@ -11890,14 +11892,34 @@ function claimLoot(){
 // ╔══════════════════════════════════════════════════════╗
 // ║  INVENTORY                                           ║
 // ╚══════════════════════════════════════════════════════╝
+// Sidebar overlays that mutually close each other when any one opens
+const SIDEBAR_OVERLAYS = ['inv','wpn','shp','qlog','journal','armory'];
+
+function _closeSidebarOverlays() {
+  SIDEBAR_OVERLAYS.forEach(id => {
+    const el = document.getElementById('ov-'+id);
+    if(el) el.classList.remove('on');
+  });
+  _kbNavResetOnClose();
+}
+
 function openOverlay(which){
-  if(which==='inv'){ buildInvGrid(); document.getElementById('ov-inv').classList.add('on'); }
-  if(which==='wpn'){ buildWpnOverlay(); document.getElementById('ov-wpn').classList.add('on'); }
-  if(which==='shp'){ buildShipOverlay(); document.getElementById('ov-shp').classList.add('on'); }
-  if(which==='qlog'){ buildQuestLog('active'); document.getElementById('ov-qlog').classList.add('on'); }
-  if(which==='journal'){ buildJournal(); document.getElementById('ov-journal').classList.add('on'); }
+  _closeSidebarOverlays();
+  if(which==='inv'){     buildInvGrid();       document.getElementById('ov-inv').classList.add('on'); }
+  if(which==='wpn'){     buildWpnOverlay();    document.getElementById('ov-wpn').classList.add('on'); }
+  if(which==='shp'){     buildShipOverlay();   document.getElementById('ov-shp').classList.add('on'); }
+  if(which==='qlog'){    buildQuestLog('active'); document.getElementById('ov-qlog').classList.add('on'); }
+  if(which==='journal'){ buildJournal();       document.getElementById('ov-journal').classList.add('on'); }
 }
 function closeOverlay(which){ document.getElementById('ov-'+which).classList.remove('on'); _kbNavResetOnClose(); }
+
+function openArmory() {
+  _closeSidebarOverlays();
+  buildArmoryGrid();
+  document.getElementById('ov-armory').classList.add('on');
+  const ag = document.getElementById('armory-gold');
+  if(ag) ag.textContent = G.ship.gold;
+}
 
 function setInvFilter(f,el){
   G.invFilter=f; G.selItem=null;
@@ -14428,7 +14450,7 @@ function _lsBuildCargoGrid() {
   grid.innerHTML = '';
 
   const sellable = G.ship.inv.filter(i =>
-    ['trade','component','artifact'].includes(i.type)
+    ['trade','component','artifact','weapon'].includes(i.type)
   );
 
   if(sellable.length === 0) {
@@ -14439,20 +14461,23 @@ function _lsBuildCargoGrid() {
     return;
   }
 
-  // Sell All button
-  const total = sellable.reduce((a,i) => a + (i.val||0), 0);
-  const allRow = document.createElement('div');
-  allRow.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:5px 8px;border-radius:4px;background:rgba(10,30,10,0.6);border:1px solid #33664433;';
-  allRow.innerHTML = `<span style="font-size:0.625em;color:#44ee88;">💰 Sell All (${sellable.length} items)</span>
-    <button class="btn" style="font-size:0.563em;padding:3px 10px;border-color:#33664455;color:#44ee88;">⚜ ${total}g</button>`;
-  allRow.querySelector('button').onclick = () => {
-    G.ship.inv = G.ship.inv.filter(i => !['trade','component','artifact'].includes(i.type));
-    G.ship.gold += total;
-    snd('purchase', 0.7);
-    addLog(`Sold all cargo at Selûne's Tear for ${total} gold.`, 'gd');
-    updateUI(); _lsRefreshDock();
-  };
-  grid.appendChild(allRow);
+  // Sell All button — trade/component/artifact only (weapons require individual sale)
+  const bulkSellable = G.ship.inv.filter(i => ['trade','component','artifact'].includes(i.type));
+  if(bulkSellable.length) {
+    const total = bulkSellable.reduce((a,i) => a + (i.val||0), 0);
+    const allRow = document.createElement('div');
+    allRow.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:5px 8px;border-radius:4px;background:rgba(10,30,10,0.6);border:1px solid #33664433;';
+    allRow.innerHTML = `<span style="font-size:0.625em;color:#44ee88;">💰 Sell All Cargo (${bulkSellable.length} items)</span>
+      <button class="btn" style="font-size:0.563em;padding:3px 10px;border-color:#33664455;color:#44ee88;">⚜ ${total}g</button>`;
+    allRow.querySelector('button').onclick = () => {
+      G.ship.inv = G.ship.inv.filter(i => !['trade','component','artifact'].includes(i.type));
+      G.ship.gold += total;
+      snd('purchase', 0.7);
+      addLog(`Sold all cargo at Selûne's Tear for ${total} gold.`, 'gd');
+      updateUI(); _lsRefreshDock();
+    };
+    grid.appendChild(allRow);
+  }
 
   // Individual items
   sellable.forEach(item => {
@@ -15582,13 +15607,6 @@ function _mkWpnInvItem(wk) {
 }
 
 // ── Armory — equip weapons from cargo hold ──────────────────────────────────
-function openArmory() {
-  buildArmoryGrid();
-  document.getElementById('ov-armory').classList.add('on');
-  const ag = document.getElementById('armory-gold');
-  if(ag) ag.textContent = G.ship.gold;
-}
-
 function buildArmoryGrid() {
   const grid  = document.getElementById('armory-inv-grid');
   const empty = document.getElementById('armory-empty');
