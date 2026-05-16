@@ -1675,6 +1675,7 @@ body {
     <div class="ptitle">⊞ Overlays</div>
     <button class="ovl-btn" onclick="openOverlay('inv')">📦 Cargo Manifest</button>
     <button class="ovl-btn" onclick="openOverlay('wpn')">⚔ Weapon Loadout</button>
+    <button class="ovl-btn" id="sidebar-armory-btn" onclick="openArmory()" style="border-color:#aa882255;color:#ffcc88;">🛠 Armory</button>
     <button class="ovl-btn" onclick="openOverlay('shp')">🚀 Ship Details</button>
     <button class="ovl-btn" onclick="openOverlay('qlog')">📜 Quest Log</button>
     <button class="ovl-btn" id="sidebar-lq-btn" onclick="openLocalQuest()" style="display:none;border-color:#44886655;color:#44ffcc;">🌌 Local Quests</button>
@@ -1831,6 +1832,7 @@ body {
       <button class="fbtn" onclick="setInvFilter('usable',this)">Usable</button>
       <button class="fbtn" onclick="setInvFilter('equip',this)">Equip</button>
       <button class="fbtn" onclick="setInvFilter('artifact',this)">Artifacts</button>
+      <button class="fbtn" onclick="setInvFilter('weapon',this)" style="border-color:#aa882255;color:#ffcc88;">⚔ Weapons</button>
     </div>
     <div class="inv-body">
       <div class="inv-grid-wrap">
@@ -2204,6 +2206,21 @@ body {
     </div>
   </div>
 
+  <!-- ARMORY — Equip weapons from inventory without buying -->
+  <div class="ovlay" id="ov-armory" style="z-index:55;">
+    <button class="ovl-close-btn" onclick="closeOverlay('armory')">✕ Close</button>
+    <div style="font-family:'Cinzel',serif;font-size:0.875em;color:#ffcc88;letter-spacing:2px;margin-bottom:4px;">🛠 ARMORY</div>
+    <div style="font-size:0.625em;color:#665533;margin-bottom:10px;">Weapons in your cargo hold — install into any slot at no cost.</div>
+    <div class="trade-gold-bar" style="margin-bottom:10px;">
+      <span class="tgb-icon">⚜</span>
+      <span class="tgb-label">Treasury</span>
+      <span class="tgb-amount" id="armory-gold">0</span>
+      <span class="tgb-label">gold</span>
+    </div>
+    <div id="armory-inv-grid" style="display:flex;flex-direction:column;gap:7px;width:100%;max-width:480px;overflow-y:auto;max-height:55vh;"></div>
+    <div id="armory-empty" style="font-size:0.688em;color:#443344;font-style:italic;text-align:center;padding:20px 0;display:none;">No weapons in cargo hold.<br><span style="font-size:0.85em;color:#332233;">Defeat enemies for a chance at weapon drops, or buy at a port.</span></div>
+  </div>
+
   <!-- MSG -->
   <div id="msgbox"><div id="msgtitle"></div><div id="msgbody"></div><div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;"><button class="btn" id="msgbtn" onclick="dismissMsg()">Continue</button><button class="btn" id="msgbtn2" onclick="dismissMsg2()" style="display:none;border-color:#33664455;color:#44bb88;"></button></div></div>
 
@@ -2363,11 +2380,11 @@ const UPGRADE_DATA = {
 const SPHERE_SHOPS = {
   // ── Tier 1 ────────────────────────────────────────────────────────────
   refuge:  { label:'IEN Station Armory',         flavor:'Imperial Elven Navy standard issue. One gun and pray.',
-             wpns:[], upgs:['plating','engine','quarters','recycler'], drydock:true },
+             wpns:['lcannon'], upgs:['plating','engine','quarters','recycler'], drydock:true },
   realm:   { label:'Realmspace Trading Post',    flavor:"First real market you've seen in weeks. Feels like civilization.",
              wpns:['hball','lcannon'], upgs:['cdreduce'], drydock:true },
   grey:    { label:"Oerth's Dwarven Forge",      flavor:"Dwarven master-craft. They don't sell junk and they don't haggle.",
-             wpns:['rball','gfire'], upgs:['chainreact'] },
+             wpns:['lcannon','rball','gfire'], upgs:['chainreact'] },
   // ── Tier 2 ────────────────────────────────────────────────────────────
   krynn:   { label:'Krynnspace Starport',        flavor:'Dragonlance-era elven precision. The kind of weapons that win wars.',
              wpns:['starlance','lightning'], upgs:['firectrl'], drydock:true },
@@ -6652,6 +6669,10 @@ function arrive(id){
     checkQuestTurnin(id);
     setTag('Navigation'); updateUI();
     ensureLqState();
+    // Engine field test — realm counts as a valid away sphere
+    if(G.localQuests['refuge_q2'] === 'active') {
+      G.localQuests['refuge_q2_pending'] = true;
+    }
     setTimeout(() => openLocalSpace(), 400);
     _writeAutoSave();
     return;
@@ -6952,21 +6973,48 @@ function wpnPickerConfirm() {
   const item = _wpnPickerItem;
   const slotIdx = _wpnPickerSlot;
   const s = G.ship;
+  const isFree = (item.cost === 0) || (_wpnPickerFrom === 'armory');
 
-  if (s.gold < item.cost) { addLog('Not enough gold.', 'dmg'); return; }
+  if (!isFree && s.gold < item.cost) { addLog('Not enough gold.', 'dmg'); return; }
 
-  // Remove old weapon from that slot (refund hull penalty if it had one)
+  // If buying and all slots full — send to inventory instead
+  const slots = SHIP_TYPES[s.type].slots;
+  const allFull = s.wpns.filter(Boolean).length >= slots && slotIdx >= slots;
+  if(allFull) {
+    if(!isFree) s.gold -= item.cost;
+    const newW = WPN[item.wk];
+    s.inv.push(_mkWpnInvItem(item.wk));
+    snd('purchase', 0.7);
+    addLog(`⚔ ${newW.n} — no empty slots, stored in cargo hold.`, 'gd');
+    updateUI(); buildShop();
+    wpnPickerCancel(); return;
+  }
+
+  // Remove old weapon from that slot — send to inventory
   const oldKey = s.wpns[slotIdx];
-  if (oldKey) {
+  if (oldKey && oldKey !== 'ballista') {  // don't stash the starter ballista
     const oldW = WPN[oldKey];
     if (oldW && oldW.hullPenalty > 0) {
       s.maxHull += oldW.hullPenalty;
       s.hull = Math.min(s.hull, s.maxHull);
     }
+    // Remove from armory inv if it came from there
+    if(_wpnPickerFrom === 'armory' && item._invUid) {
+      s.inv = s.inv.filter(i => i.uid !== item._invUid);
+    }
+    // Stash old weapon in cargo hold
+    s.inv.push(_mkWpnInvItem(oldKey));
+    addLog(`⚔ ${WPN[oldKey]?.n} moved to cargo hold.`, '');
+  } else if (oldKey === 'ballista') {
+    // Starter ballista — just remove, don't stash
+    if(oldKey){ const oldW=WPN[oldKey]; if(oldW?.hullPenalty>0){s.maxHull+=oldW.hullPenalty;s.hull=Math.min(s.hull,s.maxHull);} }
+    if(_wpnPickerFrom === 'armory' && item._invUid) s.inv = s.inv.filter(i => i.uid !== item._invUid);
+  } else {
+    if(_wpnPickerFrom === 'armory' && item._invUid) s.inv = s.inv.filter(i => i.uid !== item._invUid);
   }
 
-  // Charge gold
-  s.gold -= item.cost;
+  // Charge gold (not for armory equip)
+  if (!isFree) s.gold -= item.cost;
 
   // Ensure wpns array has entries up to this slot
   while (s.wpns.length <= slotIdx) s.wpns.push(null);
@@ -6983,27 +7031,18 @@ function wpnPickerConfirm() {
   }
 
   snd('ship_upgrade', 0.9);
-  if (oldKey) {
-    addLog(`⚔ ${newW.n} installed in slot ${slotIdx + 1} — replaces ${WPN[oldKey]?.n || oldKey}.`, 'gd');
-  } else {
-    addLog(`⚔ ${newW.n} installed in slot ${slotIdx + 1}.`, 'gd');
-  }
-
-  // Apply cd bonus if player has Rapid Reload System
-  if (s.cdBonus && s.cdBonus > 0) {
-    // cdBonus is applied at combat time per weapon; no action needed here
-  }
+  const costStr = isFree ? '(free from cargo)' : `⚜ ${item.cost}`;
+  addLog(`⚔ ${newW.n} installed in slot ${slotIdx + 1} ${costStr}.`, 'gd');
 
   updateUI();
   buildShop();
   if (document.getElementById('pt-gold')) document.getElementById('pt-gold').textContent = s.gold;
-  // Refresh LQ shop if we came from there
-  if (_wpnPickerFrom === 'lq' && typeof showLqShop === 'function' && LQ?.selectedNpc) {
-    showLqShop(LQ.selectedNpc);
-  }
+  if (_wpnPickerFrom === 'lq' && typeof showLqShop === 'function' && LQ?.selectedNpc) showLqShop(LQ.selectedNpc);
   if (document.getElementById('lq-qm-gold')) document.getElementById('lq-qm-gold').textContent = s.gold;
 
   wpnPickerCancel();
+  // Refresh armory if open
+  if(document.getElementById('ov-armory')?.classList.contains('on')) buildArmoryGrid();
 }
 
 function _wpnPickerSelectSlot(idx) {
@@ -11708,9 +11747,39 @@ function endCbt(won){
 // ╔══════════════════════════════════════════════════════╗
 // ║  LOOT                                                ║
 // ╚══════════════════════════════════════════════════════╝
+// Weapon drop chances per enemy key — 1%–5%
+const WPN_DROPS = {
+  goblin_cutter:      { wk:'ballista',  chance:0.01 },
+  goblin_rocketer:    { wk:'ballista',  chance:0.01 },
+  goblin_shaman_boat: { wk:'ballista',  chance:0.01 },
+  scro_patrol:        { wk:'hball',     chance:0.02 },
+  scro_enforcer:      { wk:'hball',     chance:0.02 },
+  scro_slaver:        { wk:'hball',     chance:0.03 },
+  corsair:            { wk:'hball',     chance:0.02 },
+  plunderer:          { wk:'lcannon',   chance:0.02 },
+  blackfleet:         { wk:'fcannon',   chance:0.03 },
+  nautiloid:          { wk:'lcannon',   chance:0.03 },
+  neogi:              { wk:'gfire',     chance:0.02 },
+  beholder:           { wk:'rball',     chance:0.03 },
+  leviathan:          { wk:'starlance', chance:0.04 },
+  githyanki:          { wk:'lightning', chance:0.03 },
+  thrikreen:          { wk:'rball',     chance:0.03 },
+  vodoniPatrol:       { wk:'fcannon',   chance:0.04 },
+  scroBattle:         { wk:'fcannon',   chance:0.04 },
+  frStalker:          { wk:'nether',    chance:0.04 },
+  frHorde:            { wk:'nether',    chance:0.03 },
+};
+
 function genLoot(key){
   const table=LOOT[key]||[];
-  return table.filter(e=>Math.random()<e.c).map(e=>({...ITEMS[e.id],uid:uid()}));
+  const items = table.filter(e=>Math.random()<e.c).map(e=>({...ITEMS[e.id],uid:uid()}));
+  // Weapon drop chance
+  const drop = WPN_DROPS[key];
+  if(drop && Math.random() < drop.chance) {
+    const wpnItem = _mkWpnInvItem(drop.wk);
+    if(wpnItem) items.push(wpnItem);
+  }
+  return items;
 }
 
 function showLootOverlay(key, gold, items){
@@ -11881,6 +11950,26 @@ function selectInvItem(uid){
     if(G.phase!=='port')sb.title='Must be docked at a port to sell';
     sb.onclick=()=>{ if(G.phase!=='port'){showMsg('Cannot Sell','Dock at a port to sell cargo.');return;} G.ship.gold+=item.val; G.ship.inv=G.ship.inv.filter(i=>i.uid!==uid); addLog(`Sold ${item.n} for ${item.val} gold.`,'gd'); updateUI(); buildInvGrid(); if(G.phase==='port'){document.getElementById('pt-gold').textContent=G.ship.gold;buildShop();} };
     acts.appendChild(sb);
+  }
+  if(item.type==='weapon' && item.wk) {
+    // Equip from inventory — free, opens armory slot picker
+    const eb=document.createElement('button'); eb.className='btn sm';
+    eb.style.cssText='border-color:#aa882255;color:#ffcc88;';
+    eb.textContent='🛠 Equip Weapon';
+    eb.onclick=()=>{ openArmoryEquip(item); };
+    acts.appendChild(eb);
+    // Sell at half price — allowed at port or in local space dock
+    const canSellWpn = G.phase==='port' || document.getElementById('ls-dock-panel')?.classList.contains('on');
+    const swb=document.createElement('button'); swb.className='btn sm'; swb.textContent=`💰 Sell ⚜${item.val}`;
+    swb.disabled=!canSellWpn;
+    if(!canSellWpn)swb.title='Dock at a port or station to sell';
+    swb.onclick=()=>{
+      if(!canSellWpn){showMsg('Cannot Sell','Dock at a port or station to sell weapons.');return;}
+      G.ship.gold+=item.val; G.ship.inv=G.ship.inv.filter(i=>i.uid!==uid);
+      addLog(`Sold ${item.n} for ${item.val} gold (salvage price).`,'gd');
+      updateUI(); buildInvGrid();
+    };
+    acts.appendChild(swb);
   }
 }
 
@@ -13430,7 +13519,7 @@ function _applyLoad(save) {
     if (G.animId) cancelAnimationFrame(G.animId);
     _stopLoop();
     // Close all overlays including local space
-    ['ov-cbt-inv','ov-travel-seq','ov-wpnpicker','ov-combat','ov-port','ov-waypoint','ov-loot','ov-inv','ov-wpn','ov-shp','ov-qlog','ov-journal','ov-dockmaster','ov-localquest','ov-localspace','ov-faction-rep','scr-defeat','scr-win','scr-farwin','tvlbar','msgbox','save-overlay'].forEach(id=>{
+    ['ov-cbt-inv','ov-travel-seq','ov-wpnpicker','ov-combat','ov-port','ov-waypoint','ov-loot','ov-inv','ov-wpn','ov-shp','ov-qlog','ov-journal','ov-dockmaster','ov-localquest','ov-localspace','ov-armory','ov-faction-rep','scr-defeat','scr-win','scr-farwin','tvlbar','msgbox','save-overlay'].forEach(id=>{
       const el=document.getElementById(id); if(el)el.classList.remove('on','active');
     });
     // Reset local space engine state — position/world restored below after state is loaded
@@ -13800,6 +13889,7 @@ const LOCAL_QUEST_DATA = {
         { type:'usable', ico:'🩹', name:"Alchemist's Mend", desc:'Use in combat: Restores 20 hull + 1 crew', cost:80, itemKey:'almend', qty:4 },
         { type:'upgrade', ico:'🛡', name:'Ablative Hull Plating', desc:'+50 max hull points (IEN grade)', cost:110, act:'upg', upg:'plating', qty:1 },
         { type:'upgrade', ico:'⚡', name:'Speed Engine Mk.II', desc:'+2 spelljamming speed', cost:85, act:'upg', upg:'engine', qty:1 },
+        { type:'wpn', ico:'💥', name:'Light Cannon', desc:'3d8 · 3-round reload · first cannon tier — more damage than ballista (IEN surplus)', cost:165, wk:'lcannon', qty:1 },
         { type:'wpn', ico:'⚔', name:'Heavy Ballista Mk.II', desc:'Improved ballista — higher damage per shot (IEN issue)', cost:95, wk:'hball', qty:2 },
       ]
     }
@@ -15116,6 +15206,28 @@ function _lsRender(cx, W, H, dt) {
         cx.beginPath(); cx.moveTo(3,0);  cx.lineTo(11,2);  cx.stroke();
       });
       cx.shadowBlur=0; cx.restore();
+
+      // Quest indicator — exclamation mark above the ship
+      const qs = _lsNpcQuestState(p);
+      if(qs) {
+        const qCol   = qs === 'turnin' ? '#ffaa22' : '#ffff44';
+        const qBg    = qs === 'turnin' ? 'rgba(60,30,0,0.88)' : 'rgba(40,40,0,0.88)';
+        const qPulse = 0.75 + 0.25*Math.sin(LS.t * (qs==='turnin'?3.5:2));
+        cx.save();
+        cx.globalAlpha = qPulse;
+        // Bubble background
+        cx.fillStyle = qBg;
+        cx.strokeStyle = qCol;
+        cx.lineWidth = 1.5;
+        cx.beginPath(); cx.arc(p.x, p.y-32, 10, 0, Math.PI*2); cx.fill(); cx.stroke();
+        // Exclamation mark
+        cx.font = 'bold 13px Arial'; cx.textAlign='center'; cx.textBaseline='middle';
+        cx.fillStyle = qCol;
+        cx.fillText('!', p.x, p.y-32);
+        cx.textBaseline='alphabetic';
+        cx.globalAlpha = 1;
+        cx.restore();
+      }
     } else if(p.type==='dock') {
       // Station — draw as a distinct structure (cross/ring shape)
       cx.save(); cx.translate(p.x, p.y); cx.rotate(LS.t * 0.08);
@@ -15315,8 +15427,22 @@ function _lsRenderMinimap() {
 
   // POIs
   LS.pois.filter(p=>p.type!=='hazard_zone'&&p.type!=='patrol_zone').forEach(p=>{
+    const mx2 = ox+p.x*scale;
+    const my2 = oy+p.y*scale;
     mx.fillStyle=p.col;
-    mx.beginPath(); mx.arc(ox+p.x*scale,oy+p.y*scale,3,0,Math.PI*2); mx.fill();
+    mx.beginPath(); mx.arc(mx2,my2,3,0,Math.PI*2); mx.fill();
+    // Quest indicator on minimap
+    const qs = _lsNpcQuestState(p);
+    if(qs) {
+      const qCol = qs==='turnin' ? '#ffaa22' : '#ffff44';
+      const qPulse = 0.6+0.4*Math.sin(LS.t*(qs==='turnin'?3.5:2));
+      mx.save();
+      mx.globalAlpha = qPulse;
+      mx.fillStyle = qCol;
+      mx.font = 'bold 7px Arial'; mx.textAlign='center'; mx.textBaseline='middle';
+      mx.fillText('!', mx2+5, my2-5);
+      mx.restore();
+    }
   });
 
   // Enemies
@@ -15424,6 +15550,136 @@ function _lsCheckReturnAfterCombat() {
     _lsPendingFragment = null;
     setTimeout(() => openLocalSpace(), 600);
   }
+}
+
+// ── Quest indicator helper — returns 'available', 'turnin', or null ───────
+function _lsNpcQuestState(poi) {
+  if(poi.type !== 'npc') return null;
+  const data = LOCAL_QUEST_DATA[G.ship.loc || 'realm'];
+  if(!data) return null;
+  const npc = data.npcs?.find(n => n.id === poi.npcId);
+  if(!npc?.quests?.length) return null;
+  for(const q of npc.quests) {
+    const status = G.localQuests?.[q.id] || 'available';
+    if(status === 'rewarded') continue;
+    if(status === 'available') return 'available';
+    if(status === 'active' && q.check && q.check(G)) return 'turnin';
+  }
+  return null;
+}
+
+// ── Weapon inventory item factory ──────────────────────────────────────────
+function _mkWpnInvItem(wk) {
+  const w = WPN[wk];
+  if(!w) return null;
+  return {
+    uid:  uid(),
+    type: 'weapon',
+    wk,
+    n:    w.n,
+    ico:  '⚔',
+    desc: w.info + (w.farRealm ? ' ⚠ Far Realm weapon.' : ''),
+    val:  Math.max(5, Math.floor((w.cost || 0) / 2)),
+  };
+}
+
+// ── Armory — equip weapons from cargo hold ──────────────────────────────────
+function openArmory() {
+  buildArmoryGrid();
+  document.getElementById('ov-armory').classList.add('on');
+  const ag = document.getElementById('armory-gold');
+  if(ag) ag.textContent = G.ship.gold;
+}
+
+function buildArmoryGrid() {
+  const grid  = document.getElementById('armory-inv-grid');
+  const empty = document.getElementById('armory-empty');
+  if(!grid) return;
+  grid.innerHTML = '';
+
+  const wpnItems = G.ship.inv.filter(i => i.type === 'weapon' && i.wk && WPN[i.wk]);
+  if(wpnItems.length === 0) {
+    grid.style.display = 'none';
+    if(empty) empty.style.display = 'block';
+    return;
+  }
+  grid.style.display = 'flex';
+  if(empty) empty.style.display = 'none';
+
+  const slots  = SHIP_TYPES[G.ship.type].slots;
+  const equipped = G.ship.wpns;
+
+  wpnItems.forEach(item => {
+    const w = WPN[item.wk];
+    const avgDmg = ((w.d[0]+1)/2 * w.d[1]).toFixed(1);
+    const alreadyEquipped = equipped.includes(item.wk);
+
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:5px;background:rgba(15,8,35,0.8);border:1px solid #44332255;';
+
+    // Info block
+    const info = document.createElement('div');
+    info.style.cssText = 'flex:1;min-width:0;';
+    info.innerHTML = `
+      <div style="font-family:'Cinzel',serif;font-size:0.688em;color:#ffcc88;">${w.n}</div>
+      <div style="font-size:0.563em;color:#665533;margin-top:2px;">${w.d[0]}d${w.d[1]} · avg ${avgDmg} · ${w.cd===0?'no reload':w.cd+'-rd reload'}</div>
+      <div style="font-size:0.5em;color:#443322;margin-top:1px;">${w.info}</div>
+      ${w.farRealm?'<div style="font-size:0.5em;color:#993333;margin-top:1px;">⚠ Far Realm weapon</div>':''}
+      <div style="font-size:0.5em;color:#554422;margin-top:2px;">Sell value: ⚜ ${item.val}g</div>`;
+    row.appendChild(info);
+
+    // Equip button
+    const btn = document.createElement('button');
+    btn.className = 'btn';
+    btn.style.cssText = 'font-size:0.625em;padding:5px 10px;border-color:#aa882255;color:#ffcc88;flex-shrink:0;';
+    btn.textContent = alreadyEquipped ? '✓ Equipped' : '🛠 Equip';
+    btn.disabled = alreadyEquipped;
+    if(!alreadyEquipped) {
+      btn.onclick = () => openArmoryEquip(item);
+    }
+    row.appendChild(btn);
+
+    // Sell button
+    const sbtn = document.createElement('button');
+    sbtn.className = 'btn';
+    sbtn.style.cssText = 'font-size:0.563em;padding:5px 8px;flex-shrink:0;';
+    sbtn.textContent = `⚜ ${item.val}g`;
+    sbtn.title = 'Sell (requires port or station dock)';
+    const canSell = G.phase==='port' || document.getElementById('ls-dock-panel')?.classList.contains('on');
+    sbtn.disabled = !canSell;
+    sbtn.onclick = () => {
+      if(!canSell){showMsg('Cannot Sell','Dock at a port or station to sell weapons.');return;}
+      G.ship.gold += item.val;
+      G.ship.inv = G.ship.inv.filter(i => i.uid !== item.uid);
+      addLog(`Sold ${item.n} for ${item.val} gold.`, 'gd');
+      updateUI(); buildArmoryGrid();
+    };
+    row.appendChild(sbtn);
+    grid.appendChild(row);
+  });
+}
+
+function openArmoryEquip(item) {
+  // Reuse wpnPickerOpen but mark as armory (free, from inventory)
+  _wpnPickerItem = { ...item, cost: 0, _invUid: item.uid };
+  _wpnPickerFrom = 'armory';
+  _wpnPickerSlot = null;
+
+  const w = WPN[item.wk];
+  document.getElementById('wpnp-new-name').textContent = w.n;
+  document.getElementById('wpnp-new-stats').innerHTML  = _wpnStatHtml(w);
+  document.getElementById('wpnp-new-special').textContent = _wpnSpecialText(w, item.wk);
+
+  const btn = document.getElementById('wpnpicker-confirm-btn');
+  btn.textContent = '🛠 Install (Free — from cargo)';
+  btn.style.display = 'none';
+
+  document.getElementById('wpnpicker-compare').classList.remove('on');
+  document.getElementById('ov-armory').classList.remove('on');
+  document.getElementById('ov-wpnpicker').classList.add('on');
+
+  _wpnPickerBuildSlots();
+  _wpnPickerDrawCanvas();
 }
 
 function openLocalQuest() {
