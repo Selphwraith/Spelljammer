@@ -2197,16 +2197,16 @@ body {
 
       <div class="ls-dock-section" style="margin-top:6px;">🔧 SERVICES</div>
       <div class="ls-dock-row">
-        <span class="ls-dock-label">Hull Repair (+40)</span>
-        <button class="btn ls-dock-btn" id="ls-svc-hull" onclick="lsDockService('hull')">⚜ 50g</button>
+        <span class="ls-dock-label">Hull Repair (full)</span>
+        <button class="btn ls-dock-btn" id="ls-svc-hull" onclick="lsDockService('hull')">⚜ —g</button>
       </div>
       <div class="ls-dock-row">
         <span class="ls-dock-label">Air Resupply (full)</span>
-        <button class="btn ls-dock-btn" id="ls-svc-air" onclick="lsDockService('air')">⚜ 40g</button>
+        <button class="btn ls-dock-btn" id="ls-svc-air" onclick="lsDockService('air')">⚜ —g</button>
       </div>
       <div class="ls-dock-row">
-        <span class="ls-dock-label">Crew Hire (+4)</span>
-        <button class="btn ls-dock-btn" id="ls-svc-crew" onclick="lsDockService('crew')">⚜ 60g</button>
+        <span class="ls-dock-label">Crew Hire (full)</span>
+        <button class="btn ls-dock-btn" id="ls-svc-crew" onclick="lsDockService('crew')">⚜ —g</button>
       </div>
 
       <div class="ls-dock-section" style="margin-top:6px;">🛒 IEF QUARTERMASTER</div>
@@ -14534,27 +14534,29 @@ function lsDockDepart() {
 
 // ── DOCK SERVICES ─────────────────────────────────────────────────────────
 function lsDockService(type) {
+  const s = G.ship;
   if(type === 'hull') {
-    if(G.ship.hull >= G.ship.maxHull) { _lsLog('Hull is already at full integrity.'); return; }
-    if(G.ship.gold < 50) { _lsLog('Not enough gold for hull repair (50g).'); return; }
-    G.ship.gold -= 50;
-    G.ship.hull = Math.min(G.ship.maxHull, G.ship.hull + 40);
+    if(s.hull >= s.maxHull) { _lsLog('Hull is already at full integrity.'); return; }
+    const cost = Math.max(5, Math.floor((s.maxHull - s.hull) * 0.5));
+    if(s.gold < cost) { _lsLog(`Not enough gold for hull repair (${cost}g).`); return; }
+    s.gold -= cost; s.hull = s.maxHull;
     snd('repair_hull', 0.7); snd('purchase', 0.6);
-    addLog('Hull patched at Fentheris Orbital\'s Tear (+40 HP).','gd');
+    addLog('Hull fully repaired at Fentheris Orbital.','gd');
   } else if(type === 'air') {
-    if(G.ship.air >= (G.ship.maxAir||12)) { _lsLog('Air supply already full.'); return; }
-    if(G.ship.gold < 40) { _lsLog('Not enough gold for air resupply (40g).'); return; }
-    G.ship.gold -= 40;
-    G.ship.air = G.ship.maxAir || 12;
+    const maxAir = s.maxAir || 12;
+    if(s.air >= maxAir) { _lsLog('Air supply already full.'); return; }
+    const cost = Math.max(3, Math.floor((maxAir - s.air) * 0.5));
+    if(s.gold < cost) { _lsLog(`Not enough gold for air resupply (${cost}g).`); return; }
+    s.gold -= cost; s.air = maxAir;
     snd('purchase', 0.6);
-    addLog('Air supply restored at Fentheris Orbital\'s Tear.','gd');
+    addLog('Air supply restored at Fentheris Orbital.','gd');
   } else if(type === 'crew') {
-    if(G.ship.crew >= G.ship.maxCrew) { _lsLog('Crew already at full complement.'); return; }
-    if(G.ship.gold < 60) { _lsLog('Not enough gold for crew hire (60g).'); return; }
-    G.ship.gold -= 60;
-    G.ship.crew = Math.min(G.ship.maxCrew, G.ship.crew + 4);
+    if(s.crew >= s.maxCrew) { _lsLog('Crew already at full complement.'); return; }
+    const cost = Math.max(5, (s.maxCrew - s.crew) * 3);
+    if(s.gold < cost) { _lsLog(`Not enough gold for crew hire (${cost}g).`); return; }
+    s.gold -= cost; s.crew = s.maxCrew;
     snd('purchase', 0.6);
-    addLog('+4 IEF crew assigned at Fentheris Orbital\'s Tear.','gd');
+    addLog('Crew fully replenished at Fentheris Orbital.','gd');
   }
   updateUI();
   _lsRefreshDock();
@@ -14562,17 +14564,23 @@ function lsDockService(type) {
 }
 
 function _lsRefreshDock() {
-  document.getElementById('ls-dock-hull').textContent = G.ship.hull+'/'+G.ship.maxHull;
-  document.getElementById('ls-dock-crew').textContent = G.ship.crew+'/'+G.ship.maxCrew;
-  document.getElementById('ls-dock-air').textContent  = (G.ship.air||0)+' days';
-  document.getElementById('ls-dock-gold').textContent = G.ship.gold;
-  // Disable buttons when already full / can't afford
+  const s = G.ship;
+  document.getElementById('ls-dock-hull').textContent = s.hull+'/'+s.maxHull;
+  document.getElementById('ls-dock-crew').textContent = s.crew+'/'+s.maxCrew;
+  document.getElementById('ls-dock-air').textContent  = (s.air||0)+' days';
+  document.getElementById('ls-dock-gold').textContent = s.gold;
+
+  // Dynamic prices matching port formula
+  const hullCost = s.hull >= s.maxHull ? 0 : Math.max(5, Math.floor((s.maxHull - s.hull) * 0.5));
+  const airCost  = s.air  >= (s.maxAir||12) ? 0 : Math.max(3, Math.floor(((s.maxAir||12) - s.air) * 0.5));
+  const crewCost = s.crew >= s.maxCrew ? 0 : Math.max(5, (s.maxCrew - s.crew) * 3);
+
   const hBtn = document.getElementById('ls-svc-hull');
   const aBtn = document.getElementById('ls-svc-air');
   const cBtn = document.getElementById('ls-svc-crew');
-  if(hBtn) hBtn.disabled = G.ship.hull >= G.ship.maxHull || G.ship.gold < 50;
-  if(aBtn) aBtn.disabled = G.ship.air  >= (G.ship.maxAir||12) || G.ship.gold < 40;
-  if(cBtn) cBtn.disabled = G.ship.crew >= G.ship.maxCrew || G.ship.gold < 60;
+  if(hBtn){ hBtn.textContent = `⚜ ${hullCost}g`; hBtn.disabled = s.hull >= s.maxHull || s.gold < hullCost; }
+  if(aBtn){ aBtn.textContent = `⚜ ${airCost}g`;  aBtn.disabled = s.air  >= (s.maxAir||12) || s.gold < airCost; }
+  if(cBtn){ cBtn.textContent = `⚜ ${crewCost}g`; cBtn.disabled = s.crew >= s.maxCrew || s.gold < crewCost; }
   // Build QM shop grid
   _lsBuildQmShop();
   // Build cargo sell grid
