@@ -6990,9 +6990,9 @@ function wpnPickerConfirm() {
     wpnPickerCancel(); return;
   }
 
-  // Remove old weapon from that slot — send to inventory
+  // Remove old weapon from slot — always send to inventory
   const oldKey = s.wpns[slotIdx];
-  if (oldKey && oldKey !== 'ballista') {  // don't stash the starter ballista
+  if (oldKey) {
     const oldW = WPN[oldKey];
     if (oldW && oldW.hullPenalty > 0) {
       s.maxHull += oldW.hullPenalty;
@@ -7003,12 +7003,11 @@ function wpnPickerConfirm() {
       s.inv = s.inv.filter(i => i.uid !== item._invUid);
     }
     // Stash old weapon in cargo hold
-    s.inv.push(_mkWpnInvItem(oldKey));
-    addLog(`⚔ ${WPN[oldKey]?.n} moved to cargo hold.`, '');
-  } else if (oldKey === 'ballista') {
-    // Starter ballista — just remove, don't stash
-    if(oldKey){ const oldW=WPN[oldKey]; if(oldW?.hullPenalty>0){s.maxHull+=oldW.hullPenalty;s.hull=Math.min(s.hull,s.maxHull);} }
-    if(_wpnPickerFrom === 'armory' && item._invUid) s.inv = s.inv.filter(i => i.uid !== item._invUid);
+    const stashed = _mkWpnInvItem(oldKey);
+    if(stashed) {
+      s.inv.push(stashed);
+      addLog(`⚔ ${WPN[oldKey]?.n} moved to cargo hold.`, '');
+    }
   } else {
     if(_wpnPickerFrom === 'armory' && item._invUid) s.inv = s.inv.filter(i => i.uid !== item._invUid);
   }
