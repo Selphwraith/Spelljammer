@@ -7882,19 +7882,13 @@ function tsRender(timestamp) {
         return false;
       }
     } else if (ev.type === 'waypoint') {
-      // Waypoints are fixed objects in space — they don't move.
-      // They start small and ahead, scale up as the ship "flies toward" them,
-      // and trigger when they've grown large enough to fill the approach zone.
       if (ev.x === null) {
         ev.x = W * (ev.xFrac ?? 0.5);
         ev.y = H * (ev.yFrac ?? -0.14);
-        ev._scale = 0.08;   // start tiny — far away
       }
-      // Scale up over time (ship is flying toward it)
-      ev._scale = Math.min(1, (ev._scale || 0.08) + dt * 0.28);
-      // Also drift the Y slowly downward as it "passes" into view
-      ev.y += 55 * dt;
-      if (!ev.triggered && ev._scale >= 0.92) {
+      // Simple scroll down the lane like any other object
+      ev.y += TS.scrollSpeed * 0.9 * dt;
+      if (!ev.triggered && ev.y >= H * 0.52) {
         ev.triggered = true;
         tsResolveEvent(ev);
         return false;
@@ -8235,40 +8229,29 @@ function tsDrawEvent(ctx, ev, W, H) {
     ctx.fillText(ev.label || '⚠ ENEMY SIGHTED', 0, 0);
     ctx.restore();
   } else if (ev.type === 'waypoint') {
-    const scale = ev._scale || 0.1;
     ctx.save();
-    ctx.translate(ev.x ?? W/2, ev.y ?? H*0.3);
-    ctx.scale(scale, scale);
+    ctx.translate(ev.x ?? W/2, ev.y ?? -90);
     const pulse = 1 + 0.10 * Math.sin(TS.t * 2.5);
     ctx.scale(pulse, pulse);
-    // Glow halo — bigger as it gets closer
-    const rg = ctx.createRadialGradient(0, 0, 0, 0, 0, 60);
-    rg.addColorStop(0, 'rgba(68,136,255,0.45)'); rg.addColorStop(1, 'transparent');
-    ctx.fillStyle = rg; ctx.beginPath(); ctx.arc(0, 0, 60, 0, Math.PI*2); ctx.fill();
-    // Station body
+    const rg = ctx.createRadialGradient(0, 0, 0, 0, 0, 48);
+    rg.addColorStop(0, 'rgba(68,136,255,0.4)'); rg.addColorStop(1, 'transparent');
+    ctx.fillStyle = rg; ctx.beginPath(); ctx.arc(0, 0, 48, 0, Math.PI*2); ctx.fill();
     ctx.fillStyle = 'rgba(8,18,50,0.95)';
-    ctx.strokeStyle = '#4488ffaa'; ctx.lineWidth = 3;
-    ctx.beginPath(); ctx.arc(0, 0, 28, 0, Math.PI*2); ctx.fill(); ctx.stroke();
-    // Slow station rotation
+    ctx.strokeStyle = '#4488ffaa'; ctx.lineWidth = 2.5;
+    ctx.beginPath(); ctx.arc(0, 0, 26, 0, Math.PI*2); ctx.fill(); ctx.stroke();
     ctx.rotate(TS.t * 0.15);
     ctx.strokeStyle = '#4488ff66'; ctx.lineWidth = 2;
     for(let a=0; a<4; a++){
       const ra = a * Math.PI/2;
-      ctx.beginPath(); ctx.moveTo(Math.cos(ra)*28, Math.sin(ra)*28);
-      ctx.lineTo(Math.cos(ra)*42, Math.sin(ra)*42); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(Math.cos(ra)*26, Math.sin(ra)*26);
+      ctx.lineTo(Math.cos(ra)*40, Math.sin(ra)*40); ctx.stroke();
     }
     ctx.rotate(-TS.t * 0.15);
-    // Icon
-    ctx.font = '26px serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.font = '22px serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillText(ev.icon || '📡', 0, 1);
     ctx.textBaseline = 'alphabetic';
-    // Label — only show when large enough to read
-    if(scale > 0.4) {
-      ctx.font = `bold ${Math.round(11/scale)}px 'Cinzel', serif`;
-      ctx.globalAlpha = Math.min(1, (scale - 0.4) * 4);
-      ctx.fillStyle = '#88ccff';
-      ctx.fillText(ev.label, 0, 46);
-    }
+    ctx.font = `bold 10px 'Cinzel', serif`; ctx.fillStyle = '#88ccff';
+    ctx.fillText(ev.label, 0, 42);
     ctx.restore();
   } else if (ev.type === 'roam') {
     const shipCX = W / 2;
@@ -14137,12 +14120,6 @@ function _lsDefinePois() {
       x: W*0.80, y: H*0.20, r: 180, col:'#ff4444', icon:'⚠', type:'hazard_zone',
       enemyKey: 'neogi', spawnRate: 0.6,
     },
-    // Patrol Lane — low danger middle band
-    {
-      id:'patrol_lane', label:'IEN Patrol Corridor', role:'Occasional enemy contact',
-      x: W*0.50, y: H*0.25, r: 140, col:'#44ffcc', icon:'', type:'patrol_zone',
-      enemyKey: 'corsair', spawnRate: 0.25,
-    },
   ];
 }
 
@@ -14768,8 +14745,10 @@ function _lsUpdateParticles(dt) {
 // ── PROXIMITY CHECK ───────────────────────────────────────────────────────
 function _lsCheckProximity() {
   if(LS.dockOpen) return;
+  const INTERACTABLE_TYPES = new Set(['dock','npc','fragment']);
   let closest = null, closestDist = Infinity;
   LS.pois.forEach(p => {
+    if(!INTERACTABLE_TYPES.has(p.type)) return;
     const dx = LS.px-p.x, dy = LS.py-p.y;
     const d = Math.sqrt(dx*dx+dy*dy);
     if(d < p.r + 30 && d < closestDist) { closest=p; closestDist=d; }
