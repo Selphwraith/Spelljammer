@@ -98,8 +98,9 @@ body {
 .ls-dock-label  { color:#99aacc; }
 .ls-dock-val    { color:#ddeeff; font-weight:500; }
 .ls-dock-section { font-size:0.563em; color:#6688aa; letter-spacing:2px; margin-top:4px; }
-.ovl-close-btn { position:absolute; top:10px; right:14px; background:rgba(30,12,8,0.85); border:1px solid #aa663355; border-radius:3px; color:#ddaa77; font-size: 0.75em; padding:4px 10px; cursor:pointer; font-family:'Cinzel',serif; letter-spacing:1px; }
+.ovl-close-btn { background:rgba(30,12,8,0.85); border:1px solid #aa663355; border-radius:3px; color:#ddaa77; font-size: 0.75em; padding:4px 8px; cursor:pointer; font-family:'Cinzel',serif; letter-spacing:1px; flex-shrink:0; }
 .ovl-close-btn:hover { border-color:#ffaa55; color:#ffcc88; background:rgba(70,28,8,0.9); }
+.ovl-title-row { display:flex; align-items:center; justify-content:space-between; width:100%; max-width:640px; gap:10px; margin-bottom:2px; }
 
 /* ── LOOT OVERLAY ── */
 .loot-title { font-family:'Cinzel',serif; font-size: 1.625em; font-weight:900; color:#ffd700; text-shadow:0 0 20px #ffd70088; letter-spacing:4px; }
@@ -1786,8 +1787,10 @@ body {
 
   <!-- QUEST LOG -->
   <div class="ovlay" id="ov-qlog">
-    <button class="ovl-close-btn" onclick="closeOverlay('qlog')">✕ Close</button>
-    <div class="qlog-header">📜 Quest Log</div>
+    <div class="ovl-title-row">
+      <div class="qlog-header">📜 Quest Log</div>
+      <button class="ovl-close-btn" onclick="closeOverlay('qlog')">✕</button>
+    </div>
     <div class="qlog-sub">CAPTAIN'S MISSION RECORD</div>
     <div class="qlog-tabs">
       <button class="qlog-tab act" id="qlog-tab-active"  onclick="qlogTab('active',this)">Active</button>
@@ -1800,8 +1803,10 @@ body {
 
   <!-- CAPTAIN'S LOG / JOURNAL -->
   <div class="ovlay" id="ov-journal">
-    <button class="ovl-close-btn" onclick="closeOverlay('journal')">✕ Close</button>
-    <div class="jlog-header">📖 Captain's Log</div>
+    <div class="ovl-title-row">
+      <div class="jlog-header">📖 Captain's Log</div>
+      <button class="ovl-close-btn" onclick="closeOverlay('journal')">✕</button>
+    </div>
     <div class="jlog-sub">Personal record — IEF Void Ship, Year 3350 CG</div>
     <div class="jlog-body" id="jlog-body"></div>
   </div>
@@ -1909,8 +1914,10 @@ body {
 
   <!-- INVENTORY -->
   <div class="ovlay" id="ov-inv">
-    <button class="ovl-close-btn" onclick="closeOverlay('inv')">✕ Close</button>
-    <div class="inv-header">📦 Cargo Manifest</div>
+    <div class="ovl-title-row">
+      <div class="inv-header">📦 Cargo Manifest</div>
+      <button class="ovl-close-btn" onclick="closeOverlay('inv')">✕</button>
+    </div>
     <div class="filter-row" id="inv-filters">
       <button class="fbtn act" onclick="setInvFilter('all',this)">All</button>
       <button class="fbtn" onclick="setInvFilter('trade',this)">Trade</button>
@@ -1939,8 +1946,10 @@ body {
 
   <!-- WEAPONS LOADOUT -->
   <div class="ovlay" id="ov-wpn">
-    <button class="ovl-close-btn" onclick="closeOverlay('wpn')">✕ Close</button>
-    <div class="wpn-header">⚔ Weapon Loadout</div>
+    <div class="ovl-title-row">
+      <div class="wpn-header">⚔ Weapon Loadout</div>
+      <button class="ovl-close-btn" onclick="closeOverlay('wpn')">✕</button>
+    </div>
     <div class="wpn-ship-label" id="wpn-ship-label">Pinnace — 2 Weapon Slots</div>
     <div class="wpn-grid" id="wpn-grid"></div>
     <div style="font-size:11px;color:#5544aa;font-style:italic;max-width:560px;text-align:center;">Weapons can be swapped at any port. Cooldowns track rounds remaining until reload complete.</div>
@@ -1991,8 +2000,10 @@ body {
 
   <!-- SHIP DETAILS -->
   <div class="ovlay" id="ov-shp">
-    <button class="ovl-close-btn" onclick="closeOverlay('shp')">✕ Close</button>
-    <div class="shp-header" id="shp-name">Pinnace</div>
+    <div class="ovl-title-row">
+      <div class="shp-header" id="shp-name">Pinnace</div>
+      <button class="ovl-close-btn" onclick="closeOverlay('shp')">✕</button>
+    </div>
     <div class="shp-type" id="shp-type">Scout Vessel — 2 weapon slots</div>
     <div class="shp-body">
       <div class="shp-canvas-wrap">
@@ -2008,8 +2019,10 @@ body {
 
   <!-- PORT -->
   <div class="ovlay" id="ov-port">
-    <button class="ovl-close-btn" onclick="departPort()">⛵ Depart</button>
-    <div class="ptop" id="pt-name">Fentheris System</div>
+    <div class="ovl-title-row">
+      <div class="ptop" id="pt-name">Fentheris System</div>
+      <button class="ovl-close-btn" onclick="departPort()">⛵ Depart</button>
+    </div>
     <div class="pdesc" id="pt-desc">A bustling spaceport.</div>
     <div class="trade-gold-bar">
       <span class="tgb-icon">⚜</span>
@@ -2296,8 +2309,10 @@ body {
 
   <!-- ARMORY — Equip weapons from inventory without buying -->
   <div class="ovlay" id="ov-armory" style="z-index:55;">
-    <button class="ovl-close-btn" onclick="closeOverlay('armory')">✕ Close</button>
-    <div style="font-family:'Cinzel',serif;font-size:0.875em;color:#ffcc88;letter-spacing:2px;margin-bottom:4px;">🛠 ARMORY</div>
+    <div class="ovl-title-row">
+      <div style="font-family:'Cinzel',serif;font-size:0.875em;color:#ffcc88;letter-spacing:2px;">🛠 ARMORY</div>
+      <button class="ovl-close-btn" onclick="closeOverlay('armory')">✕</button>
+    </div>
     <div style="font-size:0.625em;color:#665533;margin-bottom:10px;">Weapons in your cargo hold — install into any slot at no cost.</div>
     <div class="trade-gold-bar" style="margin-bottom:10px;">
       <span class="tgb-icon">⚜</span>
