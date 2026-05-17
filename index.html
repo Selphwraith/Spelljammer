@@ -7175,6 +7175,8 @@ function wpnPickerConfirm() {
   wpnPickerCancel();
   // Refresh armory if open
   if(document.getElementById('ov-armory')?.classList.contains('on')) buildArmoryGrid();
+  // Refresh local space dock cargo/shop grids if the weapon was bought there
+  if(_wpnPickerFrom === 'ls' && document.getElementById('ls-dock-panel')?.classList.contains('on')) _lsRefreshDock();
 }
 
 function _wpnPickerSelectSlot(idx) {
@@ -13592,6 +13594,30 @@ function updateZoomHud(){ drawZoomHud(null, cv?.width||800, cv?.height||600, 0);
 // ── MENU ────────────────────────────────────────────────
 let _gameActive = false; // true once a game is running
 
+function menuQuitToTitle() {
+  // Stop all active systems
+  if(G.tvl?.timer) clearInterval(G.tvl.timer);
+  if(G.animId) cancelAnimationFrame(G.animId);
+  if(LS.animId) { cancelAnimationFrame(LS.animId); LS.animId = null; }
+  _stopLoop();
+  stopTravelHum();
+  LS._firstEntry = true;
+  _lsPendingReturn = false;
+  _gameActive = false;
+  G = {};
+  // Close all overlays
+  ['ov-cbt-inv','ov-travel-seq','ov-wpnpicker','ov-combat','ov-port','ov-waypoint',
+   'ov-loot','ov-inv','ov-wpn','ov-shp','ov-qlog','ov-journal','ov-dockmaster',
+   'ov-localquest','ov-localspace','scr-defeat','scr-win','scr-farwin','tvlbar',
+   'msgbox','save-overlay'].forEach(id => {
+    const el = document.getElementById(id);
+    if(el) el.classList.remove('on','active');
+  });
+  document.getElementById('clog').innerHTML = '';
+  playTitle();
+  showMainMenu();
+}
+
 function showMainMenu() {
   const el = document.getElementById('main-menu');
   if (!el) return;
@@ -14851,7 +14877,7 @@ function _lsBuildCargoGrid() {
       G.ship.inv = G.ship.inv.filter(i => !['trade','component','artifact'].includes(i.type));
       G.ship.gold += total;
       snd('purchase', 0.7);
-      addLog(`Sold all cargo at Fentheris Orbital for ${total} gold.`, 'gd');
+      const _sellSphName = (G.ship?.loc === 'refuge') ? 'IEF Refuge Station' : 'Fentheris Orbital'; addLog(`Sold all cargo at ${_sellSphName} for ${total} gold.`, 'gd');
       updateUI(); _lsRefreshDock();
     };
     grid.appendChild(allRow);
@@ -15147,10 +15173,29 @@ function _lsUpdatePlayer(dt) {
   LS.px += LS.pvx * dt;
   LS.py += LS.pvy * dt;
 
-  // Boundary clamp (sphere wall)
-  const margin = 80;
-  LS.px = Math.max(margin, Math.min(LS.W-margin, LS.px));
-  LS.py = Math.max(margin, Math.min(LS.H-margin, LS.py));
+  // Circular boundary clamp — matches the visual sphere border ring exactly
+  const _bR   = Math.min(LS.W, LS.H) * 0.498; // same radius as drawn border
+  const _wallMargin = 55;                        // stop slightly inside the ring
+  const _maxR  = _bR - _wallMargin;
+  const _cx    = LS.W / 2, _cy = LS.H / 2;
+  const _dx    = LS.px - _cx, _dy = LS.py - _cy;
+  const _dist  = Math.sqrt(_dx*_dx + _dy*_dy);
+  if(_dist > _maxR) {
+    // Push back inside — cancel velocity component pointing outward
+    const _nx = _dx/_dist, _ny = _dy/_dist;
+    LS.px = _cx + _nx * _maxR;
+    LS.py = _cy + _ny * _maxR;
+    // Kill outward velocity so ship doesn't keep pushing against wall
+    const _outV = LS.pvx*_nx + LS.pvy*_ny;
+    if(_outV > 0) { LS.pvx -= _outV*_nx; LS.pvy -= _outV*_ny; }
+  }
+  // Cancel click-to-move targets outside the boundary
+  if(LS.pTargetX !== null) {
+    const _tdx = LS.pTargetX - _cx, _tdy = LS.pTargetY - _cy;
+    if(Math.sqrt(_tdx*_tdx+_tdy*_tdy) > _maxR) {
+      LS.pTargetX = null; LS.pTargetY = null;
+    }
+  }
 
   // Engine trail particles
   if(spd > 8) {
@@ -17405,6 +17450,10 @@ document.addEventListener('DOMContentLoaded', () => {
     <button class="mm-btn" onclick="menuShowBriefing()">
       <span class="mm-ico">📖</span>
       <span><span>How to Play — Captain's Handbook</span><span class="mm-desc">Full rules, controls, combat tactics, and ship guide — read before your first voyage</span></span>
+    </button>
+    <button class="mm-btn" id="btn-quit" onclick="menuQuitToTitle()" style="margin-top:4px;opacity:0.6;">
+      <span class="mm-ico">✕</span>
+      <span><span>Quit to Title</span><span class="mm-desc">End current session and return to the title screen</span></span>
     </button>
   </div>
 </div>
