@@ -4483,42 +4483,42 @@ const SOUND_FILES = {};
 // ║  SHIP IMAGES                                         ║
 // ╚══════════════════════════════════════════════════════╝
 const SHIP_IMAGE_DATA = {
-  'pinnace':      'images/ship_pinnace.png',
-  'squid':        'images/ship_squid.png',
-  'hammer':       'images/ship_hammer.png',
-  'manow':        'images/ship_manow.png',
-  'corsair':      'images/ship_corsair.png',
-  'plunderer':    'images/ship_plunderer.png',
-  'blackfleet':   'images/ship_blackfleet.png',
-  'nautiloid':    'images/ship_nautiloid.png',
-  'githyanki':    'images/ship_githyanki.png',
-  'beholder':     'images/ship_beholder.png',
-  'leviathan':    'images/ship_leviathan.png',
-  'vodoniPatrol': 'images/ship_vodoni.png',
-  'trullBattle':  'images/ship_trull.png',
-  'thrikreen':    'images/ship_thrikreen.png',
-  'harvester':         'images/ship_harvester.png',
-  'goblin_cutter':      'images/ship_goblin_cutter.png',
-  'goblin_rocketer':    'images/ship_goblin_rocketer.png',
-  'goblin_shaman_boat': 'images/ship_goblin_shaman.png',
-  'trull_patrol':       'images/ship_trull_patrol.png',
-  'trull_enforcer':     'images/ship_trull_enforcer.png',
-  'trull_slaver':       'images/ship_trull_slaver.png',
-  'trull_warship':      'images/ship_trull_warship.png',
-  'trull_dreadnought':  'images/ship_trull_dreadnought.png',
-  'phlog_mote':        'images/ship_phlog_mote.png',
-  'phlog_jellyfish':   'images/ship_phlog_jellyfish.png',
-  'phlog_flamewing':   'images/ship_phlog_flamewing.png',
-  'phlog_vinecrawler': 'images/ship_phlog_vinecrawler.png',
-  'void_shark':        'images/ship_void_shark.png',
-  'frStalker':   'images/ship_frstalker.png',
-  'frHorde':     'images/ship_frhorde.png',
-  'elder':       'images/ship_elder.png',
-  'wb_grex':     'images/ship_wb_grex.png',
-  'wb_admiral':  'images/ship_wb_admiral.png',
-  'wb_clutch':   'images/ship_wb_clutch.png',
-  'wb_murmur':   'images/ship_wb_murmur.png',
-  'npc_ship':    'images/ship_npc.png',
+  'pinnace':      'images/ship_pinnace.png?v=2',
+  'squid':        'images/ship_squid.png?v=2',
+  'hammer':       'images/ship_hammer.png?v=2',
+  'manow':        'images/ship_manow.png?v=2',
+  'corsair':      'images/ship_corsair.png?v=2',
+  'plunderer':    'images/ship_plunderer.png?v=2',
+  'blackfleet':   'images/ship_blackfleet.png?v=2',
+  'nautiloid':    'images/ship_nautiloid.png?v=2',
+  'githyanki':    'images/ship_githyanki.png?v=2',
+  'beholder':     'images/ship_beholder.png?v=2',
+  'leviathan':    'images/ship_leviathan.png?v=2',
+  'vodoniPatrol': 'images/ship_vodoni.png?v=2',
+  'trullBattle':  'images/ship_trull.png?v=2',
+  'thrikreen':    'images/ship_thrikreen.png?v=2',
+  'harvester':         'images/ship_harvester.png?v=2',
+  'goblin_cutter':      'images/ship_goblin_cutter.png?v=2',
+  'goblin_rocketer':    'images/ship_goblin_rocketer.png?v=2',
+  'goblin_shaman_boat': 'images/ship_goblin_shaman.png?v=2',
+  'trull_patrol':       'images/ship_trull_patrol.png?v=2',
+  'trull_enforcer':     'images/ship_trull_enforcer.png?v=2',
+  'trull_slaver':       'images/ship_trull_slaver.png?v=2',
+  'trull_warship':      'images/ship_trull_warship.png?v=2',
+  'trull_dreadnought':  'images/ship_trull_dreadnought.png?v=2',
+  'phlog_mote':        'images/ship_phlog_mote.png?v=2',
+  'phlog_jellyfish':   'images/ship_phlog_jellyfish.png?v=2',
+  'phlog_flamewing':   'images/ship_phlog_flamewing.png?v=2',
+  'phlog_vinecrawler': 'images/ship_phlog_vinecrawler.png?v=2',
+  'void_shark':        'images/ship_void_shark.png?v=2',
+  'frStalker':   'images/ship_frstalker.png?v=2',
+  'frHorde':     'images/ship_frhorde.png?v=2',
+  'elder':       'images/ship_elder.png?v=2',
+  'wb_grex':     'images/ship_wb_grex.png?v=2',
+  'wb_admiral':  'images/ship_wb_admiral.png?v=2',
+  'wb_clutch':   'images/ship_wb_clutch.png?v=2',
+  'wb_murmur':   'images/ship_wb_murmur.png?v=2',
+  'npc_ship':    'images/ship_npc.png?v=2',
 };
 const _SHIP_IMG = {};
 const _SHIP_IMG_FAILED = new Set();
@@ -9673,6 +9673,30 @@ function startCombat(key){
   setTimeout(()=>setAmbient('combat'), 600);
   cLog(`A ${t.name} drops out of the void! Battle stations!`,'dmg');
   cLog(`Choose your action.`,'');
+
+  // ── Image-wait: if the enemy or player PNG isn't loaded yet, poll until
+  // it arrives (or 10s passes) then redraw. Handles slow connections where
+  // the image is still in-flight or in the 2s/30s retry queue.
+  (function _waitForCbtImg() {
+    const imgKey = key;
+    const shipKey = G.ship?.type;
+    const guardianMap = {fg_krynn:'githyanki', fg_hero:'beholder', fg_dark:'leviathan'};
+    const resolvedEnemyImg = guardianMap[imgKey] || imgKey;
+    if (_SHIP_IMG[resolvedEnemyImg] && _SHIP_IMG[shipKey]) return; // both already loaded
+    let attempts = 0;
+    const poll = setInterval(() => {
+      attempts++;
+      const stillInCombat = G.phase === 'combat' && G.cbt?.enemy?._key === imgKey;
+      if (!stillInCombat || attempts > 20) { clearInterval(poll); return; }
+      const eNow = !!_SHIP_IMG[resolvedEnemyImg];
+      const pNow = !!_SHIP_IMG[shipKey];
+      if (eNow && pNow) { clearInterval(poll); drawCbtShips(imgKey); return; }
+      // Nudge the loader in case it's stuck in the failed set
+      if (_SHIP_IMG_FAILED.has(resolvedEnemyImg)) _SHIP_IMG_FAILED.delete(resolvedEnemyImg);
+      if (_SHIP_IMG_FAILED.has(shipKey)) _SHIP_IMG_FAILED.delete(shipKey);
+      loadShipImages();
+    }, 500); // poll every 500ms, give up after 10s (20 attempts)
+  })();
 }
 
 // ── the Unnamed Reveal Sequence ────────────────────────────────
@@ -14448,6 +14472,42 @@ const LS = {
 // Types: 'dock'|'npc'|'fragment'|'hazard_zone'|'patrol'
 function _lsDefinePois() {
   const W = LS.W, H = LS.H;
+  const sphereId = G.ship?.loc || 'realm';
+
+  // ── REFUGE STATION — safe haven, no enemies, compact layout ──────────────
+  if (sphereId === 'refuge') {
+    return [
+      // IEF Refuge Station — central dock, safe zone
+      {
+        id:'dock', label:'IEF Refuge Station', role:'IEF Forward Station · Air · Hull · Crew · QM',
+        x: W*0.50, y: H*0.50, r: 70, col:'#88ddff', icon:'⚓', type:'dock',
+        safeRadius: 9999,  // entire sphere is safe — no enemy spawns
+      },
+      // Admiral Vayne Soreth — orbiting close to station
+      {
+        id:'npc_admiral', label:'Admiral Vayne Soreth', role:'IEF — Commander, Fentheris Sector',
+        x: W*0.38, y: H*0.40, r: 48, col:'#ffdd44', icon:'🎖️', type:'npc',
+        npcId: 'refuge_admiral',
+        patrol: true, patrolR: 100, patrolSpeed: 0.20, patrolAngle: 0,
+      },
+      // QM Senna Lyrel — tight orbit near dock
+      {
+        id:'npc_qm', label:'QM Senna Lyrel', role:'IEF Supply Corps — Refuge',
+        x: W*0.60, y: H*0.40, r: 48, col:'#88ddff', icon:'⚓', type:'npc',
+        npcId: 'refuge_qm',
+        patrol: true, patrolR: 80, patrolSpeed: 0.25, patrolAngle: 2.1,
+      },
+      // Chief Engineer Darro Velt — slightly further out
+      {
+        id:'npc_engineer', label:'Chief Engineer Darro Velt', role:'IEF Engineering Corps — Refuge',
+        x: W*0.50, y: H*0.64, r: 48, col:'#88aaff', icon:'🔧', type:'npc',
+        npcId: 'refuge_engineer',
+        patrol: true, patrolR: 90, patrolSpeed: 0.18, patrolAngle: 4.2,
+      },
+    ];
+  }
+
+  // ── FENTHERIS SYSTEM (realm) — default full layout ────────────────────────
   return [
     // Fentheris Orbital Station — center-safe zone, the dock
     {
@@ -14554,6 +14614,7 @@ function _lsSpawnClearOfPois(x, y, minDist) {
 
 // Spawn enemies randomly on the outer fringe, avoiding POIs
 function _lsSpawnInitialEnemies(sphereId) {
+  if (sphereId === 'refuge') return; // Refuge is a safe station — no enemy spawns
   const W = LS.W, H = LS.H;
   const pool = LS_ENEMY_POOLS[sphereId] || LS_ENEMY_POOLS.realm;
 
@@ -14597,17 +14658,31 @@ function openLocalSpace() {
   ensureLqState();
   snd('sphere_arrive', 0.5);
 
-  // Initialize world on first entry OR if 30+ days since last spawn
+  // Initialize world on first entry OR sphere changed OR if 30+ days since last spawn
   const sphereId = G.ship.loc || 'realm';
   const dayNow   = G.watch?.day || 1;
   if(!G._lsLastSpawn) G._lsLastSpawn = {};
   const lastSpawn   = G._lsLastSpawn[sphereId] || 0;
+  // Force re-init if the sphere changed since last open (different POI layouts)
+  if(LS._lastSphereId && LS._lastSphereId !== sphereId) {
+    LS._firstEntry = true;
+    LS.W = 2400; LS.H = 2400; // reset to default; openLocalSpace will resize for refuge
+  }
+  LS._lastSphereId = sphereId;
   const needsRespawn = LS._firstEntry || (dayNow - lastSpawn >= 30);
 
   if(LS._firstEntry) {
     LS._firstEntry = false;
-    LS.px = LS.W * 0.50 + 280;
-    LS.py = LS.H * 0.50;
+    // Refuge is a compact safe station — smaller world, player starts at dock
+    if (sphereId === 'refuge') {
+      LS.W = 1400; LS.H = 1400;
+      LS.px = LS.W * 0.50 + 75;  // just outside dock interaction radius
+      LS.py = LS.H * 0.50;
+    } else {
+      LS.W = 2400; LS.H = 2400;
+      LS.px = LS.W * 0.50 + 280;
+      LS.py = LS.H * 0.50;
+    }
     LS.pvx = 0; LS.pvy = 0;
     LS.pAngle = -Math.PI * 0.75;
     LS.pTargetX = null; LS.pTargetY = null;
@@ -14684,10 +14759,12 @@ function lsDockDepart() {
   closeLsDock();
   closeLsOverlay();
   // Ensure player is at realm on the map
-  G.ship.loc = 'realm';
+  // loc was already set when entering — preserve it, just return to map
   G.phase = 'map';
   updateUI();
-  addLog('Departed Fentheris System local space.','');
+  const _dSph = G.ship.loc || 'realm';
+  const _dSphName = _dSph === 'refuge' ? 'Refuge Station' : 'Fentheris System';
+  addLog('Departed ' + _dSphName + ' local space.','');
 }
 
 // ── DOCK SERVICES ─────────────────────────────────────────────────────────
@@ -14953,6 +15030,13 @@ function _lsUpdateHud() {
   const hh = document.getElementById('ls-hud-hull');
   const hc = document.getElementById('ls-hud-crew');
   const hg = document.getElementById('ls-hud-gold');
+  // Update HUD title to reflect current sphere
+  const _hudTitle = document.getElementById('ls-hud-title');
+  if(_hudTitle) {
+    const _sId = G.ship?.loc || 'realm';
+    const _sLabel = LOCAL_QUEST_DATA[_sId]?.label || '🔭 Local Space';
+    _hudTitle.textContent = '🔭 ' + _sLabel;
+  }
   if(hh) hh.textContent = G.ship.hull+'/'+G.ship.maxHull;
   if(hc) hc.textContent = G.ship.crew+'/'+G.ship.maxCrew;
   if(hg) hg.textContent = G.ship.gold;
@@ -15235,7 +15319,10 @@ function _lsShowInteract(poi) {
     const dockBtn = document.createElement('button');
     dockBtn.className='btn'; dockBtn.textContent='⚓ Dock';
     dockBtn.onclick = () => {
-      _lsLog('Docked at Fentheris Orbital\'s Tear Station.','');
+      const _dSphId = G.ship?.loc || 'realm';
+      const _dockName = _dSphId === 'refuge' ? 'IEF Refuge Station' : 'Fentheris Orbital Station';
+      _lsLog('Docked at ' + _dockName + '.', '');
+      document.getElementById('ls-dock-title').textContent = '⚓ ' + _dockName.toUpperCase();
       LS.dockOpen = true;
       LS.pTargetX = null; LS.pTargetY = null;
       panel.classList.remove('on');
@@ -15806,7 +15893,37 @@ document.addEventListener('keyup', e => {
 // ── CLICK-TO-MOVE ON CANVAS ───────────────────────────────────────────────
 document.getElementById('ls-canvas').addEventListener('click', e => {
   if(!document.getElementById('ov-localspace')?.classList.contains('on')) return;
-  if(LS.dockOpen || LS.interactOpen) return;
+
+  // If a panel is open, check if the click landed on the panel itself (ignore)
+  // or outside it (close panel AND set move target — one-tap workflow).
+  if(LS.dockOpen || LS.interactOpen) {
+    const dockEl   = document.getElementById('ls-dock-panel');
+    const dialogEl = document.getElementById('ls-npc-dialog');
+    const interEl  = document.getElementById('ls-interact-panel');
+    const hitPanel = [dockEl, dialogEl, interEl].some(el => {
+      if(!el || !el.classList.contains('on')) return false;
+      const r = el.getBoundingClientRect();
+      return e.clientX >= r.left && e.clientX <= r.right &&
+             e.clientY >= r.top  && e.clientY <= r.bottom;
+    });
+    if(hitPanel) return; // tap was inside a panel — let the panel handle it
+    // Tap was outside all panels — close them and treat as move command
+    if(LS.dockOpen) {
+      dockEl.classList.remove('on');
+      LS.dockOpen = false;
+      _lsLog('Departed station. Safe travels, Captain.');
+    }
+    if(dialogEl && dialogEl.classList.contains('on')) {
+      dialogEl.classList.remove('on');
+      LS.interactOpen = false;
+    }
+    if(interEl && interEl.classList.contains('on')) {
+      interEl.classList.remove('on');
+      LS.interactOpen = false;
+      LS.nearPoi = null;
+    }
+  }
+
   const rect = LS.canvas.getBoundingClientRect();
   const mx = (e.clientX - rect.left) * (LS.canvas.width / rect.width);
   const my = (e.clientY - rect.top)  * (LS.canvas.height / rect.height);
@@ -17045,6 +17162,8 @@ function skipCinematic(){
   _gameActive = true;
   stopTitle();   // stop just before game audio takes over
   initGame();
+  // Start inside Refuge local space so new players land at the dock immediately
+  setTimeout(() => openLocalSpace(), 150);
 }
 function nextCinSlide(){
   stopCinVoice();                          // cut current narration before advancing
