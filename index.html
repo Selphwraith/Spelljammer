@@ -8541,6 +8541,10 @@ function tsOpen(lane) {
   const ov = document.getElementById('ov-travel-seq');
   ov.classList.add('on');
 
+  // Force watch HUD visible during travel — it's the main purpose of the HUD
+  const wh = document.getElementById('watch-hud');
+  if(wh) { wh.classList.remove('hidden-by-overlay'); wh.classList.add('on'); }
+
   // Update destination label
   const destId = G.tvl?.to;
   const destName = G.spheres?.find(s=>s.id===destId)?.n || 'Unknown';
