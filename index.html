@@ -6808,13 +6808,22 @@ function arrive(id){
     }
   }
   // ── LOCAL SPACE SPHERES — auto-open on arrival ───────────────────────────
-  const _LS_SPHERES = new Set(['realm','refuge','grey']);
+  const _LS_SPHERES = new Set(['realm','refuge','grey','cluster']);
   checkQuestTurnin(id);
   setTag('Navigation'); updateUI();
   ensureLqState();
   // Engine field test tracking — any non-refuge sphere counts as away
   if(id !== 'refuge' && G.localQuests['refuge_q2'] === 'active') {
     G.localQuests['refuge_q2_pending'] = true;
+  }
+  // cluster_q3: Kezzix errand — mark pending when player leaves cluster
+  if(id !== 'cluster' && G.localQuests['cluster_q3'] === 'active') {
+    G.localQuests['cluster_q3_pending'] = true;
+  }
+  if(id === 'cluster' && G.localQuests['cluster_q3_pending']) {
+    G.localQuests['cluster_q3_visited'] = true;
+    G.localQuests['cluster_q3_pending'] = false;
+    addLog('Lane confirmed clear. Return to Port-Boss Kezzix to report.', 'gd');
   }
   if(id === 'refuge' && G.localQuests['refuge_q2_pending']) {
     G.localQuests['refuge_q2_visited'] = true;
@@ -6844,7 +6853,7 @@ let _portSphere=null;
 function enterPort(sph){
   if(sph.boss)return;
   // ── REALMSPACE: redirect to Local Space overlay ──────────
-  if(sph.id === 'realm' || sph.id === 'refuge' || sph.id === 'grey') { openLocalSpace(); return; }
+  if(sph.id === 'realm' || sph.id === 'refuge' || sph.id === 'grey' || sph.id === 'cluster') { openLocalSpace(); return; }
   // ── the Scar-Wraith confrontation at The Shatter ───────────────
   if(sph.id === 'baresun' && G.shothothuqUnlocked && !(G.worldBossDefeated && G.worldBossDefeated.has('shothothug'))){
     addLog('⬡ The The Shatter scar screams. Something vast is coming through.','dmg');
@@ -14343,6 +14352,107 @@ const LOCAL_QUEST_DATA = {
   },
 
   // ═══════════════════════════════════════════════════════════
+  // CLUSTERSPACE — Thousand Sails Freeport, Varuun
+  // ═══════════════════════════════════════════════════════════
+  cluster: {
+    label: 'Thousand Sails Freeport — Local Space',
+    color: '#44ffcc',
+    bgColor: 'rgba(10,80,70,0.20)',
+    npcs: [
+      {
+        id: 'cluster_qm',
+        name: 'Port-Boss Kezzix',
+        role: 'Thousand Sails Independent Authority — Freeport QM',
+        portrait: '🏴‍☠️', color: '#44ffcc',
+        greet: "You want supplies, you pay my prices. You want to argue about my prices, there's the airlock. We run a clean operation here — clean meaning nobody shoots each other inside the docking ring. Outside is your problem. What are you buying?",
+        shop: true,
+        quests: [
+          {
+            id: 'cluster_q3',
+            title: "Kezzix's Errand",
+            desc: "Port-Boss Kezzix needs a delivery verified — a shipment that was supposed to arrive from the outer lanes never showed. She wants someone to make a run out and confirm whether the courier is dead, fled, or just slow.",
+            task: 'Travel to any other sphere and return to Kezzix to confirm the lanes are clear.',
+            reward: '⚜ 120 Gold + 💰 Plundered Merchant Gold (trade good)',
+            type: 'explore',
+            checkDesc: 'Travel to any sphere and return to Kezzix.',
+            check: (G) => (G.localQuests?.cluster_q3_visited || false),
+            rewardFn: (G) => {
+              G.ship.gold += 120;
+              G.ship.inv.push({...ITEMS['plunder'], uid: uid()});
+              addLog("Kezzix tosses a bag across the dock. 'Courier was dead. Expected. Here's your cut — and a bonus from what was left on the hull. Don't ask where I got it.'", 'gd');
+            },
+            trigger: (G) => { G.localQuests.cluster_q3_visited = false; }
+          }
+        ]
+      },
+      {
+        id: 'cluster_relic',
+        name: 'Saja Vell',
+        role: 'Independent Relic Hunter — Varuun Salvage Circuit',
+        portrait: '🔭', color: '#ffcc44',
+        greet: "Don't let the freeport fool you — the real money in Varuun isn't the black market, it's the wrecks. Pre-Sundering hulls drifting in the outer lanes, still pressurised, full of gear that doesn't exist anymore. I've located one but I need a Star Elven Coin Hoard to prove provenance to the buyer. The lanes between here and the Relic Hunter's Route are lousy with them. You interested?",
+        quests: [
+          {
+            id: 'cluster_q1',
+            title: "The Relic Hunter's Prize",
+            desc: "Saja Vell has located a pre-Sundering wreck and needs a Star Elven Coin Hoard to authenticate its provenance to a buyer. The coins drop from Drift Corsair and Black Fleet ships on the outer lanes.",
+            task: 'Bring Saja a Star Elven Coin Hoard from your cargo.',
+            reward: '⚜ 140 Gold + 💍 Thrall Binding Ring (equip: +3 max crew)',
+            type: 'delivery',
+            checkDesc: 'Have a Star Elven Coin Hoard in cargo.',
+            check: (G) => G.ship.inv.some(i => i.n === 'Star Elven Coin Hoard'),
+            rewardFn: (G) => {
+              const idx = G.ship.inv.findIndex(i => i.n === 'Star Elven Coin Hoard');
+              if(idx >= 0) G.ship.inv.splice(idx, 1);
+              G.ship.gold += 140;
+              G.ship.inv.push({...ITEMS['thrallring'], uid: uid()});
+              addLog("Saja practically snatches the coin from your hand. 'Perfect. This authenticates everything. Here — the ring is worth more to a fighting ship than an archaeologist anyway. Good doing business.'", 'gd');
+            },
+            trigger: () => {}
+          }
+        ]
+      },
+      {
+        id: 'cluster_defector',
+        name: '"Scratch"',
+        role: 'Former Void Corsair — Independent Operator',
+        portrait: '🗡️', color: '#ff8844',
+        greet: "I used to fly with a Harvester slaver crew. Emphasis on used to. They took something from me — crew I sailed with for six years. Sold them to a Veilborn processing cell in the outer lanes. I've been hunting the ship responsible ever since. I can't take it alone. You look like you can handle yourself. I'll make it worth your time.",
+        quests: [
+          {
+            id: 'cluster_q2',
+            title: "Scratch's Reckoning",
+            desc: "A former pirate called Scratch is hunting a Harvester slaver that cost him his crew. He needs two Harvesters eliminated in the outer lanes — proof the hunting ground has been cleared.",
+            task: 'Destroy 2 Harvester ships in the Drift lanes and return to Scratch.',
+            reward: '⚜ 160 Gold + 🌀 Anti-Magic Sphere Shard (equip: −3 incoming damage)',
+            type: 'combat',
+            checkDesc: 'Destroy 2 Harvester ships and return.',
+            check: (G) => (G.localQuests?.cluster_q2_kills || 0) >= 2,
+            rewardFn: (G) => {
+              G.ship.gold += 160;
+              G.ship.inv.push({...ITEMS['antimag'], uid: uid()});
+              addLog("Scratch stares at the kill data for a long moment. 'That's the one. That's the hull.' He sets down a sphere shard on the dock plate. 'Take it. I don't need it anymore.'", 'gd');
+            },
+            trigger: (G) => { G.localQuests.cluster_q2_kills = 0; }
+          }
+        ]
+      }
+    ],
+    qmStock: {
+      flavor: 'Thousand Sails salvage market. No questions, no receipts, everything works.',
+      items: [
+        { type:'supply', ico:'🔧', name:'Emergency Hull Patch',       desc:'Restores 40 hull points',          cost:60,  act:'hull40' },
+        { type:'supply', ico:'💨', name:'Compressed Air Cylinder',    desc:'Restores full air supply',          cost:45,  act:'air' },
+        { type:'supply', ico:'👥', name:'Crew Hire (Freeport)',       desc:'+4 crew from the docks',            cost:65,  act:'crew4' },
+        { type:'usable', ico:'🍺', name:"Crew's Courage Mead",        desc:"Use: Restores 3 crew in combat",    cost:55,  itemKey:'crewmead' },
+        { type:'upgrade', ico:'💥', name:'Chain Reaction Crystal',    desc:'30% chance of free bonus shot on any hit', cost:300, act:'upg', upg:'chainreact' },
+        { type:'wpn', ico:'⚙️', name:'Void Sailing Ram',              desc:'5d6 · 4-round reload · bone-shattering impact (salvaged)', cost:320, wk:'ram' },
+        { type:'wpn', ico:'💥', name:'Force Cannon',                  desc:'4d8 · 3-round reload · heavy shot (freeport surplus)',      cost:265, wk:'fcannon' },
+      ]
+    }
+  },
+
+  // ═══════════════════════════════════════════════════════════
   // REFUGE — Home base, IEF station
   // ═══════════════════════════════════════════════════════════
   refuge: {
@@ -14570,6 +14680,55 @@ function _lsDefinePois() {
   }
 
   // ── KORRETH (grey) — dwarven forge-sphere, mid-tier enemies ─────────────
+  if (sphereId === 'cluster') {
+    return [
+      // Thousand Sails Freeport — central dock, teal colour
+      {
+        id:'dock', label:'Thousand Sails Freeport', role:'Varuun Freeport · Air · Hull · Crew · QM',
+        x: W*0.50, y: H*0.50, r: 70, col:'#44ffcc', icon:'⚓', type:'dock',
+        safeRadius: 280,
+      },
+      // Port-Boss Kezzix — tight orbit near dock
+      {
+        id:'npc_kezzix', label:'Port-Boss Kezzix', role:'Thousand Sails Freeport Authority',
+        x: W*0.38, y: H*0.42, r: 48, col:'#44ffcc', icon:'🏴‍☠️', type:'npc',
+        npcId: 'cluster_qm',
+        patrol: true, patrolR: 85, patrolSpeed: 0.24, patrolAngle: 0,
+      },
+      // Saja Vell — mid ring, relic hunter
+      {
+        id:'npc_relic', label:'Saja Vell', role:'Independent Relic Hunter',
+        x: W*0.63, y: H*0.40, r: 48, col:'#ffcc44', icon:'🔭', type:'npc',
+        npcId: 'cluster_relic',
+        patrol: true, patrolR: 105, patrolSpeed: 0.19, patrolAngle: 2.0,
+      },
+      // Scratch — outer ring, defector
+      {
+        id:'npc_scratch', label:'"Scratch"', role:'Former Void Corsair',
+        x: W*0.50, y: H*0.65, r: 48, col:'#ff8844', icon:'🗡️', type:'npc',
+        npcId: 'cluster_defector',
+        patrol: true, patrolR: 95, patrolSpeed: 0.16, patrolAngle: 4.0,
+      },
+      // Fragment Site — The Broker's Cache
+      {
+        id:'fragment', label:"Fragment Orbit — The Broker's Cache", role:'Navigation Core Site',
+        x: W*0.20, y: H*0.22, r: 55, col:'#ffdd44', icon:'🔮', type:'fragment',
+      },
+      // Harvester salvage zone — outer ring
+      {
+        id:'hazard_harvester', label:'Harvester Salvage Zone', role:'⚠ Harvester Activity',
+        x: W*0.78, y: H*0.24, r: 165, col:'#ff4444', icon:'⚠', type:'hazard_zone',
+        enemyKey: 'harvester', spawnRate: 0.5,
+      },
+      // Blackfleet patrol zone — lower ring
+      {
+        id:'hazard_blackfleet', label:'Black Fleet Hunting Ground', role:'⚠ Pirate Activity',
+        x: W*0.74, y: H*0.74, r: 155, col:'#ff6600', icon:'⚠', type:'hazard_zone',
+        enemyKey: 'blackfleet', spawnRate: 0.4,
+      },
+    ];
+  }
+
   if (sphereId === 'grey') {
     return [
       // Ironhaven Station — central dock
@@ -14720,6 +14879,17 @@ const LS_ENEMY_POOLS = {
     ['phlog_jellyfish',    2],
     ['phlog_flamewing',    2],
     ['phlog_vinecrawler',  1],
+  ],
+  // Varuun (cluster) — pirate-heavy freeport: corsairs, blackfleet, plunderers, harvesters
+  cluster: [
+    ['corsair',            5],
+    ['plunderer',          5],
+    ['blackfleet',         4],
+    ['harvester',          4],
+    ['void_shark',         3],
+    ['goblin_cutter',      2],
+    ['phlog_vinecrawler',  2],
+    ['phlog_jellyfish',    1],
   ],
   // Future spheres can define their own pools here
   // krynn: [...],
@@ -14898,7 +15068,7 @@ function lsDockDepart() {
   G.phase = 'map';
   updateUI();
   const _dSph = G.ship.loc || 'realm';
-  const _dSphName = _dSph === 'refuge' ? 'Refuge Station' : _dSph === 'grey' ? 'Korreth' : 'Fentheris System';
+  const _dSphName = _dSph === 'refuge' ? 'Refuge Station' : _dSph === 'grey' ? 'Korreth' : _dSph === 'cluster' ? 'Varuun' : 'Fentheris System';
   addLog('Departed ' + _dSphName + ' local space.','');
 }
 
@@ -14986,7 +15156,7 @@ function _lsBuildCargoGrid() {
       G.ship.inv = G.ship.inv.filter(i => !['trade','component','artifact'].includes(i.type));
       G.ship.gold += total;
       snd('purchase', 0.7);
-      const _sellSphName = G.ship?.loc === 'refuge' ? 'IEF Refuge Station' : G.ship?.loc === 'grey' ? 'Ironhaven Station' : 'Fentheris Orbital'; addLog(`Sold all cargo at ${_sellSphName} for ${total} gold.`, 'gd');
+      const _sellSphName = G.ship?.loc === 'refuge' ? 'IEF Refuge Station' : G.ship?.loc === 'grey' ? 'Ironhaven Station' : G.ship?.loc === 'cluster' ? 'Thousand Sails Freeport' : 'Fentheris Orbital'; addLog(`Sold all cargo at ${_sellSphName} for ${total} gold.`, 'gd');
       updateUI(); _lsRefreshDock();
     };
     grid.appendChild(allRow);
@@ -15477,7 +15647,7 @@ function _lsShowInteract(poi) {
     dockBtn.className='btn'; dockBtn.textContent='⚓ Dock';
     dockBtn.onclick = () => {
       const _dSphId = G.ship?.loc || 'realm';
-      const _dockName = _dSphId === 'refuge' ? 'IEF Refuge Station' : _dSphId === 'grey' ? 'Ironhaven Station' : 'Fentheris Orbital Station';
+      const _dockName = _dSphId === 'refuge' ? 'IEF Refuge Station' : _dSphId === 'grey' ? 'Ironhaven Station' : _dSphId === 'cluster' ? 'Thousand Sails Freeport' : 'Fentheris Orbital Station';
       _lsLog('Docked at ' + _dockName + '.', '');
       document.getElementById('ls-dock-title').textContent = '⚓ ' + _dockName.toUpperCase();
       const _departBtn = document.getElementById('ls-dock-depart-btn');
@@ -16745,6 +16915,7 @@ function lqTrackKill(enemyKey) {
     { qid:'realm_q2_kills',  condition: (k) => k==='blackfleet' },
     { qid:'realm_q4_kills',  condition: (k) => k==='nautiloid' },
     { qid:'grey_q3_kills',   condition: (k) => k==='harvester' || k==='trull_slaver' },
+    { qid:'cluster_q2_kills', condition: (k) => k==='harvester' },
     { qid:'refuge_q1_kills', condition: (k) => k==='githyanki' },
   ];
   trackers.forEach(t => {
