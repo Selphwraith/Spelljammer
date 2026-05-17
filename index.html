@@ -9570,11 +9570,19 @@ function startCombat(key){
   // Trull Overmind fight triggers the the Unnamed reveal sequence
   if(key === 'elder'){ startElderCaiphonSequence(); return; }
 
+  const t = ENM[key];
+  if(!t){
+    console.error(`startCombat: unknown enemy key "${key}" — aborting combat`);
+    addLog(`⚠ Combat error: unknown enemy type "${key}". Continuing voyage.`, 'dmg');
+    G.phase = 'map'; setTag('Navigation'); updateUI();
+    return;
+  }
+
   G.phase='combat'; setTag('COMBAT');
-  stopTravelHum(); stopLiveClock(); // mute engine hum — combat music takes over
-  tsClose();       // close travel sequence — reopens when travel resumes
-  document.getElementById('watch-hud')?.classList.remove('on'); // hide time HUD during combat
-  const t=ENM[key];
+  G.phase='combat'; setTag('COMBAT');
+  stopTravelHum(); stopLiveClock();
+  tsClose();
+  document.getElementById('watch-hud')?.classList.remove('on');
   const eWpns = (t.wpns||[]).map(w=>({...w}));
   const eCds  = eWpns.map(()=>0);
   const eDisabled = eWpns.map(()=>0);
