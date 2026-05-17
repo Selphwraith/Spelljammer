@@ -13594,6 +13594,23 @@ function updateZoomHud(){ drawZoomHud(null, cv?.width||800, cv?.height||600, 0);
 // ── MENU ────────────────────────────────────────────────
 let _gameActive = false; // true once a game is running
 
+function menuQuitGame() {
+  // Attempt to close the window/tab — only works if opened by script (e.g. PWA or kiosk)
+  // On standard browser tabs this will be blocked, so we show a polite fallback
+  try { window.close(); } catch(_) {}
+  // If still open after 300ms, show a message
+  setTimeout(() => {
+    if (!window.closed) {
+      showMsg(
+        '⏻ Close Game',
+        'To close the game, use your browser\'s close button or press Ctrl+W / Cmd+W on desktop.\n\nOn mobile, swipe the tab away from your recent apps.',
+        'Return to Menu',
+        null
+      );
+    }
+  }, 300);
+}
+
 function menuQuitToTitle() {
   // Stop all active systems
   if(G.tvl?.timer) clearInterval(G.tvl.timer);
@@ -17550,6 +17567,10 @@ document.addEventListener('DOMContentLoaded', () => {
     <button class="mm-btn" id="btn-quit" onclick="menuQuitToTitle()" style="margin-top:4px;opacity:0.6;">
       <span class="mm-ico">✕</span>
       <span><span>Quit to Title</span><span class="mm-desc">End current session and return to the title screen</span></span>
+    </button>
+    <button class="mm-btn" onclick="menuQuitGame()" style="margin-top:2px;opacity:0.4;">
+      <span class="mm-ico">⏻</span>
+      <span><span>Quit Game</span><span class="mm-desc">Close the game window</span></span>
     </button>
   </div>
 </div>
