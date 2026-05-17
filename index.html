@@ -14875,7 +14875,7 @@ function _lsBuildCargoGrid() {
 }
 
 function _lsGetQmStock() {
-  const stock = LOCAL_QUEST_DATA.realm?.qmStock;
+  const stock = LOCAL_QUEST_DATA[G.ship?.loc || 'realm']?.qmStock || LOCAL_QUEST_DATA.realm?.qmStock;
   if(!stock) return [];
   const dayNow = G.watch?.day || 1;
   const RESTOCK_DAYS = 30;
