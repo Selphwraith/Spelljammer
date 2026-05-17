@@ -2260,7 +2260,7 @@ body {
 
       <div style="display:flex;gap:8px;justify-content:center;margin-top:10px;flex-wrap:wrap;">
         <button class="btn exit" style="font-size:0.688em;" onclick="closeLsDock()">⬅ Return to Space</button>
-        <button class="btn exit" style="font-size:0.688em;border-color:#661100;color:#ff8866;" onclick="lsDockDepart()">⛵ Depart Fentheris System</button>
+        <button class="btn exit" style="font-size:0.688em;border-color:#661100;color:#ff8866;" onclick="lsDockDepart()" id="ls-dock-depart-btn">⛵ Depart</button>
       </div>
     </div>
 
@@ -6830,7 +6830,7 @@ let _portSphere=null;
 function enterPort(sph){
   if(sph.boss)return;
   // ── REALMSPACE: redirect to Local Space overlay ──────────
-  if(sph.id === 'realm') { openLocalSpace(); return; }
+  if(sph.id === 'realm' || sph.id === 'refuge' || sph.id === 'grey') { openLocalSpace(); return; }
   // ── the Scar-Wraith confrontation at The Shatter ───────────────
   if(sph.id === 'baresun' && G.shothothuqUnlocked && !(G.worldBossDefeated && G.worldBossDefeated.has('shothothug'))){
     addLog('⬡ The The Shatter scar screams. Something vast is coming through.','dmg');
@@ -14276,10 +14276,10 @@ const LOCAL_QUEST_DATA = {
             id: 'grey_q3',
             title: 'The Lost Crew',
             desc: "Mira's merchant cog was taken by Shell Drifters. The survivors were either enslaved or left aboard the drifting hull. She wants someone to investigate — and deal with whatever is still aboard.",
-            task: 'Defeat a void ship in the lanes (representing clearing the drifting hull) and return.',
+            task: 'Defeat a Harvester or Trull Slaver in the Korreth lanes and return to Mira.',
             reward: "⚜ 50 Gold + 🧵 Astral Silk + 🍺 Crew's Courage Mead",
             type: 'combat',
-            checkDesc: 'Defeat a Shell Drifter and return to Mira.',
+            checkDesc: 'Defeat a Harvester or Trull Slaver in the lanes and return to Mira.',
             check: (G) => (G.localQuests?.grey_q3_kills || 0) >= 1,
             rewardFn: (G) => {
               G.ship.gold += 50;
@@ -14533,6 +14533,63 @@ function _lsDefinePois() {
     ];
   }
 
+  // ── KORRETH (grey) — dwarven forge-sphere, mid-tier enemies ─────────────
+  if (sphereId === 'grey') {
+    return [
+      // Ironhaven Station — central dock
+      {
+        id:'dock', label:'Ironhaven Station', role:'Dwarven Forge-Dock · Air · Hull · Crew · QM',
+        x: W*0.50, y: H*0.50, r: 70, col:'#88ff44', icon:'⚓', type:'dock',
+        safeRadius: 300,
+      },
+      // Quartermaster Rugdim Brassbeard — tight orbit near dock
+      {
+        id:'npc_qm', label:'QM Rugdim Brassbeard', role:'IEF Supply Corps — Korreth',
+        x: W*0.38, y: H*0.42, r: 48, col:'#88bbff', icon:'⚓', type:'npc',
+        npcId: 'grey_qm',
+        patrol: true, patrolR: 90, patrolSpeed: 0.22, patrolAngle: 0,
+      },
+      // Forgemaster Gordin Ashveil — mid ring
+      {
+        id:'npc_forgemaster', label:'Forgemaster Ashveil', role:'Ironhaven Weapons Guild',
+        x: W*0.62, y: H*0.40, r: 48, col:'#ffaa44', icon:'⚒️', type:'npc',
+        npcId: 'grey_forgemaster',
+        patrol: true, patrolR: 110, patrolSpeed: 0.18, patrolAngle: 1.8,
+      },
+      // Bram Hollick — prospector, outer ring
+      {
+        id:'npc_prospector', label:'Bram Hollick', role:'Deep-Void Prospector',
+        x: W*0.60, y: H*0.62, r: 48, col:'#aabb88', icon:'⛏️', type:'npc',
+        npcId: 'grey_prospector',
+        patrol: true, patrolR: 95, patrolSpeed: 0.14, patrolAngle: 3.5,
+      },
+      // Mira Sullen — displaced merchant, inner ring
+      {
+        id:'npc_refugee', label:'Mira Sullen', role:'Displaced — former Oerth Merchant',
+        x: W*0.38, y: H*0.60, r: 48, col:'#ddaaff', icon:'🧕', type:'npc',
+        npcId: 'grey_refugee',
+        patrol: false,
+      },
+      // Fragment Site — The Dwarven Vault, outer edge
+      {
+        id:'fragment', label:'Fragment Orbit — The Dwarven Vault', role:'Navigation Core Site',
+        x: W*0.20, y: H*0.20, r: 55, col:'#ffdd44', icon:'🔮', type:'fragment',
+      },
+      // Harvester Disruption Zone — outer ring
+      {
+        id:'hazard_harvester', label:'Harvester Salvage Zone', role:'⚠ Harvester Activity',
+        x: W*0.78, y: H*0.22, r: 170, col:'#ff4444', icon:'⚠', type:'hazard_zone',
+        enemyKey: 'harvester', spawnRate: 0.5,
+      },
+      // Plunderer patrol zone — lower ring
+      {
+        id:'hazard_plunderer', label:'Plunderer Lane', role:'⚠ Pirate Activity',
+        x: W*0.75, y: H*0.75, r: 150, col:'#ff8833', icon:'⚠', type:'hazard_zone',
+        enemyKey: 'plunderer', spawnRate: 0.4,
+      },
+    ];
+  }
+
   // ── FENTHERIS SYSTEM (realm) — default full layout ────────────────────────
   return [
     // Fentheris Orbital Station — center-safe zone, the dock
@@ -14617,8 +14674,18 @@ const LS_ENEMY_POOLS = {
     ['void_shark',         2],
     ['phlog_mote',         1],
   ],
+  // Korreth (grey) — mid-tier: harvesters, plunderers, trull slavers, void sharks
+  grey: [
+    ['plunderer',          5],
+    ['harvester',          4],
+    ['trull_slaver',       4],
+    ['trull_warship',      3],
+    ['void_shark',         3],
+    ['phlog_jellyfish',    2],
+    ['phlog_flamewing',    2],
+    ['phlog_vinecrawler',  1],
+  ],
   // Future spheres can define their own pools here
-  // grey:  [...],
   // krynn: [...],
 };
 
@@ -14738,7 +14805,13 @@ function openLocalSpace() {
   LS.interactOpen = false;
   LS.dockOpen = false;
 
-  document.getElementById('ov-localspace').classList.add('on');
+  const _lsOverlay = document.getElementById('ov-localspace');
+  _lsOverlay.classList.add('on');
+  // Tint the overlay background to the sphere's colour for atmosphere
+  const _lsBgCol = LOCAL_QUEST_DATA[sphereId]?.bgColor || 'rgba(3,0,12,0.96)';
+  _lsOverlay.style.background = `rgba(3,0,12,0.96)`;  // base stays dark
+  const _lsCanvas = document.getElementById('ls-canvas');
+  if(_lsCanvas) _lsCanvas.style.background = _lsBgCol;
   document.getElementById('ls-interact-panel').classList.remove('on');
   document.getElementById('ls-dock-panel').classList.remove('on');
   _lsUpdateHud();
@@ -14789,7 +14862,7 @@ function lsDockDepart() {
   G.phase = 'map';
   updateUI();
   const _dSph = G.ship.loc || 'realm';
-  const _dSphName = _dSph === 'refuge' ? 'Refuge Station' : 'Fentheris System';
+  const _dSphName = _dSph === 'refuge' ? 'Refuge Station' : _dSph === 'grey' ? 'Korreth' : 'Fentheris System';
   addLog('Departed ' + _dSphName + ' local space.','');
 }
 
@@ -14877,7 +14950,7 @@ function _lsBuildCargoGrid() {
       G.ship.inv = G.ship.inv.filter(i => !['trade','component','artifact'].includes(i.type));
       G.ship.gold += total;
       snd('purchase', 0.7);
-      const _sellSphName = (G.ship?.loc === 'refuge') ? 'IEF Refuge Station' : 'Fentheris Orbital'; addLog(`Sold all cargo at ${_sellSphName} for ${total} gold.`, 'gd');
+      const _sellSphName = G.ship?.loc === 'refuge' ? 'IEF Refuge Station' : G.ship?.loc === 'grey' ? 'Ironhaven Station' : 'Fentheris Orbital'; addLog(`Sold all cargo at ${_sellSphName} for ${total} gold.`, 'gd');
       updateUI(); _lsRefreshDock();
     };
     grid.appendChild(allRow);
@@ -15368,9 +15441,11 @@ function _lsShowInteract(poi) {
     dockBtn.className='btn'; dockBtn.textContent='⚓ Dock';
     dockBtn.onclick = () => {
       const _dSphId = G.ship?.loc || 'realm';
-      const _dockName = _dSphId === 'refuge' ? 'IEF Refuge Station' : 'Fentheris Orbital Station';
+      const _dockName = _dSphId === 'refuge' ? 'IEF Refuge Station' : _dSphId === 'grey' ? 'Ironhaven Station' : 'Fentheris Orbital Station';
       _lsLog('Docked at ' + _dockName + '.', '');
       document.getElementById('ls-dock-title').textContent = '⚓ ' + _dockName.toUpperCase();
+      const _departBtn = document.getElementById('ls-dock-depart-btn');
+      if(_departBtn) _departBtn.textContent = '⛵ Depart ' + (_dSphId === 'refuge' ? 'Refuge Station' : _dSphId === 'grey' ? 'Korreth' : 'Fentheris System');
       LS.dockOpen = true;
       LS.pTargetX = null; LS.pTargetY = null;
       panel.classList.remove('on');
@@ -15405,7 +15480,7 @@ function _lsShowInteract(poi) {
     }
 
   } else if(poi.type === 'fragment') {
-    const fs = FRAGMENT_SITES.find(f=>f.sphere==='realm') || null;
+    const fs = FRAGMENT_SITES.find(f=>f.sphere===(G.ship?.loc||'realm')) || null;
     const alreadyCollected = fs && G.fragsCollected && G.fragsCollected.has(fs.id);
 
     if(!fs) {
@@ -15419,7 +15494,7 @@ function _lsShowInteract(poi) {
     } else {
       const guardian = FRAG_GUARDIANS[fs.guardianKey];
       document.getElementById('ls-interact-prompt').textContent =
-        `The Flotsam Field crackles with hostile energy. A guardian vessel — ${guardian?.name || 'unknown'} — blocks access to the Fragment.`;
+        `${fs.n} crackles with hostile energy. A guardian vessel — ${guardian?.name || 'unknown'} — blocks access to the Fragment.`;
       const fightBtn = document.createElement('button');
       fightBtn.className='btn'; fightBtn.style.color='#ffdd44';
       fightBtn.textContent='⚔ Engage Guardian';
@@ -15448,7 +15523,7 @@ function _lsShowInteract(poi) {
 
   } else if(poi.type === 'hazard_zone') {
     document.getElementById('ls-interact-prompt').textContent =
-      "⚠ Harvester disruption field — enemy activity is heavy. Proceed with caution.";
+      `⚠ ${poi.label || "Enemy Activity Zone"} — enemy ships are active in this region. Proceed with caution.`;
     const closeBtn = document.createElement('button');
     closeBtn.className='btn'; closeBtn.textContent='⚠ Acknowledged';
     closeBtn.onclick = () => panel.classList.remove('on');
@@ -15589,9 +15664,30 @@ function _lsRender(cx, W, H, dt) {
 
   // Background — deep space gradient
   cx.fillStyle='#020010'; cx.fillRect(0,0,W,H);
-  // Nebula tint for Fentheris System (blue)
+  // Sphere-specific nebula tint — uses sphere colour from LOCAL_QUEST_DATA
+  const _lsNebSph = G.ship?.loc || 'realm';
+  const _lsNebCols = {
+    realm:  'rgba(20,40,120,0.18)',
+    refuge: 'rgba(20,70,100,0.18)',
+    grey:   'rgba(30,70,10,0.18)',
+    krynn:  'rgba(100,50,10,0.18)',
+    cluster:'rgba(10,80,70,0.18)',
+    hero:   'rgba(80,40,10,0.18)',
+    dark:   'rgba(10,10,40,0.22)',
+  };
+  const _lsNebWalls = {
+    realm:  ['rgba(30,60,180,0.08)','rgba(40,80,220,0.35)','#4466cc44'],
+    refuge: ['rgba(20,60,100,0.08)','rgba(30,80,160,0.30)','#4488dd44'],
+    grey:   ['rgba(30,70,10,0.08)', 'rgba(50,120,20,0.30)','#66aa2244'],
+    krynn:  ['rgba(100,50,10,0.08)','rgba(180,80,20,0.30)','#cc661144'],
+    cluster:['rgba(10,80,70,0.08)', 'rgba(20,140,120,0.30)','#22bbaa44'],
+    hero:   ['rgba(80,40,10,0.08)', 'rgba(150,80,20,0.30)','#aa661144'],
+    dark:   ['rgba(10,10,50,0.10)', 'rgba(20,10,80,0.35)', '#2222aa44'],
+  };
+  const _nbCol  = _lsNebCols[_lsNebSph]  || _lsNebCols.realm;
+  const _wCols  = _lsNebWalls[_lsNebSph] || _lsNebWalls.realm;
   const nb = cx.createRadialGradient(W*0.5,H*0.5,0,W*0.5,H*0.5,W*0.65);
-  nb.addColorStop(0,'rgba(20,40,120,0.18)'); nb.addColorStop(1,'transparent');
+  nb.addColorStop(0,_nbCol); nb.addColorStop(1,'transparent');
   cx.fillStyle=nb; cx.fillRect(0,0,W,H);
 
   cx.save();
@@ -15601,11 +15697,11 @@ function _lsRender(cx, W, H, dt) {
   const bR = Math.min(LS.W, LS.H)*0.498;
   const wallGrd = cx.createRadialGradient(LS.W/2,LS.H/2,bR*0.88,LS.W/2,LS.H/2,bR);
   wallGrd.addColorStop(0,'transparent');
-  wallGrd.addColorStop(0.6,'rgba(30,60,180,0.08)');
-  wallGrd.addColorStop(1,'rgba(40,80,220,0.35)');
+  wallGrd.addColorStop(0.6,_wCols[0]);
+  wallGrd.addColorStop(1,_wCols[1]);
   cx.fillStyle=wallGrd;
   cx.beginPath(); cx.arc(LS.W/2,LS.H/2,bR,0,Math.PI*2); cx.fill();
-  cx.strokeStyle='#4466cc44'; cx.lineWidth=2;
+  cx.strokeStyle=_wCols[2]; cx.lineWidth=2;
   cx.beginPath(); cx.arc(LS.W/2,LS.H/2,bR,0,Math.PI*2); cx.stroke();
 
   // ── Stars ──
@@ -16612,7 +16708,7 @@ function lqTrackKill(enemyKey) {
     { qid:'realm_q1_kills',  condition: (k) => k==='harvester' },
     { qid:'realm_q2_kills',  condition: (k) => k==='blackfleet' },
     { qid:'realm_q4_kills',  condition: (k) => k==='nautiloid' },
-    { qid:'grey_q3_kills',   condition: (k) => k==='nautiloid' },
+    { qid:'grey_q3_kills',   condition: (k) => k==='harvester' || k==='trull_slaver' },
     { qid:'refuge_q1_kills', condition: (k) => k==='githyanki' },
   ];
   trackers.forEach(t => {
