@@ -12333,7 +12333,10 @@ function claimLoot(){
     const clearedSite = FRAGMENT_SITES.find(fs => fs.id === G._lootKey.replace('fg_','fs_') ||
       FRAGMENT_SITES.find(f=>f.guardianKey===G._lootKey)?.id === fs.id);
     const wonSite = FRAGMENT_SITES.find(fs=>fs.guardianKey===G._lootKey);
-    G.ship.atFragSite = wonSite || null;
+    // Only lock player to fragment site if they traveled there directly from the map.
+    // When coming from local space / dungeon (_lsPendingReturn), player is already at
+    // their sphere and must NOT be locked to an external fragment site position.
+    G.ship.atFragSite = _lsPendingReturn ? null : (wonSite || null);
     G.phase='map'; setTag('Navigation'); updateUI();
     /* title plays continuously */
     _lsCheckReturnAfterCombat();
