@@ -292,6 +292,32 @@ body {
 .cbt-ewpn-disabled-bar { font-size:8px; color:#886644; font-family:'Cinzel',serif; margin-top:3px; letter-spacing:1px; }
 .cbt-ecd-pip { position:absolute; top:-4px; right:-4px; background:#cc4400; color:#fff; font-size:8px; border-radius:50%; width:13px; height:13px; display:flex; align-items:center; justify-content:center; font-family:'Cinzel',serif; font-weight:700; }
 
+/* ── Multi-enemy stacking stack ───────────────────────────────────────── */
+#cbt-enemy-stack { display:flex; flex-direction:column; align-items:center; gap:5px; }
+.cbt-extra-row   { display:flex; gap:6px; justify-content:center; flex-wrap:wrap; }
+.cbt-extra-unit  { display:flex; flex-direction:column; align-items:center; gap:2px; }
+.cv-extra-canvas {
+  border-radius:4px; border:1px solid #aa334455;
+  background:rgba(15,3,38,0.75);
+  transition: transform 0.15s, box-shadow 0.15s;
+  cursor:default;
+}
+.cv-extra-canvas:hover { border-color:#cc6655; }
+.cbt-extra-name {
+  font-family:'Cinzel',serif; font-size:7px; color:#886655;
+  text-align:center; letter-spacing:0.5px; max-width:88px;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+@keyframes extra-attack-flash {
+  0%   { box-shadow:none; transform:scale(1); border-color:#aa334455; }
+  25%  { box-shadow:0 0 16px 5px #ff6633, 0 0 6px 2px #ff3300; transform:scale(1.22); border-color:#ff6633; }
+  65%  { box-shadow:0 0 10px 3px #ff884488; transform:scale(1.14); border-color:#ff8844; }
+  100% { box-shadow:none; transform:scale(1); border-color:#aa334455; }
+}
+.cv-extra-canvas.stack-attacking {
+  animation: extra-attack-flash 0.75s ease-out forwards;
+}
+
 /* Combat ability row */
 .cbt-ability-row { display:flex; gap:5px; flex-wrap:wrap; justify-content:center; width:100%; max-width:660px; margin-top:4px; }
 .cbt-ability-row .btn { font-size: 0.688em; padding:6px 10px; word-break:break-word; overflow-wrap:anywhere; }
@@ -1934,7 +1960,10 @@ body {
       <div class="cbt-col cbt-col-enemy">
         <div class="cblock">
           <div class="cname" id="ct-ename">Shell Drifter</div>
-          <canvas id="cv-enemy" width="200" height="130"></canvas>
+          <div id="cbt-enemy-stack">
+            <canvas id="cv-enemy" width="200" height="130"></canvas>
+            <!-- extra enemy canvases injected here by _buildEnemyStack() -->
+          </div>
           <div class="cstat">Hull: <span id="ct-ehp">80</span>/<span id="ct-emhp">80</span></div>
           <div class="hpw"><div class="hpf" id="ct-ebar" style="width:100%"></div></div>
           <div class="cstat">Crew: <span id="ct-ecrew">—</span> <span id="ct-emcrew" style="color:#556677"></span></div>
@@ -4031,9 +4060,11 @@ function stopLiveClock() {
   if (_clockTicker) { clearInterval(_clockTicker); _clockTicker = null; }
 }
 
-function resetLiveClock() {
-  // Called at start of a fresh leg — reset HWM and base
-  _clockHWM   = 0;
+function resetLiveClock(pausedFrac) {
+  // Called at start of a fresh leg — reset HWM and base.
+  // When resuming mid-journey (e.g. after a waystation stop), pass the
+  // fraction already completed so the clock doesn't jump backward.
+  _clockHWM   = pausedFrac ?? 0;
   _clockBaseH = G.watch?.totalHours || 0;
   _clockLegStart = performance.now();
   _clockLegHours = _clockBaseH;
@@ -6686,7 +6717,7 @@ function startTravel(toId, _resumeWatchesLeft, _pausedPos, _pausedProg, _savedLa
   }
 
   if(G.tvl)G.tvl._eventLocked=false; G.tvl.timer = setInterval(travelTick, tickMs);
-  startTravelHum(); startLiveClock(); resetLiveClock();
+  startTravelHum(); startLiveClock(); resetLiveClock(_pausedProg ? _pausedProg / 100 : 0);
   // Open the drift travel sequence visual
   if (!_pausedProg) {
     tsOpen(lane);
@@ -10160,6 +10191,93 @@ function updateCbtUI(){
   updateUI();
 }
 
+// ── Draw any enemy ship onto an arbitrary canvas context ──────────────────
+// Used by the multi-enemy stack to render queued enemies at any size.
+function _drawEnemyOnCtx(key, ctx, cw, ch, w, h) {
+  ctx.clearRect(0, 0, cw, ch);
+  const cx = cw/2, cy = ch/2;
+  const r  = Math.round(h * 0.47); // fallback procedural draw radius
+  const _eF = (k, flip, fn) => drawShipImg(k, ctx, cx, cy, w, h, flip, fn);
+  if(key==='fg_realm')              _eF('squid',false,             ()=>drawSquid(ctx,cx,cy,r,true));
+  else if(key==='fg_grey')          _eF('hammer',false,            ()=>drawHammer(ctx,cx,cy,r,true));
+  else if(key==='fg_krynn')         _eF('githyanki',false,         ()=>drawGithyanki(ctx,cx,cy,r));
+  else if(key==='fg_cluster')       _eF('squid',false,             ()=>drawSquid(ctx,cx,cy,r,true));
+  else if(key==='fg_hero')          _eF('beholder',false,          ()=>drawBeholder(ctx,cx,cy,r));
+  else if(key==='fg_dark')          _eF('leviathan',false,         ()=>drawLeviathan(ctx,cx,cy,r));
+  else if(key==='corsair')          _eF('corsair',false,           ()=>drawCorsairSloop(ctx,cx,cy,r,true));
+  else if(key==='plunderer')        _eF('plunderer',false,         ()=>drawPlundererBrig(ctx,cx,cy,r,true));
+  else if(key==='blackfleet')       _eF('blackfleet',false,        ()=>drawBlackFleetReaver(ctx,cx,cy,r,true));
+  else if(key==='nautiloid')        _eF('nautiloid',false,         ()=>drawNautiloid(ctx,cx,cy,r));
+  else if(key==='beholder')         _eF('beholder',false,          ()=>drawBeholder(ctx,cx,cy,r));
+  else if(key==='leviathan')        _eF('leviathan',false,         ()=>drawLeviathan(ctx,cx,cy,r));
+  else if(key==='githyanki')        _eF('githyanki',false,         ()=>drawGithyanki(ctx,cx,cy,r));
+  else if(key==='harvester')        _eF('harvester',false,         ()=>drawNeogi(ctx,cx,cy,r));
+  else if(key==='thrikreen')        _eF('thrikreen',false,         ()=>drawThriKreen(ctx,cx,cy,r));
+  else if(key==='vodoniPatrol')     _eF('vodoniPatrol',false,      ()=>drawVodoniWarship(ctx,cx,cy,r));
+  else if(key==='trullBattle')      _eF('trullBattle',false,       ()=>drawTrullBattleCruiser(ctx,cx,cy,r));
+  else if(key==='frStalker')        _eF('frStalker',false,         ()=>drawFarRealmStalker(ctx,cx,cy,r));
+  else if(key==='frHorde')          _eF('frHorde',false,           ()=>drawFarRealmHorde(ctx,cx,cy,r));
+  else if(key==='goblin_cutter')    _eF('goblin_cutter',false,     ()=>drawGoblinCutter(ctx,cx,cy,r));
+  else if(key==='goblin_rocketer')  _eF('goblin_rocketer',false,   ()=>drawGoblinRocketer(ctx,cx,cy,r));
+  else if(key==='goblin_shaman_boat')_eF('goblin_shaman_boat',false,()=>drawGoblinShaman(ctx,cx,cy,r));
+  else if(key==='trull_patrol')     _eF('trull_patrol',false,      ()=>drawTrullPatrol(ctx,cx,cy,r));
+  else if(key==='trull_enforcer')   _eF('trull_enforcer',false,    ()=>drawTrullEnforcer(ctx,cx,cy,r));
+  else if(key==='trull_slaver')     _eF('trull_slaver',false,      ()=>drawTrullSlaver(ctx,cx,cy,r));
+  else if(key==='trull_warship')    _eF('trull_warship',false,     ()=>drawTrullWarship(ctx,cx,cy,r));
+  else if(key==='trull_dreadnought')_eF('trull_dreadnought',false, ()=>drawTrullDreadnought(ctx,cx,cy,r));
+  else if(key==='phlog_mote')       _eF('phlog_mote',false,        ()=>drawPhlogMote(ctx,cx,cy,r));
+  else if(key==='phlog_jellyfish')  _eF('phlog_jellyfish',false,   ()=>drawPhlogJellyfish(ctx,cx,cy,r));
+  else if(key==='phlog_flamewing')  _eF('phlog_flamewing',false,   ()=>drawPhlogFlamewing(ctx,cx,cy,r));
+  else if(key==='phlog_vinecrawler')_eF('phlog_vinecrawler',false, ()=>drawPhlogVinecrawler(ctx,cx,cy,r));
+  else if(key==='void_shark')       _eF('void_shark',false,        ()=>drawVoidShark(ctx,cx,cy,r));
+  else if(key==='wb_grex')          _eF('wb_grex',false,           ()=>drawWarlordGrex(ctx,cx,cy,r));
+  else if(key==='wb_admiral')       _eF('wb_admiral',false,        ()=>drawHollowAdmiral(ctx,cx,cy,r));
+  else if(key==='wb_clutch')        _eF('wb_clutch',false,         ()=>drawClutchMother(ctx,cx,cy,r));
+  else if(key==='wb_murmur')        _eF('wb_murmur',false,         ()=>drawTheMurmur(ctx,cx,cy,r));
+  else drawSquid(ctx, cx, cy, r, true);
+}
+
+// ── Build / refresh the stacked extra-enemy canvas row ────────────────────
+// Called after startCombat (to show the queue), after each enemy dies
+// (to remove them), and at battle end (to clear).
+function _buildEnemyStack() {
+  const stack = document.getElementById('cbt-enemy-stack');
+  if(!stack) return;
+  // Remove any previous extra canvases
+  stack.querySelectorAll('.cbt-extra-row').forEach(el => el.remove());
+  const queue = G.cbt?._lsExtraQueue;
+  if(!queue || queue.length === 0) return;
+
+  const row = document.createElement('div');
+  row.className = 'cbt-extra-row';
+
+  queue.forEach((xtra, idx) => {
+    const unit = document.createElement('div');
+    unit.className = 'cbt-extra-unit';
+
+    const c = document.createElement('canvas');
+    c.width  = 90; c.height = 60;
+    c.className = 'cv-extra-canvas';
+    c.id    = `cv-extra-${idx}`;
+    c.title = xtra.data.name || xtra.key;
+    unit.appendChild(c);
+
+    const lbl = document.createElement('div');
+    lbl.className = 'cbt-extra-name';
+    lbl.textContent = xtra.data.name || xtra.key;
+    unit.appendChild(lbl);
+
+    row.appendChild(unit);
+
+    // Draw immediately (on next tick so DOM is attached)
+    requestAnimationFrame(() => {
+      _drawEnemyOnCtx(xtra.key, c.getContext('2d'), 90, 60, 74, 48);
+    });
+  });
+
+  stack.appendChild(row);
+}
+
 function drawCbtShips(key){
   const pc=document.getElementById('cv-player').getContext('2d');
   pc.clearRect(0,0,200,130);
@@ -12126,34 +12244,65 @@ async function enemyTurn() {
     return;
   }
 
-  // ── Extra enemy attacks (multi-enemy stacking from local space) ──────────
+  // ── Extra enemy attacks (multi-enemy stacking) ───────────────────────────
   if(G.cbt._lsExtraQueue && G.cbt._lsExtraQueue.length > 0) {
-    for(const extra of G.cbt._lsExtraQueue) {
+    // Tick extra-enemy cooldowns in sync with main enemy
+    G.cbt._lsExtraQueue.forEach(xtra => {
+      if(xtra._eCds) xtra._eCds = xtra._eCds.map(cd => Math.max(0, cd - 1));
+    });
+    for(let xi = 0; xi < G.cbt._lsExtraQueue.length; xi++) {
+      const xtra = G.cbt._lsExtraQueue[xi];
       if(G.phase !== 'combat') return;
-      const xd = extra.data;
-      // Pick a random atk entry for the extra enemy
-      const xAtks = ENM[extra.key]?.atk || [{n:'Weapons Fire',d:[1,6],txt:'Fire from the flanking vessel!'}];
-      const xAtk  = xAtks[Math.floor(Math.random() * xAtks.length)];
-      const xRaw  = roll(xAtk.d[0], xAtk.d[1]);
-      const xRes  = G.ship.resist || 0;
-      const xDmg  = Math.max(1, xRaw - xRes);
-      cLogSep(`— ${xd.name || extra.key} —`);
-      cLog(`${xd.name}: ${xAtk.n} — ${xAtk.txt}`, 'dmg');
-      await sleep(350);
-      if(G.phase !== 'combat') return;
-      triggerAnim(pCV(), 'anim-shake');
-      snd('player_hit', 0.65);
-      if(!G._godMode) {
-        G.ship.hull -= xDmg;
-        floatDmg(pCV(), xDmg, false);
-        cLog(`Flanking attack hits for ${xDmg} hull damage!`, 'dmg');
-        if(xAtk.crew) {
-          G.ship.crew = Math.max(0, G.ship.crew - xAtk.crew);
-          cLog(`☠ ${xAtk.crew} crew lost to ${xd.name}!`, 'dmg');
+      const xd    = xtra.data;
+      const xName = xd.name || xtra.key;
+      // Flash the stacked canvas for this enemy
+      const xCanvas = document.getElementById(`cv-extra-${xi}`);
+      if(xCanvas) { xCanvas.classList.add('stack-attacking'); }
+      // Try a weapon with available cooldown first
+      let fired = false;
+      if(xtra._eWpns && xtra._eWpns.length > 0) {
+        const avail = xtra._eWpns.map((w,i)=>({w,i})).filter(({i})=>(xtra._eCds[i]||0)===0);
+        if(avail.length > 0) {
+          const tot = avail.reduce((s,{w})=>s+(w.threat||1),0);
+          let pick = Math.random()*tot, chosen = avail[avail.length-1];
+          for(const en of avail){ pick-=(en.w.threat||1); if(pick<=0){chosen=en;break;} }
+          const {w,i} = chosen;
+          const raw = roll(w.d[0], w.d[1]);
+          const res = (w.pierceres||w.ignoreResist) ? 0 : (G.ship.resist||0);
+          const dmg = Math.max(1, raw - res);
+          xtra._eCds[i] = w.cd || 0;
+          cLogSep(`— ${xName} —`);
+          cLog(`${xName}: ${w.ico||'⚔'} ${w.n} — ${w.txt}`, 'dmg');
+          await sleep(350);
+          if(G.phase !== 'combat') return;
+          triggerAnim(pCV(), 'anim-shake'); snd('player_hit', 0.65);
+          if(!G._godMode) {
+            G.ship.hull -= dmg; floatDmg(pCV(), dmg, false);
+            cLog(`Flanking hit: ${dmg} hull damage!`, 'dmg');
+            if(w.crew) { G.ship.crew = Math.max(0, G.ship.crew - w.crew); cLog(`☠ ${w.crew} crew lost!`, 'dmg'); }
+          }
+          fired = true;
+        }
+      }
+      if(!fired) {
+        const xAtks = ENM[xtra.key]?.atk || [{n:'Weapons Fire',d:[1,6],txt:'Fire from the flanking vessel!'}];
+        const xAtk  = xAtks[Math.floor(Math.random()*xAtks.length)];
+        const dmg   = Math.max(1, roll(xAtk.d[0], xAtk.d[1]) - (G.ship.resist||0));
+        cLogSep(`— ${xName} —`);
+        cLog(`${xName}: ${xAtk.n} — ${xAtk.txt}`, 'dmg');
+        await sleep(350);
+        if(G.phase !== 'combat') return;
+        triggerAnim(pCV(), 'anim-shake'); snd('player_hit', 0.65);
+        if(!G._godMode) {
+          G.ship.hull -= dmg; floatDmg(pCV(), dmg, false);
+          cLog(`Flanking hit: ${dmg} hull damage!`, 'dmg');
+          if(xAtk.crew) { G.ship.crew = Math.max(0, G.ship.crew - xAtk.crew); cLog(`☠ ${xAtk.crew} crew lost!`, 'dmg'); }
         }
       }
       updateCbtUI();
       await sleep(500);
+      // Remove glow
+      setTimeout(() => { if(xCanvas) xCanvas.classList.remove('stack-attacking'); }, 200);
       if(G.ship.hull <= 0) { doDefeat('hull_combat'); return; }
       if(G.ship.crew !== undefined && G.ship.crew <= 0) { doDefeat('crew_combat'); return; }
     }
@@ -12193,23 +12342,20 @@ function cbtWin(){
   const items=genLoot(G.cbt.pendingLootKey);
   const lootKey=G.cbt.pendingLootKey;
   G.ship.gold+=g;
-  // Track kill for local quest system
   if(e._key) lqTrackKill(e._key);
   snd('enemy_explode', 1.0);
   updateCbtUI();
 
-  // ── Multi-enemy queue: if extras remain, bank this loot and fight the next ──
+  // ── Multi-enemy queue: advance to next enemy if any remain ────────────
   if(G.cbt._lsExtraQueue && G.cbt._lsExtraQueue.length > 0) {
-    // Bank gold and items for the batch payout
     G.cbt._lsBatchGold  = (G.cbt._lsBatchGold  || 0) + g;
     G.cbt._lsBatchItems = (G.cbt._lsBatchItems || []).concat(items);
-    // Shift next enemy from queue into the main slot
     const next = G.cbt._lsExtraQueue.shift();
     const nt   = ENM[next.key];
-    const nextWpns    = (nt.wpns||[]).map(w=>({...w}));
+    const nextWpns  = next._eWpns || (nt.wpns||[]).map(w=>({...w}));
     G.cbt.enemy       = next.data;
     G.cbt.eWpns       = nextWpns;
-    G.cbt.eCds        = nextWpns.map(()=>0);
+    G.cbt.eCds        = next._eCds || nextWpns.map(()=>0);
     G.cbt.eDisabled   = nextWpns.map(()=>0);
     G.cbt.pendingLootKey = next.key;
     G.cbt.rageStacks  = 0;
@@ -12221,17 +12367,17 @@ function cbtWin(){
     document.getElementById('ct-ename').textContent = `${next.data.name} · ${nt.sub}`;
     document.getElementById('ct-title').textContent = `⚔ ${(next.data.name).toUpperCase()} ⚔`;
     drawCbtShips(next.key);
+    _buildEnemyStack();
     updateCbtUI(); buildCbtBtns();
-    return; // stay in combat
+    return;
   }
 
-  // ── Final enemy defeated — combine batch loot if this was a multi-fight ──
+  // ── Final enemy — combine batch loot ─────────────────────────────────
   const totalGold  = (G.cbt._lsBatchGold  || 0) + g;
   const totalItems = (G.cbt._lsBatchItems || []).concat(items);
   const wasBatch   = !!(G.cbt._lsBatchGold);
-  // Clear batch state
   G.cbt._lsBatchGold = 0; G.cbt._lsBatchItems = [];
-
+  _buildEnemyStack(); // clear stack
   document.getElementById('ov-combat').classList.remove('on');
   // Check if this was a fragment guardian fight
   const fragSite = G._pendingFragSite;
@@ -15929,7 +16075,6 @@ function closeLsOverlay() {
   document.getElementById('ls-npc-dialog')?.classList.remove('on');
   if(LS.animId) { cancelAnimationFrame(LS.animId); LS.animId = null; }
   LS.keys = {};
-  // Stop engine hum when leaving local space
   if(LS._humActive) { stopTravelHum(); LS._humActive = false; }
   setTag('Navigation'); updateUI();
   _syncWatchHudVisibility();
@@ -16816,15 +16961,13 @@ function _lsTriggerCombat(enemy) {
   // Remove the triggering enemy from local space
   LS.enemies = LS.enemies.filter(e => e.uid !== enemy.uid);
 
-  // ── Multi-enemy bundling: find any other enemies within aggro range ──
-  // If multiple hostiles are nearby when combat starts, they all pile in.
+  // ── Multi-enemy bundling: find other enemies within aggro range ──
   const BUNDLE_RANGE = 280;
   const extras = [];
   LS.enemies = LS.enemies.filter(e => {
     const dx = e.x - enemy.x, dy = e.y - enemy.y;
     if(Math.sqrt(dx*dx+dy*dy) < BUNDLE_RANGE && ENM[e.key]) {
-      extras.push(e);
-      return false; // remove from LS
+      extras.push(e); return false;
     }
     return true;
   });
@@ -16848,25 +16991,29 @@ function _lsTriggerCombat(enemy) {
   }, 600);
 }
 
-// ── Multi-enemy combat: queue extras onto G.cbt after primary starts ──────
+// ── Multi-enemy combat ─────────────────────────────────────────────────────
 function _lsStartMultiCombat(primary, extras) {
-  // Start combat with primary as usual
   startCombat(primary.key);
-  // Store the extra enemy queue on the combat state
-  // Each entry: { key, data (full ENM copy with live hp/crew) }
   G.cbt._lsExtraQueue = extras.map(e => {
     const t = ENM[e.key];
-    return { key: e.key, data: {...t, hp: t.maxHp, crew: t.crew !== undefined ? t.crew : undefined,
-      burnLeft:0, stunsNext:false, _key:e.key, _healUsed:false,
-      _buffResist:0, _buffResistTurns:0, _buffAtk:0, _buffAtkTurns:0 } };
+    const eWpns = (t.wpns||[]).map(w=>({...w}));
+    return {
+      key: e.key,
+      data: {...t, hp:t.maxHp, crew:t.crew!==undefined?t.crew:undefined,
+        burnLeft:0, stunsNext:false, _key:e.key, _healUsed:false,
+        _buffResist:0, _buffResistTurns:0, _buffAtk:0, _buffAtkTurns:0},
+      _eWpns: eWpns,
+      _eCds:  eWpns.map(()=>0)
+    };
   });
-  G.cbt._lsBatchGold  = 0;   // accumulate gold from all enemies in this battle
-  G.cbt._lsBatchItems = [];   // accumulate items
-  const names = extras.map(e => ENM[e.key]?.name || e.key).join(', ');
+  G.cbt._lsBatchGold  = 0;
+  G.cbt._lsBatchItems = [];
   setTimeout(() => {
+    const names = extras.map(e => ENM[e.key]?.name || e.key).join(', ');
     cLog(`⚠ MULTIPLE HOSTILES: ${names} also engage!`, 'dmg');
-    cLog(`Enemy formation: ${1 + extras.length} ships. Each will attack on the enemy turn.`, 'dmg');
-  }, 800);
+    cLog(`Enemy formation: ${1 + extras.length} ships. Each attacks on the enemy turn.`, 'dmg');
+    _buildEnemyStack();
+  }, 900);
 }
 
 // Flag so we re-open LS after combat ends when coming from LS
@@ -17712,7 +17859,6 @@ function _lsCheckReturnAfterCombat() {
     if(_fdFragPoi) _fdFragPoi._cleared = true;
     document.getElementById('ov-fragsitee')?.classList.remove('on');
     if(FD.animId){ cancelAnimationFrame(FD.animId); FD.animId = null; }
-    if(FD._humActive){ stopTravelHum(); FD._humActive = false; }
     setTimeout(() => openLocalSpace(), 600);
     return;
   }
@@ -18579,7 +18725,7 @@ function _fdUpdatePlayer(dt){
   else if(_fdIsInFloor(FD.px,ny)){FD.py=ny;FD.pvx=0;}
   else                           {FD.pvx=0;FD.pvy=0;}
 
-  // Engine hum — fade in when moving in dungeon, fade out when stopped
+  // Engine hum in dungeon
   const _fdSpd=Math.sqrt(FD.pvx*FD.pvx+FD.pvy*FD.pvy);
   if(_fdSpd>8&&!FD._humActive){startTravelHum();FD._humActive=true;}
   else if(_fdSpd<3&&FD._humActive){stopTravelHum();FD._humActive=false;}
@@ -18646,7 +18792,6 @@ function _fdTriggerCombat(idx){
   FD.canvas?.removeEventListener('click',_fdHandleClick);
   document.removeEventListener('keydown',_fdKeyDown);
   document.removeEventListener('keyup',_fdKeyUp);
-  if(FD._humActive){stopTravelHum();FD._humActive=false;}
   document.getElementById('ov-fragsitee').classList.remove('on');
   setTimeout(()=>{_lsPendingReturn=true;startCombat(e.key);},400);
 }
