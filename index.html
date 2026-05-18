@@ -15691,7 +15691,7 @@ function _lsShowInteract(poi) {
       _lsLog('Docked at ' + _dockName + '.', '');
       document.getElementById('ls-dock-title').textContent = '⚓ ' + _dockName.toUpperCase();
       const _departBtn = document.getElementById('ls-dock-depart-btn');
-      if(_departBtn) _departBtn.textContent = '⛵ Depart ' + (_dSphId === 'refuge' ? 'Refuge Station' : _dSphId === 'grey' ? 'Korreth' : 'Fentheris System');
+      if(_departBtn) _departBtn.textContent = '⛵ Depart System';
       LS.dockOpen = true;
       LS.pTargetX = null; LS.pTargetY = null;
       panel.classList.remove('on');
@@ -15713,13 +15713,13 @@ function _lsShowInteract(poi) {
         ensureLqState();
         LQ.sphere = _npcSphereId; LQ.data = LOCAL_QUEST_DATA[_npcSphereId];
         panel.classList.remove('on');
-        if(npcData.shop) {
-          LQ.selectedNpc = npcData;
-          // Open QM shop in a LS-friendly way
+        LQ.selectedNpc = npcData;
+        if(npcData.shop && (!npcData.quests || npcData.quests.length === 0)) {
+          // Pure QM with no quests — open shop directly
           _lsOpenQmCard(npcData);
         } else {
-          LQ.selectedNpc = npcData;
-          _lsOpenNpcCard(npcData);
+          // NPC has quests (may also have a shop) — show quest card first
+          _lsOpenNpcCard(npcData, npcData.shop);
         }
       };
       btns.appendChild(hailBtn);
@@ -15781,7 +15781,7 @@ function _lsShowInteract(poi) {
 }
 
 // ── NPC HAIL DIALOG — self-contained inside ov-localspace ────────────────
-function _lsOpenNpcCard(npc) {
+function _lsOpenNpcCard(npc, hasShop=false) {
   ensureLqState();
   const dlg = document.getElementById('ls-npc-dialog');
 
@@ -15849,6 +15849,19 @@ function _lsOpenNpcCard(npc) {
       prog.textContent = 'In progress — ' + quest.checkDesc;
       btnRow.appendChild(prog);
     }
+  }
+
+  // Shop button — shown for QM NPCs that also have quests
+  if(hasShop) {
+    const shopBtn = document.createElement('button');
+    shopBtn.className='btn'; shopBtn.textContent='🛒 Open Shop';
+    shopBtn.style.cssText='border-color:#33664455;color:#44ffcc;';
+    shopBtn.onclick = () => {
+      dlg.classList.remove('on');
+      LS.interactOpen = false;
+      _lsOpenQmCard(npc);
+    };
+    btnRow.appendChild(shopBtn);
   }
 
   const closeBtn = document.createElement('button');
