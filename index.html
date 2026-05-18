@@ -1073,6 +1073,17 @@ body {
 #fd-interact-desc { font-size:0.625em; color:#887755; font-style:italic; }
 #fd-interact-btns { display:flex; gap:8px; justify-content:center; flex-wrap:wrap; margin-top:4px; }
 #fd-joystick-zone { position:absolute; bottom:60px; left:20px; width:100px; height:100px; z-index:12; display:none; touch-action:none; }
+#fd-joystick-base {
+  position:relative; width:100px; height:100px; border-radius:50%;
+  background:rgba(200,140,50,0.10); border:1px solid #cc883344;
+}
+#fd-joystick-knob {
+  position:absolute; top:50%; left:50%;
+  width:36px; height:36px; border-radius:50%;
+  background:rgba(200,140,50,0.30); border:1px solid #cc883388;
+  transform:translate(-50%,-50%);
+  pointer-events:none;
+}
 
 /* ── Ask Locals panel ── */
 #ls-locals-panel {
@@ -2435,8 +2446,8 @@ body {
 
     <!-- Mobile joystick (reuses same logic) -->
     <div id="fd-joystick-zone">
-      <div id="ls-joystick-base" style="width:100px;height:100px;border-radius:50%;background:rgba(68,136,255,0.08);border:1px solid #4488ff33;">
-        <div id="fd-joystick-knob" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:36px;height:36px;border-radius:50%;background:rgba(100,150,255,0.25);border:1px solid #4488ff55;"></div>
+      <div id="fd-joystick-base">
+        <div id="fd-joystick-knob"></div>
       </div>
     </div>
   </div>
@@ -12962,6 +12973,9 @@ function showMsg(title,body,btn,cb,btn2,cb2){
     // Just acknowledge — don't show the new msg, don't clobber the resume prompt
     return;
   }
+  // Remove any stale auto-rest checkbox injected by the watch/rest system
+  const _staleRestRow = document.getElementById('auto-rest-row');
+  if(_staleRestRow) _staleRestRow.remove();
   document.getElementById('msgtitle').textContent=title;
   document.getElementById('msgbody').textContent=body;
   document.getElementById('msgbtn').textContent=btn||'Continue';
@@ -16054,6 +16068,8 @@ function _lsLocalsRevealFragment() {
   const sphereId = G.ship?.loc || 'realm';
   ensureLqState();
   G.localQuests[sphereId+'_frag_revealed'] = true;
+  // Also add to G.clues so the main navigation map shows the fragment site marker
+  if(G.clues) G.clues.add(sphereId);
   const fragPoi = LS.pois?.find(p=>p.type==='fragment');
   if(fragPoi) { fragPoi.hidden = false; fragPoi._pingT = 8.0; }
   const fs = FRAGMENT_SITES.find(f=>f.sphere===sphereId);
@@ -17058,7 +17074,7 @@ function _lsRender(cx, W, H, dt) {
   });
 
   // ── POI icons ──
-  LS.pois.filter(p=>p.type!=='hazard_zone'&&p.type!=='patrol_zone').forEach(p=>{
+  LS.pois.filter(p=>p.type!=='hazard_zone'&&p.type!=='patrol_zone'&&!p.hidden).forEach(p=>{
     // Glow halo
     const grd = cx.createRadialGradient(p.x,p.y,0,p.x,p.y,38);
     grd.addColorStop(0,hexA(p.col,'33')); grd.addColorStop(1,'transparent');
@@ -17332,7 +17348,7 @@ function _lsRenderMinimap() {
   });
 
   // POIs
-  LS.pois.filter(p=>p.type!=='hazard_zone'&&p.type!=='patrol_zone').forEach(p=>{
+  LS.pois.filter(p=>p.type!=='hazard_zone'&&p.type!=='patrol_zone'&&!p.hidden).forEach(p=>{
     const mx2 = ox+p.x*scale;
     const my2 = oy+p.y*scale;
     mx.fillStyle=p.col;
@@ -17465,15 +17481,14 @@ document.getElementById('ls-canvas').addEventListener('click', e => {
 // ── FD (Fragment Dungeon) MOBILE JOYSTICK ────────────────────────────────
 (function() {
   const zone = document.getElementById('fd-joystick-zone');
-  if(!zone) return;
-  // The knob is the first child div inside the base div
-  const knob = zone.querySelector('div div') || zone.querySelector('div');
+  const knob = document.getElementById('fd-joystick-knob');
+  if(!zone || !knob) return;
   let startX=0, startY=0, _active=false;
   const R=32;
   zone.addEventListener('touchstart', e=>{
     e.preventDefault(); _active=true; FD.joystickActive=true;
     const rect=zone.getBoundingClientRect();
-    startX=rect.left+50; startY=rect.top+50;
+    startX=rect.left+rect.width/2; startY=rect.top+rect.height/2;
     _updateFdKnob(e.touches[0].clientX, e.touches[0].clientY);
   },{passive:false});
   zone.addEventListener('touchmove', e=>{
@@ -17482,13 +17497,13 @@ document.getElementById('ls-canvas').addEventListener('click', e => {
   },{passive:false});
   zone.addEventListener('touchend', ()=>{
     _active=false; FD.joystickActive=false; FD.joystickX=0; FD.joystickY=0;
-    if(knob) knob.style.transform='translate(-50%,-50%)';
+    knob.style.transform='translate(-50%,-50%)';
   });
   function _updateFdKnob(cx,cy){
     let dx=cx-startX, dy=cy-startY;
     const d=Math.sqrt(dx*dx+dy*dy);
     if(d>R){dx*=R/d;dy*=R/d;}
-    if(knob) knob.style.transform=`translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+    knob.style.transform=`translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
     FD.joystickX=dx/R; FD.joystickY=dy/R;
     if(d>4) FD.pAngle=Math.atan2(dy,dx);
   }
@@ -18159,7 +18174,7 @@ const FD = {
   W:3800, H:2200,
   px:300, py:800,
   pvx:0, pvy:0, pAngle:0,
-  pSpeed:120, pAccel:440, pFriction:0.88,
+  pSpeed:150, pAccel:520, pFriction:0.92,
   pTargetX:null, pTargetY:null,
   keys:{},
   joystickActive:false, joystickX:0, joystickY:0,
