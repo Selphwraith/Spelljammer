@@ -1077,7 +1077,7 @@ body {
 
 /* ── NPC Hail dialog ── */
 
-/* ── Persistent gold bar shown at top of every trade/shop window ── */
+/* ── Persistent TS bar shown at top of every trade/shop window ── */
 .trade-gold-bar {
   display:flex; align-items:center; justify-content:center; gap:6px;
   background:rgba(40,28,0,0.7); border:1px solid #aa880044;
@@ -1680,7 +1680,7 @@ body {
   </div>
   <div class="mhud-stat">
     <span class="mhud-val" id="mhud-gold">120</span>
-    <span class="mhud-lbl">GOLD</span>
+    <span class="mhud-lbl">TS</span>
   </div>
   <div class="mhud-stat">
     <div class="mhud-frags" id="mhud-frags"></div>
@@ -1703,7 +1703,7 @@ body {
     <div class="bw"><div class="bf bc" id="sd-b-crew" style="width:100%"></div></div>
     <div class="srow" style="margin-top:4px"><span class="slabel">Air</span><span class="sval"><span id="sd-air">30</span> days</span></div>
     <div class="bw"><div class="bf ba" id="sd-b-air" style="width:100%"></div></div>
-    <div class="srow" style="margin-top:4px"><span class="slabel">Gold</span><span class="sval">⚜ <span id="sd-gold">120</span></span></div>
+    <div class="srow" style="margin-top:4px"><span class="slabel">TS</span><span class="sval">🔷 <span id="sd-gold">120</span></span></div>
     <div class="srow"><span class="slabel">Speed</span><span class="sval" id="sd-speed">4</span></div>
     <div class="srow"><span class="slabel">Resist</span><span class="sval" id="sd-resist">—</span></div>
   </div>
@@ -1714,7 +1714,7 @@ body {
   <div class="pbox">
     <div class="ptitle">📦 Cargo</div>
     <div class="srow"><span class="slabel">Items</span><span class="sval" id="sd-items">0</span></div>
-    <div class="srow"><span class="slabel">Est. Value</span><span class="sval">⚜ <span id="sd-invval">0</span></span></div>
+    <div class="srow"><span class="slabel">Est. Value</span><span class="sval">🔷 <span id="sd-invval">0</span></span></div>
   </div>
   <div class="pbox">
     <div class="ptitle">⊞ Overlays</div>
@@ -1740,7 +1740,7 @@ body {
     <div class="bw"><div class="bf bc" id="b-crew" style="width:100%"></div></div>
     <div class="srow" style="margin-top:4px"><span class="slabel">Air</span><span class="sval"><span id="s-air">30</span> days</span></div>
     <div class="bw"><div class="bf ba" id="b-air" style="width:100%"></div></div>
-    <div class="srow" style="margin-top:4px"><span class="slabel">Gold</span><span class="sval">⚜ <span id="s-gold">100</span></span></div>
+    <div class="srow" style="margin-top:4px"><span class="slabel">TS</span><span class="sval">🔷 <span id="s-gold">100</span></span></div>
     <div class="srow"><span class="slabel">Speed</span><span class="sval" id="s-speed">4</span></div>
     <div class="srow"><span class="slabel">Resist</span><span class="sval" id="s-resist">—</span></div>
   </div>
@@ -1756,7 +1756,7 @@ body {
   <div class="pbox">
     <div class="ptitle">📦 Cargo Hold</div>
     <div class="srow"><span class="slabel">Items</span><span class="sval" id="s-items">0</span></div>
-    <div class="srow"><span class="slabel">Est. Value</span><span class="sval">⚜ <span id="s-invval">0</span></span></div>
+    <div class="srow"><span class="slabel">Est. Value</span><span class="sval">🔷 <span id="s-invval">0</span></span></div>
   </div>
   <div class="pbox ovl-btns">
     <div class="ptitle">⊞ Overlays</div>
@@ -1905,7 +1905,7 @@ body {
     <div class="loot-title">✦ Victory ✦</div>
     <div class="loot-sub" id="loot-subline">Shell Drifter Destroyed</div>
     <canvas id="loot-canvas" width="180" height="110" style="border:1px solid #44118844;border-radius:5px;background:rgba(8,0,20,0.7);"></canvas>
-    <div class="loot-gold">⚜ <span id="loot-gold">0</span> gold recovered from the wreckage</div>
+    <div class="loot-gold">🔷 <span id="loot-gold">0</span> TS recovered from the wreckage</div>
     <div class="loot-manifest">— Cargo Hold Breached —</div>
     <div class="loot-grid" id="loot-grid"></div>
     <div class="loot-empty" id="loot-empty" style="display:none">The hold was empty.</div>
@@ -1936,11 +1936,11 @@ body {
         <div class="inv-detail-ico" id="inv-d-ico">📦</div>
         <div class="inv-detail-name" id="inv-d-name">Item Name</div>
         <div class="inv-detail-desc" id="inv-d-desc">Description.</div>
-        <div class="inv-detail-val">Sell Value: ⚜ <span id="inv-d-val">0</span></div>
+        <div class="inv-detail-val">Sell Value: 🔷 <span id="inv-d-val">0</span></div>
         <div class="inv-detail-actions" id="inv-d-actions"></div>
       </div>
     </div>
-    <div class="inv-footer" id="inv-footer">0 items — Est. sell value: ⚜ 0</div>
+    <div class="inv-footer" id="inv-footer">0 items — Est. sell value: 🔷 0</div>
     <button class="btn dmg sm" id="inv-sell-all-btn" style="display:none" onclick="sellAllTrade()">💰 Sell All Trade Goods</button>
   </div>
 
@@ -2025,10 +2025,10 @@ body {
     </div>
     <div class="pdesc" id="pt-desc">A bustling spaceport.</div>
     <div class="trade-gold-bar">
-      <span class="tgb-icon">⚜</span>
+      <span class="tgb-icon">🔷</span>
       <span class="tgb-label">Treasury</span>
       <span class="tgb-amount" id="pt-gold">100</span>
-      <span class="tgb-label">gold</span>
+      <span class="tgb-label">TS</span>
     </div>
     <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;justify-content:center;">
       <button id="pt-rumor-btn" class="btn" style="font-size:11px;padding:6px 14px;display:none;">🍺 Talk to Locals</button>
@@ -2047,10 +2047,10 @@ body {
   <div class="ovlay" id="ov-dockmaster" style="z-index:50;">
     <div id="dm-card" style="background:rgba(6,0,20,0.98);border:1px solid #44118877;border-radius:7px;padding:22px 24px;max-width:500px;width:95%;box-shadow:0 0 50px #22006633;display:flex;flex-direction:column;gap:14px;">
       <div class="trade-gold-bar">
-        <span class="tgb-icon">⚜</span>
+        <span class="tgb-icon">🔷</span>
         <span class="tgb-label">Treasury</span>
         <span class="tgb-amount" id="dm-gold-bar">100</span>
-        <span class="tgb-label">gold</span>
+        <span class="tgb-label">TS</span>
       </div>
       <div style="display:flex;align-items:center;gap:14px;">
         <div id="dm-portrait" style="width:52px;height:52px;border-radius:50%;border:2px solid #44118855;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:22px;">🧑‍✈️</div>
@@ -2180,10 +2180,10 @@ body {
         </div>
       </div>
       <div class="trade-gold-bar">
-        <span class="tgb-icon">⚜</span>
+        <span class="tgb-icon">🔷</span>
         <span class="tgb-label">Treasury</span>
         <span class="tgb-amount" id="lq-qm-gold">0</span>
-        <span class="tgb-label">gold</span>
+        <span class="tgb-label">TS</span>
       </div>
       <div class="lq-sep"></div>
       <div class="lq-shop-grid" id="lq-qm-grid"></div>
@@ -2203,7 +2203,7 @@ body {
       <div id="ls-hud-stats">
         Hull: <span id="ls-hud-hull">—</span> &nbsp;
         Crew: <span id="ls-hud-crew">—</span> &nbsp;
-        ⚜ <span id="ls-hud-gold">—</span>
+        🔷 <span id="ls-hud-gold">—</span>
       </div>
     </div>
 
@@ -2238,10 +2238,10 @@ body {
       <div id="ls-dock-title">⚓ FENTHERIS ORBITAL STATION</div>
 
       <div class="trade-gold-bar">
-        <span class="tgb-icon">⚜</span>
+        <span class="tgb-icon">🔷</span>
         <span class="tgb-label">Treasury</span>
         <span class="tgb-amount" id="ls-dock-gold">—</span>
-        <span class="tgb-label">gold</span>
+        <span class="tgb-label">TS</span>
       </div>
 
       <div class="ls-dock-section">⛵ SHIP STATUS</div>
@@ -2261,15 +2261,15 @@ body {
       <div class="ls-dock-section" style="margin-top:6px;">🔧 SERVICES</div>
       <div class="ls-dock-row">
         <span class="ls-dock-label">Hull Repair (full)</span>
-        <button class="btn ls-dock-btn" id="ls-svc-hull" onclick="lsDockService('hull')">⚜ —g</button>
+        <button class="btn ls-dock-btn" id="ls-svc-hull" onclick="lsDockService('hull')">🔷 —g</button>
       </div>
       <div class="ls-dock-row">
         <span class="ls-dock-label">Air Resupply (full)</span>
-        <button class="btn ls-dock-btn" id="ls-svc-air" onclick="lsDockService('air')">⚜ —g</button>
+        <button class="btn ls-dock-btn" id="ls-svc-air" onclick="lsDockService('air')">🔷 —g</button>
       </div>
       <div class="ls-dock-row">
         <span class="ls-dock-label">Crew Hire (full)</span>
-        <button class="btn ls-dock-btn" id="ls-svc-crew" onclick="lsDockService('crew')">⚜ —g</button>
+        <button class="btn ls-dock-btn" id="ls-svc-crew" onclick="lsDockService('crew')">🔷 —g</button>
       </div>
 
       <div class="ls-dock-section" style="margin-top:6px;">🛒 IEF QUARTERMASTER</div>
@@ -2280,7 +2280,8 @@ body {
 
       <div style="display:flex;gap:8px;justify-content:center;margin-top:10px;flex-wrap:wrap;">
         <button class="btn exit" style="font-size:0.688em;" onclick="closeLsDock()">⬅ Return to Space</button>
-        <button class="btn exit" style="font-size:0.688em;border-color:#661100;color:#ff8866;" onclick="lsDockDepart()" id="ls-dock-depart-btn">⛵ Depart</button>
+        <button id="ls-dock-deliver-btn" class="btn" onclick="lsDockDeliverCargo()" style="display:none;font-size:0.688em;border-color:#446600;color:#88ff44;margin-bottom:4px;">📦 Deliver Cargo Mission</button>
+        <button class="btn exit" style="font-size:0.688em;border-color:#661100;color:#ff8866;" onclick="lsDockDepart()" id="ls-dock-depart-btn">⛵ Depart System</button>
       </div>
     </div>
 
@@ -2315,10 +2316,10 @@ body {
     </div>
     <div style="font-size:0.625em;color:#665533;margin-bottom:10px;">Weapons in your cargo hold — install into any slot at no cost.</div>
     <div class="trade-gold-bar" style="margin-bottom:10px;">
-      <span class="tgb-icon">⚜</span>
+      <span class="tgb-icon">🔷</span>
       <span class="tgb-label">Treasury</span>
       <span class="tgb-amount" id="armory-gold">0</span>
-      <span class="tgb-label">gold</span>
+      <span class="tgb-label">TS</span>
     </div>
     <div id="armory-inv-grid" style="display:flex;flex-direction:column;gap:7px;width:100%;max-width:480px;overflow-y:auto;max-height:55vh;"></div>
     <div id="armory-empty" style="font-size:0.688em;color:#443344;font-style:italic;text-align:center;padding:20px 0;display:none;">No weapons in cargo hold.<br><span style="font-size:0.85em;color:#332233;">Defeat enemies for a chance at weapon drops, or buy at a port.</span></div>
@@ -2874,7 +2875,7 @@ const ITEMS = {
   ebtiss:    { n:'Trull Overmind Tissue',     ico:'🧠', type:'artifact',  val:200, desc:'A sample of Trull Overmind tissue, pulsing with malevolent intelligence.' },
   silblade:  { n:'Silver Astral Blade Frag',ico:'🗡️',type:'artifact', val:150, desc:'A fragment of a silver astral blade. Said to cut through any defense.' },
   // ── Bandit-specific drops ─────────────────────────────
-  plunder:   { n:'Plundered Merchant Gold', ico:'💰', type:'trade',     val:32,  desc:'Stolen coinage and valuables looted from a dozen merchant vessels.' },
+  plunder:   { n:'Plundered Merchant TS', ico:'💰', type:'trade',     val:32,  desc:'Stolen coinage and valuables looted from a dozen merchant vessels.' },
   corskit:   { n:'Corsair Weapon Cache',    ico:'⚓', type:'component', val:40,  desc:'A crate of salvaged ballista bolts and powder charges. Sellable to any armorer.' },
   bfmanif:   { n:'Black Fleet Manifest',    ico:'📋', type:'artifact',  val:110, desc:'A coded Black Fleet operations log. The IEF Admiral will pay handsomely for this intelligence.' },
   // ── Void Rift drops ────────────────────────────────────────────────
@@ -3381,7 +3382,7 @@ const DOCKMASTERS = {
     title: "Nullen Survivor Authority",
     portrait: "#ff5533",
     lines: [
-      "Don't look at the sky. You will ask what those shapes are and I will have to explain and we do not have time for that. Docking fee is two ration canisters or equivalent trade goods. Gold is useless here — you cannot eat it. I am told the war will end soon. I have been told this for forty years.",
+      "Don't look at the sky. You will ask what those shapes are and I will have to explain and we do not have time for that. Docking fee is two ration canisters or equivalent trade goods. TS is useless here — you cannot eat it. I am told the war will end soon. I have been told this for forty years.",
       "Nullen was a peaceful sphere. I know this sounds implausible. There are histories. The conflict began over a navigational dispute — two settlements claimed the same approach vector. Sixty-three years later both original settlements no longer exist and nobody can quite remember what they were fighting about.",
       "The Void Rift incursion made things worse. Both sides blamed each other for it initially. Then both sides started losing ships to entities that weren't from either faction. There is something like a ceasefire right now, which means both sides are shooting at the same things instead of each other. Progress.",
       "I have seen things come through from the The Shatter direction that I cannot describe to you without sounding like I am lying. I am not lying. They move through solid hull plating. They consume navigation crystals. They leave crew members standing and functional but no longer quite themselves. Be careful in those outer lanes, Captain."
@@ -3488,7 +3489,7 @@ const SPHERES = [
     portDesc:'Fentheris System: Void Sailer merchants and IEF observers mingle at the docking rings. The Realms burn with intrigue — the Trull Overmind\'s tendrils have already touched this sphere.',
     vis:false },
   { id:'grey',    n:'Korreth',   x:.48, y:.06, c:'#88ff44', g:'rgba(136,255,68,0.35)',
-    lore:'Sphere of Oerth. Dwarven forge-masters sell their finest work to any with gold enough.',
+    lore:'Sphere of Oerth. Dwarven forge-masters sell their finest work to any with TS enough.',
     portDesc:'Korreth: Smoke and the clang of hammers. Dwarven weaponsmiths eye your elven hull with professional interest — and offer to improve it, for a price.',
     vis:false },
   { id:'krynn',   n:'Vael',  x:.88, y:.13, c:'#ff8844', g:'rgba(255,136,68,0.35)',
@@ -3530,7 +3531,7 @@ const SPHERES = [
     vis:false, breach:true },
   { id:'nullen',    n:'Nullen',       x:1.82, y:.18, c:'#ff5533', g:'rgba(255,85,51,0.40)',
     lore:'A sphere that has been at continuous war for sixty-three years. Neither side remembers why it started. The sphere itself is slowly dying.',
-    portDesc:'Nullen: Ashport is the last operational dock in a sphere reduced to cinders. Half the buildings are rubble. The other half are fortified gun emplacements. The portmaster charges you in food rations, not gold.',
+    portDesc:'Nullen: Ashport is the last operational dock in a sphere reduced to cinders. Half the buildings are rubble. The other half are fortified gun emplacements. The portmaster charges you in food rations, not TS.',
     vis:false, breach:true },
   { id:'varuun_prime',  n:'Varuun Prime',     x:1.96, y:.55, c:'#ffee55', g:'rgba(255,238,85,0.40)',
     lore:'A sphere of star-dwellers — beings of living plasma who built ports of crystallized starfire for the rare travelers willing to come this far.',
@@ -3907,6 +3908,7 @@ function restAdvanceToMorning() {
 // Ticks the leg (time passes) AND resets fatigue
 function advanceWatch(silent) {
   if (!G.watch) return;
+  _checkQuestRefresh();
   restAdvanceToMorning();      // always wake at 06:00
   G.watch.legsPushed = 0;      // fatigue cleared by rest
   if (!silent) addLog(`06:00 — Day ${G.watch.day}. Rested. Air: ${G.ship.air} days remaining.`, '');
@@ -4967,7 +4969,7 @@ function initGame() {
     phase:'map',
     ship:{
       type:'pinnace', name:'IEF Vanguard',
-      hull:65, maxHull:65, crew:6, maxCrew:6, air:12, maxAir:12, gold:150, speed:4,
+      hull:65, maxHull:65, crew:6, maxCrew:6, air:12, maxAir:12, TS:150, speed:4,
       resist:0, wpns:['ballista'], upgrades:[], inv:[],
       loc:'refuge', atWp:null, sigTier:null,
     },
@@ -5454,7 +5456,7 @@ function renderLoop(ts=0) {
   });
 
   // ── Draw Fragment Sites ────────────────────────────────
-  // Discovery lanes — dashed gold line from sphere to site once revealed
+  // Discovery lanes — dashed TS line from sphere to site once revealed
   FRAGMENT_SITES.forEach(fs=>{
     const revealed = G.clues && G.clues.has(fs.sphere);
     const collected = G.fragsCollected && G.fragsCollected.has(fs.id);
@@ -6925,15 +6927,15 @@ function buildCargoSell(){
   if(bulkSellable.length){
     const all=document.createElement('div'); all.className='sitem'; all.style.borderColor='#44ee8866';
     const total=bulkSellable.reduce((a,i)=>a+i.val,0);
-    all.innerHTML=`<div class="siname" style="color:#44ee88">💰 Sell All Cargo</div><div class="sidesc">${bulkSellable.length} trade/component/artifact items</div><div class="sicost" style="color:#44ee88">⚜ ${total} gold</div>`;
+    all.innerHTML=`<div class="siname" style="color:#44ee88">💰 Sell All Cargo</div><div class="sidesc">${bulkSellable.length} trade/component/artifact items</div><div class="sicost" style="color:#44ee88">🔷 ${total} TS</div>`;
     all.onclick=()=>sellAllTrade(); grid.appendChild(all);
   }
   sellable.forEach(item=>{
     const isWpn = item.type==='weapon';
     const d=document.createElement('div'); d.className='sitem';
     if(isWpn) d.style.borderColor='#aa882255';
-    d.innerHTML=`<div style="font-size:18px">${item.ico}</div><div class="siname"${isWpn?' style="color:#ffcc88"':''}>${item.n}${isWpn?' <span style="font-size:9px;color:#665533;">[weapon]</span>':''}</div><div class="sicost">⚜ ${item.val}</div>`;
-    d.onclick=()=>{ G.ship.gold+=item.val; G.ship.inv=G.ship.inv.filter(i=>i.uid!==item.uid); addLog(`Sold ${item.n} for ${item.val} gold.`,'gd'); updateUI(); buildShop(); document.getElementById('pt-gold').textContent=G.ship.gold; };
+    d.innerHTML=`<div style="font-size:18px">${item.ico}</div><div class="siname"${isWpn?' style="color:#ffcc88"':''}>${item.n}${isWpn?' <span style="font-size:9px;color:#665533;">[weapon]</span>':''}</div><div class="sicost">🔷 ${item.val}</div>`;
+    d.onclick=()=>{ G.ship.gold+=item.val; G.ship.inv=G.ship.inv.filter(i=>i.uid!==item.uid); addLog(`Sold ${item.n} for ${item.val} TS.`,'gd'); updateUI(); buildShop(); document.getElementById('pt-gold').textContent=G.ship.gold; };
     grid.appendChild(d);
   });
 }
@@ -6961,7 +6963,7 @@ function buildShop(){
     d.className='sitem'+(ok?'':' dis')+(item.exclusive?' exclusive-item':'');
     if(item.exclusive) d.style.borderColor='#aa6622';
     const discStr = adjCost<item.cost ? ` <span style="color:#44ff88;font-size:9px;">(${Math.round((1-adjCost/item.cost)*100)}% off)</span>` : adjCost>item.cost ? ` <span style="color:#ff8844;font-size:9px;">(+${Math.round((adjCost/item.cost-1)*100)}%)</span>` : '';
-    d.innerHTML=`<div class="siname">${item.ico} ${item.name}</div><div class="sidesc">${item.desc}</div><div class="sicost">⚜ ${adjCost}${discStr}</div>`;
+    d.innerHTML=`<div class="siname">${item.ico} ${item.name}</div><div class="sidesc">${item.desc}</div><div class="sicost">🔷 ${adjCost}${discStr}</div>`;
     if(ok) d.onclick=()=>buy(adjItem);
     grid.appendChild(d);
   });
@@ -6976,7 +6978,7 @@ function buildShop(){
     if(!st.availSpheres) return; // no sphere listed = not sold (shouldn't happen)
     const ok=G.ship.gold>=st.cost;
     const d=document.createElement('div'); d.className='sitem'+(ok?'':' dis');
-    d.innerHTML=`<div class="siname">🚀 ${st.n}</div><div class="sidesc">${st.desc}</div><div class="sicost">⚜ ${st.cost}</div>`;
+    d.innerHTML=`<div class="siname">🚀 ${st.n}</div><div class="sidesc">${st.desc}</div><div class="sicost">🔷 ${st.cost}</div>`;
     if(ok) d.onclick=()=>upgradeShip(k);
     grid.appendChild(d);
   });
@@ -7049,7 +7051,7 @@ function shopItems(stock){
     const hullCap = shipBase + s.upgrades.filter(u=>u==='plating').length * 50;
     const lost = hullCap - s.maxHull;
     if(lost > 0){
-      const drydockCost = lost * 8; // 8 gold per lost max hull point
+      const drydockCost = lost * 8; // 8 TS per lost max hull point
       items.push({
         ico:'⚙️', name:'Structural Drydock', exclusive:true,
         desc:`Restore ${lost} permanently lost max hull. (${s.maxHull} → ${hullCap}) — structural welding and void-sealing.`,
@@ -7107,7 +7109,7 @@ function wpnPickerOpen(item, from) {
 
   // Update confirm button cost label
   const btn = document.getElementById('wpnpicker-confirm-btn');
-  btn.textContent = `⚔ Install — ⚜ ${item.cost}`;
+  btn.textContent = `⚔ Install — 🔷 ${item.cost}`;
   btn.style.display = 'none';
 
   document.getElementById('wpnpicker-compare').classList.remove('on');
@@ -7131,7 +7133,7 @@ function wpnPickerConfirm() {
   const s = G.ship;
   const isFree = (item.cost === 0) || (_wpnPickerFrom === 'armory');
 
-  if (!isFree && s.gold < item.cost) { addLog('Not enough gold.', 'dmg'); return; }
+  if (!isFree && s.gold < item.cost) { addLog('Not enough TS.', 'dmg'); return; }
 
   // If buying and all slots full — send to inventory instead
   const slots = SHIP_TYPES[s.type].slots;
@@ -7168,7 +7170,7 @@ function wpnPickerConfirm() {
     if(_wpnPickerFrom === 'armory' && item._invUid) s.inv = s.inv.filter(i => i.uid !== item._invUid);
   }
 
-  // Charge gold (not for armory equip)
+  // Charge TS (not for armory equip)
   if (!isFree) s.gold -= item.cost;
 
   // Ensure wpns array has entries up to this slot
@@ -7186,7 +7188,7 @@ function wpnPickerConfirm() {
   }
 
   snd('ship_upgrade', 0.9);
-  const costStr = isFree ? '(free from cargo)' : `⚜ ${item.cost}`;
+  const costStr = isFree ? '(free from cargo)' : `🔷 ${item.cost}`;
   addLog(`⚔ ${newW.n} installed in slot ${slotIdx + 1} ${costStr}.`, 'gd');
 
   updateUI();
@@ -7231,9 +7233,9 @@ function _wpnPickerSelectSlot(idx) {
   const btn = document.getElementById('wpnpicker-confirm-btn');
   btn.style.display = 'block';
   if (oldKey) {
-    btn.textContent = `⚔ Replace ${WPN[oldKey].n} — ⚜ ${_wpnPickerItem.cost}`;
+    btn.textContent = `⚔ Replace ${WPN[oldKey].n} — 🔷 ${_wpnPickerItem.cost}`;
   } else {
-    btn.textContent = `⚔ Install in Slot ${idx + 1} — ⚜ ${_wpnPickerItem.cost}`;
+    btn.textContent = `⚔ Install in Slot ${idx + 1} — 🔷 ${_wpnPickerItem.cost}`;
   }
 
   // Redraw canvas with selection
@@ -8846,7 +8848,7 @@ function buildCbtInvOverlay() {
         <span class="cbt-c-ico">${item.ico}</span>
         <div class="cbt-c-info">
           <div class="cbt-c-name">${item.n}</div>
-          <div class="cbt-c-val">⚜ ${item.val || '—'}</div>
+          <div class="cbt-c-val">🔷 ${item.val || '—'}</div>
           <div class="cbt-c-type">${item.type || 'trade'}</div>
         </div>`;
       _cbtAddDrag(el, 'cargo');
@@ -9215,7 +9217,7 @@ function buy(item){
     addLog(`Signature ability already at this tier or higher.`,''); return;
   }
 
-  // Weapons open the slot picker — no gold deducted yet
+  // Weapons open the slot picker — no TS deducted yet
   if(item.act==='wpn' && item.wk){
     wpnPickerOpen(item, 'shop');
     return;
@@ -9409,7 +9411,7 @@ function buildWaypointShop(){
   items.forEach(item=>{
     const ok=s.gold>=item.cost;
     const d=document.createElement('div'); d.className='sitem'+(ok?'':' dis');
-    d.innerHTML=`<div class="siname">${item.ico} ${item.name}</div><div class="sidesc">${item.desc}</div><div class="sicost">⚜ ${item.cost}</div>`;
+    d.innerHTML=`<div class="siname">${item.ico} ${item.name}</div><div class="sidesc">${item.desc}</div><div class="sicost">🔷 ${item.cost}</div>`;
     if(ok) d.onclick=()=>{
       if(s.gold<item.cost)return;
       s.gold-=item.cost;
@@ -9516,7 +9518,7 @@ function buildWaystationGrid(ws){
       `<div class="sh-ico">${item.ico}</div>` +
       `<div class="sh-name">${item.name}</div>` +
       `<div class="sh-desc">${item.desc}</div>` +
-      `<div class="sh-cost ${affordable?'':'cant'}">⚜ ${item.cost}</div>`;
+      `<div class="sh-cost ${affordable?'':'cant'}">🔷 ${item.cost}</div>`;
     if(affordable && !item._disabled) card.onclick = () => waystationPurchase(item, ws);
     grid.appendChild(card);
   });
@@ -9524,7 +9526,7 @@ function buildWaystationGrid(ws){
 
 function waystationPurchase(item, ws){
   const s = G.ship;
-  if(s.gold < item.cost){ addLog('Not enough gold.','dmg'); return; }
+  if(s.gold < item.cost){ addLog('Not enough TS.','dmg'); return; }
   s.gold -= item.cost;
   snd('purchase', 0.7);
   switch(item.act){
@@ -9551,7 +9553,7 @@ function waystationPurchase(item, ws){
         if (ch > 0) { s2.crew += ch; addLog(`👥 ${ch} crew recovered. Back on duty.`, 'gd'); }
       }
       addLog(`🌙 Crew rested at ${ws.n}. Day ${G.watch.day}. Fatigue cleared.`, 'gd');
-      addJournalEntry(`Anchored at waystation ${ws.n}. Paid ${item.cost} gold for berth. Full rest.`, '');
+      addJournalEntry(`Anchored at waystation ${ws.n}. Paid ${item.cost} TS for berth. Full rest.`, '');
       updateWatchHUD();
       break;
   }
@@ -9605,7 +9607,7 @@ function sellAllTrade(){
   let total=0; sellable.forEach(i=>total+=i.val);
   G.ship.inv=G.ship.inv.filter(i=>i.type!=='trade'&&i.type!=='component');
   G.ship.gold+=total; updateUI(); buildShop(); document.getElementById('pt-gold').textContent=G.ship.gold;
-  addLog(`Sold all cargo for ${total} gold.`,'gd');
+  addLog(`Sold all cargo for ${total} TS.`,'gd');
 }
 
 // ╔══════════════════════════════════════════════════════╗
@@ -9619,7 +9621,7 @@ function showGuardianConfirm(site){
   document.getElementById('grd-title').textContent = `✦ ${site.n}`;
   document.getElementById('grd-sub').textContent   = gd.sub;
   document.getElementById('grd-stats').textContent =
-    `${gd.name}  ·  ${gd.hp} Hull Points  ·  ${gd.g[0]}–${gd.g[1]} Gold`;
+    `${gd.name}  ·  ${gd.hp} Hull Points  ·  ${gd.g[0]}–${gd.g[1]} TS`;
   document.getElementById('grd-lore').textContent  = site.lore;
   // Draw guardian ship on canvas
   const gc = document.getElementById('grd-canvas').getContext('2d');
@@ -12021,7 +12023,7 @@ function genLoot(key){
   return items;
 }
 
-function showLootOverlay(key, gold, items){
+function showLootOverlay(key, TS, items){
   G._pendingLoot=items; G._pendingGold=gold; G._lootKey=key;
   const e=ENM[key] || FRAG_GUARDIANS[key] || WORLD_BOSSES[key] || (key==='shothothug' ? FINAL_BOSS : null);
   document.getElementById('loot-subline').textContent=`${e.name} ${e.sub} — Destroyed`;
@@ -12076,7 +12078,7 @@ function showLootOverlay(key, gold, items){
     empty.style.display='none';
     items.forEach(item=>{
       const d=document.createElement('div'); d.className='loot-card';
-      d.innerHTML=`<div class="loot-ico">${item.ico}</div><div class="loot-iname">${item.n}</div><div class="loot-itype ${item.type}">${item.type}</div><div class="loot-ival">⚜ ${item.val}</div>`;
+      d.innerHTML=`<div class="loot-ico">${item.ico}</div><div class="loot-iname">${item.n}</div><div class="loot-itype ${item.type}">${item.type}</div><div class="loot-ival">🔷 ${item.val}</div>`;
       grid.appendChild(d);
     });
   }
@@ -12086,7 +12088,7 @@ function showLootOverlay(key, gold, items){
 
 function claimLoot(){
   G._pendingLoot.forEach(item=>G.ship.inv.push(item));
-  addLog(`Claimed ${G._pendingLoot.length} items and ${G._pendingGold} gold.`,'gd');
+  addLog(`Claimed ${G._pendingLoot.length} items and ${G._pendingGold} TS.`,'gd');
   // Notable loot journal notes
   if(G._pendingLoot.some(i=>i.id==='voidwelder'||i.use==='voidwelder')) jlogVoidWelder();
   G._pendingLoot=[]; G._pendingGold=0;
@@ -12202,7 +12204,7 @@ function buildInvGrid(){
     });
   }
   const total=G.ship.inv.reduce((a,i)=>a+i.val,0);
-  document.getElementById('inv-footer').textContent=`${G.ship.inv.length} items — Est. sell value: ⚜ ${total}`;
+  document.getElementById('inv-footer').textContent=`${G.ship.inv.length} items — Est. sell value: 🔷 ${total}`;
   const hasTradeOrComp=G.ship.inv.some(i=>i.type==='trade'||i.type==='component');
   document.getElementById('inv-sell-all-btn').style.display=(hasTradeOrComp&&G.phase==='port')?'inline-block':'none';
 }
@@ -12224,10 +12226,10 @@ function selectInvItem(uid){
     acts.appendChild(ub);
   }
   if(item.type==='trade'||item.type==='component'||item.type==='artifact'||item.type==='usable'||item.type==='equip'){
-    const sb=document.createElement('button'); sb.className='btn sm'; sb.textContent=`💰 Sell ⚜${item.val}`;
+    const sb=document.createElement('button'); sb.className='btn sm'; sb.textContent=`💰 Sell 🔷${item.val}`;
     sb.disabled=G.phase!=='port';
     if(G.phase!=='port')sb.title='Must be docked at a port to sell';
-    sb.onclick=()=>{ if(G.phase!=='port'){showMsg('Cannot Sell','Dock at a port to sell cargo.');return;} G.ship.gold+=item.val; G.ship.inv=G.ship.inv.filter(i=>i.uid!==uid); addLog(`Sold ${item.n} for ${item.val} gold.`,'gd'); updateUI(); buildInvGrid(); if(G.phase==='port'){document.getElementById('pt-gold').textContent=G.ship.gold;buildShop();} };
+    sb.onclick=()=>{ if(G.phase!=='port'){showMsg('Cannot Sell','Dock at a port to sell cargo.');return;} G.ship.gold+=item.val; G.ship.inv=G.ship.inv.filter(i=>i.uid!==uid); addLog(`Sold ${item.n} for ${item.val} TS.`,'gd'); updateUI(); buildInvGrid(); if(G.phase==='port'){document.getElementById('pt-gold').textContent=G.ship.gold;buildShop();} };
     acts.appendChild(sb);
   }
   if(item.type==='weapon' && item.wk) {
@@ -12239,13 +12241,13 @@ function selectInvItem(uid){
     acts.appendChild(eb);
     // Sell at half price — allowed at port or in local space dock
     const canSellWpn = G.phase==='port' || document.getElementById('ls-dock-panel')?.classList.contains('on');
-    const swb=document.createElement('button'); swb.className='btn sm'; swb.textContent=`💰 Sell ⚜${item.val}`;
+    const swb=document.createElement('button'); swb.className='btn sm'; swb.textContent=`💰 Sell 🔷${item.val}`;
     swb.disabled=!canSellWpn;
     if(!canSellWpn)swb.title='Dock at a port or station to sell';
     swb.onclick=()=>{
       if(!canSellWpn){showMsg('Cannot Sell','Dock at a port or station to sell weapons.');return;}
       G.ship.gold+=item.val; G.ship.inv=G.ship.inv.filter(i=>i.uid!==uid);
-      addLog(`Sold ${item.n} for ${item.val} gold (salvage price).`,'gd');
+      addLog(`Sold ${item.n} for ${item.val} TS (salvage price).`,'gd');
       updateUI(); buildInvGrid();
     };
     acts.appendChild(swb);
@@ -12420,7 +12422,7 @@ function buildShipOverlay(){
     ['Speed Rating',s.speed],
     ['Damage Resist',s.resist>0?`-${s.resist} incoming`:'—'],
     ['Weapon Slots',`${s.wpns.length} / ${st.slots} filled`],
-    ['Gold',`⚜ ${s.gold}`],
+    ['TS',`🔷 ${s.gold}`],
     ['Cargo Hold',`${s.inv.length} items`],
   ];
   stats.forEach(([k,v])=>{ const r=document.createElement('div'); r.className='shp-stat-line'; r.innerHTML=`<span class="k">${k}</span><span class="v">${v}</span>`; statsDiv.appendChild(r); });
@@ -12440,7 +12442,7 @@ function buildShipOverlay(){
     if(s.sigTier < 3){
       const next=sigDef.tiers[s.sigTier];
       const nx=document.createElement('div'); nx.className='upg-item'; nx.style.cssText='color:#665533;font-size:10px;';
-      nx.textContent=`Next: ${next.n} — ${next.upgradeDesc} (⚜${next.cost})`;
+      nx.textContent=`Next: ${next.n} — ${next.upgradeDesc} (🔷${next.cost})`;
       statsDiv.appendChild(nx);
     } else {
       const mx=document.createElement('div'); mx.className='upg-item'; mx.style.color='#ffaa00';
@@ -12459,7 +12461,7 @@ function buildShipOverlay(){
       if(k===s.type)return;
       const st2=SHIP_TYPES[k]; const ok=s.gold>=st2.cost;
       const d=document.createElement('div'); d.className='ship-upgrade-card'+(ok?'':' dis');
-      d.innerHTML=`<div class="suc-name">🚀 ${st2.n}</div><div class="suc-desc">${st2.desc}</div><div class="suc-cost">⚜ ${st2.cost}</div>`;
+      d.innerHTML=`<div class="suc-name">🚀 ${st2.n}</div><div class="suc-desc">${st2.desc}</div><div class="suc-cost">🔷 ${st2.cost}</div>`;
       if(ok)d.onclick=()=>{ upgradeShip(k); buildShipOverlay(); };
       ugrid.appendChild(d);
     });
@@ -12671,7 +12673,7 @@ function updateUI(){
   if(airEl) airEl.parentElement.innerHTML = `<span id="s-air">${s.air}</span><span style="color:#446655;font-size:0.85em;">/${s.maxAir||12}</span> days`;
   $id('s-gold',s.gold); $id('s-speed',s.speed); $id('s-name',s.name);
   $id('s-resist',s.resist>0?`-${s.resist}`:'—');
-  // Sync all trade window gold bars
+  // Sync all trade window TS bars
   ['pt-gold','lq-qm-gold','dm-gold-bar','ls-dock-gold','roam-gold-display','ls-hud-gold'].forEach(id=>{
     const el=document.getElementById(id); if(el) el.textContent=s.gold;
   });
@@ -12968,20 +12970,130 @@ function adjustedCost(baseCost, sphereId){
 // ── ROAMING ENCOUNTER ─────────────────────────────────────
 const ROAM_HAIL = {
   ien:      ['IEF Patrol Frigate Seven hails you. State mission and manifest.',
-             'IEF scouts are welcome on these lanes. The The Far Dark situation is escalating. Keep your weapons ready.',
-             'The IEF remembers captains with clean records. Fly safe out there, Captain.'],
+             'IEF scouts are welcome on these lanes. The Far Dark situation is escalating. Keep your weapons ready.',
+             'The IEF remembers captains with clean records. Fly safe out there, Captain.',
+             'The Fentheris Drift lanes have been stable since the First Invasion. IEF patrols keep them that way — mostly.',
+             'The Calendar of Garvos marks year 3350 CG. The IEF has held the Known Spheres for three centuries. Most captains forget what came before.',
+             'The Collapse was not an accident. IEF archives have fragments — the Veilborn were here before us. Much further back than anyone admits.'],
   merchant: ['The Consortium extends greetings and the offer of a brief trade stop. We carry useful goods.',
              'Business is complicated these days. The Void Rift situation is bad for shipping lanes. Still, profit finds a way.',
-             'The Consortium keeps records of reliable captains. You have been mentioned favourably. Safe sailing.'],
-  trull:     ['Your vessel is intact. You have survived the approach lanes. The Trulls acknowledge this.',
-             'We have no quarrel with you today. The Trull Commander remember which captains have proven worthy of passage.',
-             'The Trulls are watching the IEF incursion. What we cannot conquer, we eliminate. Pass with acknowledgement.'],
+             'The Consortium keeps records of reliable captains. You have been mentioned favourably. Safe sailing.',
+             'Varuun runs its own market. Thousand Sails prices are outrageous but nobody else services that quadrant. Supply and demand, Captain.',
+             'The Dwarven forges on Korreth make the best hull plating in the Known Spheres. The Trull Advance has been blockading their outer lanes for two seasons now.',
+             'Word is the Veilborn — the Illithid some still call them — have gone quiet. That always means they are planning something worse than noise.'],
+  trull:    ['Your vessel is intact. You have survived the approach lanes. The Trulls acknowledge this.',
+             'We have no quarrel with you today. The Trull Commander remembers which captains have proven worthy of passage.',
+             'The Trulls are watching the IEF incursion. What we cannot conquer, we eliminate. Pass with acknowledgement.',
+             'The Overmind does not forget. The First Invasion ended badly for us. The Second will not.',
+             'The Shatter was our doing. It was necessary. The Collapse that followed was not. Even the Trulls did not anticipate what we unleashed.',
+             'Korreth resists. Korreth will fall. This is not a threat. It is schedule.'],
   vodoni:   ['Imperial vessel Seven hails you. This lane falls within Trull Advance administrative jurisdiction.',
              'The Empire catalogues all traffic on these approaches. Your vessel has been recorded.',
-             'We are efficient, not unreasonable. Ships that comply with Imperial census requirements find dealings smoother.'],
+             'We are efficient, not unreasonable. Ships that comply with Imperial census requirements find dealings smoother.',
+             'The Advance holds twelve outer lanes. The Known Spheres think this is the frontier. They are incorrect.',
+             'The Overmind did not order the Shatter. The Trull Advance operates independently. This distinction matters to us.',
+             'The IEF calls us Trull Advance as though we are a division. We predate the IEF by four centuries. Perspective, Captain.'],
   farealm:  ['You are here. We have been watching. The Drift speaks of you.',
              'The scar-places remember what passes near them. You have been near interesting things lately.',
-             'The Void Rift presses. We feel it. You have felt it too. There is understanding between those who have touched the edges.'],
+             'The Void Rift presses. We feel it. You have felt it too. There is understanding between those who have touched the edges.',
+             'The Unnamed waits at the edge of what the IEF calls Elder Space. It has always been there. It will be there when the spheres are gone.',
+             'You carry Navigation Core fragments. We feel them. They were ours once — pieces of something that should not have been broken.',
+             'The Scar-Wraith walks between the rifts. If you have not encountered it yet, you will. Prepare differently than you think you should.'],
+};
+
+// Lore lines shown when roam NPC has no mission to offer (already met this session)
+// Drawn from Fentheris world lore — deities, races, history, regions, creatures
+const ROAM_LORE = {
+  ien: [
+    // History & IEF
+    'The IEF was founded in Calendar of Garvos year 1, named for Admiral Garvos who held the line at the First Invasion. Three centuries of maintenance and the line still holds. Mostly.',
+    'Fentheris is not just a sphere. The entire system carries that name now. Old charts call it Realmspace. The IEF prefers to forget the old charts — the old names carry old debts.',
+    'The Collapse was not a natural event. IEF archives hold partial records indicating the Veilborn were present in these spheres long before any human civilization had eyes to see them.',
+    'There are seven Known Spheres. Forty-three charted outer spheres. An unknown number of uncharted ones. The Drift is large, Captain. The IEF budget for mapping it is not.',
+    'The Calendar of Garvos marks year 3350 CG. The IEF has held the Known Spheres for three centuries. Most captains forget what came before. The IEF archives do not.',
+    // Deities
+    'The Prime is True Neutral — he teaches perfection through training and hard work, that teaching your children to be better than yourself is the ultimate legacy. IEF chaplains invoke him before void combat. "By the Prime!" is still the most common oath on the lanes.',
+    'Dondaril was a human bishop who died defending the Atharian royal family from the demon lord Zackros. He failed to save a single member of the family. The Prime raised him to godhood anyway, for the attempt. Deity of sacrifice and rebirth. The IEF honors that tradition.',
+    'Kitarath resides in the great oceans of Fentheris — god of navigation, storms, and deep water. Void sailors adopted him for the Drift centuries ago. His symbol is a wave filled with stars. Fitting.',
+    'Yalina appeared to human farmers during a dry season after the Skyfire, her visage as storm clouds. The wind whispered her name. Goddess of crops, forests, and storms. The outer sphere colonists invoke her more than any other deity.',
+    // Races & Creatures
+    'Drakenbrood trace their ancestry to humans whose ancestors were touched by dragon blood during the Skyfire War. The occurrence is random, generations apart — a human family can birth a scaled, clawed child with no warning. Some IEF officers are drakenbrood. They make excellent void combat specialists.',
+    'The Trülls of Fentheris regenerate from almost any wound. Lesser Trülls die only to fire. Greater Trülls heal from everything and are only killed by sunlight. They are not smart. They are persistent. The Trull Overmind is neither of those things — it is something else entirely.',
+    'Worums are earthworm-like creatures that grow to hundreds of feet. No two can exist within five hundred miles of another — they seek and destroy each other on contact. The Wormscar Mountains were carved by a pair of fighting worums eons ago. The winner reportedly still lives there.',
+    'Drak\'hev were created during the Skyfire War — the product of dragon blood mixed with human, elf, or dwarf. They could shift between humanoid and dragon form. Families carrying the gene were executed until there were no further incidents. IEF archives list this as "population management."',
+    // Regions
+    'Atharia once held the most powerful mages in Fentheris. The city fell to the demon lord Zackros twenty years ago. The land surrounding it for ten miles is dead and decayed. The IEF has a standing order not to approach without a full combat wing.',
+    'The Kezitak Desert covers most of Fentheris and saps the strength of anyone not native to it. The closer to the center, the worse it gets. The city of Grondalin survives at its heart through ancient Atharian wards — the same mages whose city is now dead.',
+    'The Crystalline Tundra requires scaling a mile-high glacial cliff to reach. Many have made the climb. Few have succeeded. The Northfolk city of Stavënhold sits on the other side, having watched people fall from those cliffs for centuries.',
+  ],
+  merchant: [
+    // Trade & Economy
+    'The Consortium was originally a Fentheris trading guild. Three centuries of void expansion later, we operate in every Known Sphere. The overhead is considerable.',
+    'Fentheris currency runs on gem shards — Topazine, Emerine, Rubine, Sapphirian, Thermian. The Thermian Crest is worth a hundred Sapphirian Shards and is only mined from one volcano north of the ruined Atharian region. Since Atharia fell, Thermian Crests stopped being produced. The old ones are worth considerably more now.',
+    'TS, silver, and platinum are exceptionally rare in Fentheris. Nobody is entirely sure why. The priests of the Prime will pay enormous sums for any quantity. Ancient mine shafts that once held these metals were depleted thousands of years ago.',
+    'Korreth ore is the most durable hull material available anywhere in the Known Spheres. The dwarves will not sell the smelting process. That is intelligent.',
+    'Varuun has no central government. The Thousand Sails Freeport self-regulates via Port-Bosses. It works about as well as you would expect. We maintain three separate brokers there, each unaware of the others.',
+    'The Navigation Cores were charting instruments before the Collapse. Nobody fully understands what they chart now. The IEF pays well for them regardless. We take our margin.',
+    // Dwarves & Cities
+    'Ironhaven on Korreth was carved into a hollowed asteroid by dwarven artificers three centuries ago. The forge-masters who built it are buried in the walls. The current generation knows every rivet personally.',
+    'Grondalin in the Kezitak Desert is the great human trade hub of Fentheris. The Atharian mages warded it against the desert heat centuries ago in exchange for a permanent trade route. When Atharia fell, the ward held. No one knows for how long.',
+    'The dwarven stronghold of Grithkaar in the Thermaspire Mountains is the most ancient of dwarven sites. It survived both great wars of the past millennia. The dwarves say nothing can crack it. We do not take that bet.',
+    'Voktaniir in the Wormscar Mountains is famous for its urmite deposits — a rare metal believed to be a byproduct of worums devouring minerals eons ago. Urmite makes the finest weapons and armor available. The price reflects that.',
+    // Creatures
+    'The Kraken stalks deep ocean trenches — enormous, ancient, eerily intelligent. It does not attack without reason. Determining what counts as sufficient reason is the difficulty.',
+    'Leviathans are so large they are sometimes mistaken for islands. A Leviathan\'s slumber can last long enough for plants and animals to begin living on its back. Void sailors have reported similar entities in the deep Drift. We do not advertise this.',
+    'Cobrions in the Kezitak Desert implant embryos into unconscious prey. The offspring inherit certain traits from the host — eye color, scale pigmentation. Biologically fascinating. Do not touch them.',
+    'Shellear appear as a horrible cross between bear and tortoise. They grapple prey with a hooked tail and hold them with hull-cracking strength. The Korreth mining guilds use them as guard animals. The insurance premiums are significant.',
+  ],
+  trull: [
+    // Trull military & history
+    'The Trull Overmind does not broadcast. It connects. Every Trull vessel you see is a thought in a mind spanning a dozen spheres. When you kill one, the Overmind learns from it.',
+    'The Skiff-Rend is our scout class. If you have encountered one, a Gore Hull knows your position. If you have encountered a Gore Hull, a Marrow Drifter is behind it. The hierarchy is not complicated.',
+    'The First Invasion ended at the Collapse. The Trulls retreated. This was strategic repositioning, not defeat. Review the history with that understanding.',
+    'We consume what we conquer. The Trull Overmind incorporates defeated peoples into the connection. Some captains find this disturbing. We find it efficient. The distinction matters less than you think from the inside.',
+    'The Trülls of the ground forces regenerate from almost all wounds. Lesser ones die only to fire. Greater ones regenerate from everything and survive only until exposed to sunlight. They are not clever. They do not need to be. We direct them.',
+    // Deities & Fentheris monsters
+    'Mortaag is the deity of battle and strength, worshipped by the beast races and some human tribes. His followers teach that strength is only proven by besting rivals. We respect this theology. The Prime teaches balance. Balance is for those without enemies.',
+    'Glog\'thar is the primary deity of the Krogish orcs, goblins, and lesser giants. Chaotic Evil, deity of strength, war, and dominance. His symbol is a field of blood. We have used Krogish troops as shock forces. They are enthusiastic but poor at following orders.',
+    'The Krogish orc bands roam almost every region of Fentheris — surprisingly adaptable. The Krozanth orcs are their refined counterpart, masters of mental magic, with a hidden kingdom beneath the Kezitak Desert. We have diplomatic contact with neither. We have military contact with both.',
+    'Cho-kreen are insectile humanoids from the southern jungles of Fentheris — four arms, all trained for multi-weapon combat. The Trull Advance has recruited cho-kreen auxiliary units. They are effective in zero-gravity boarding operations.',
+    // Shatter & breach
+    'The Shatter was our doing. It was necessary at the time. The Collapse that followed was not anticipated at that scale. Even the Overmind did not fully model what would be unleashed.',
+    'The Void Rift presses through existing scars. Fentheris has many scars. The demon lord Zackros opened one when Atharia fell. The Skyfire War opened others. We have been counting them since the beginning.',
+    'Drak\'hev could shift between humanoid and dragon form — created by mixing dragon and humanoid blood during the Skyfire War. Their volatility made them difficult to use strategically. Families carrying the gene were eliminated. We document these approaches for future reference.',
+  ],
+  vodoni: [
+    // Advance history & politics
+    'The Advance separated from the Overmind in year 2800 CG. Political schism over conquest methodology. We retain the biological architecture but exercise fully independent command authority.',
+    'The Overmind considers the Advance a rounding error in its long-term projections. We consider the Overmind a liability that will eventually destabilize every alliance we have built. Neither of us is wrong.',
+    'The outer lanes beyond the Known Spheres are not empty. The Advance has catalogued nineteen inhabited systems the IEF has no record of. We are in contact with six of them.',
+    'Imperial census data from the Collapse period suggests approximately forty percent of void-capable life in this region was lost. The records from that period are incomplete. We have been filling in the gaps for three centuries.',
+    'The Thermian Dragons were an evil breed with jet-black scales and white-fire eyes. Their breath was so hot it blinded observers and ignited everything except dirt and rock. The last of them died in the Skyfire War. We maintain records of their capabilities. One does not forget a threat of that magnitude.',
+    // Races & cities
+    'The Sapphirian Dragons had azure scales and breath so cold it froze creatures solid instantly. When Sapphirian and Thermian breath weapons intersected, the resulting explosion killed both dragons and devastated everything around them. The Advance has studied this interaction in controlled environments.',
+    'Stavënhold is the northernmost human kingdom in Fentheris — ruled by Jarls, same family line for centuries, perched on the Crystalline Tundra beyond a mile-high glacial cliff. They are not easily conquered. We noted this.',
+    'The Nedawin are amphibious reptilian humanoids with retractable bone blades on both forearms. Nomadic, xenophobic, extremely dangerous in close quarters. The Advance attempted recruitment. They declined with those bone blades. We respect the response.',
+    'Vlathiri are humanoid catlike people with climb speeds and natural claw attacks. They are prominent in most human cities of Fentheris. The Advance finds them difficult to recruit — their loyalty structures are complex and their detection abilities are inconvenient.',
+    'Eyterium are a quasi-mythical race that live in deep forests. When slain, their body bursts in divine light and a five-year-old version of them rises from the dust. They retain class abilities but lose most memories. The Advance studied this for fifty years and concluded it is not reproducible.',
+    // The Collapse
+    'The Collapse did not destroy the navigation network — it corrupted it. The Navigation Cores are what remains of that network. Each one we allow the IEF to collect represents a data point we lose access to. We have considered intervention.',
+  ],
+  farealm: [
+    // Void Rift & metaphysics
+    'The Void Rift Stalkers are not ships. They are expressions of something pressing through. The rift does not understand what it is pressing into. It only understands that there is something on the other side.',
+    'The Unnamed has no name because naming it would give it definition, definition would give it boundary, and it does not have boundaries. The IEF calls it "Elder Space." The geography is wrong but the instinct is correct.',
+    'The Navigation Cores do not point to locations. They point to moments. The Collapse was not the end of something. It was the beginning of something the Cores are tracking.',
+    'The Far Realm Horde is not a fleet. It is one organism distributed across multiple hull-forms. Destroying one part does not diminish the whole. It educates it.',
+    // Deities of darkness
+    'Thaldeen was an elven necromancer who marched on a dwarven settlement with a legion of undead. When an adventuring band slew him, his spirit rose immediately, killed them, and imprisoned their souls. He is now a Neutral Evil deity of undeath and secrets. His followers seek life eternal through death itself. We have spoken with some of them.',
+    'Valmora entered the Fentheris pantheon after the Skyfire, appearing to individuals in dark times with promises of safety and power. Lawful Evil, deity of death, power, and darkness. Her symbol is a grave with an illegible name. Those who see their own name on it reportedly die within the week. We observe this as a statistical pattern.',
+    // Breach lore
+    'The demon lord Zackros brought down Atharia twenty years ago. The land surrounding the city for ten miles is dead and decayed. What Zackros left behind is not a conventional corruption. It is a wound in the world that has not closed. The Void Rift recognizes wounds.',
+    'The Trülls of Fentheris regenerate from almost any wound. The Greater Trülls heal from everything, stopped only by sunlight. The Void Rift has been studying regenerative biology. The implications are not encouraging.',
+    'The Skyfire War between the dragons of Fentheris left scars across the world that have never fully healed. Dragon-touched humans became Drakenbrood — scaled, clawed, carrying breath weapons. Families carrying the gene were eliminated. The scars in the world were not eliminated. We find them useful.',
+    'The eyterium die and are reborn from white glowing dust as five-year-old versions of themselves. They retain their abilities but lose their memories. They exist in the deep forests of Fentheris, just out of sight. We have encountered them in the void between spheres. The logic of their rebirth seems to apply there as well.',
+    'The Kezitak Desert in Fentheris saps the strength of anyone not native to it. The closer to the center, the weaker the individual becomes. The Void Rift operates on similar principles. The center of it is not a place a living creature can approach with full faculties.',
+  ],
 };
 // Per-faction roaming shop stock (3-4 items each, limited supply)
 const ROAM_SHOP = {
@@ -13089,17 +13201,17 @@ function _buildRoamShopHTML(fac, resEl){
     html += `<div style="display:flex;align-items:center;gap:6px;padding:5px 0;border-bottom:1px solid #22113322;">
       <span style="font-size:13px;opacity:${soldOut?0.4:1}">${itm.ico}</span>
       <span style="flex:1;font-size:11px;color:${rowCol};">${nameStr}${stockLabel}</span>
-      <span style="font-size:10px;color:#886633;">⚜ ${price}</span>
+      <span style="font-size:10px;color:#886633;">🔷 ${price}</span>
       ${qtyHtml}
       <button onclick="roamBuyItem('${s.id}',${price},${i})" ${btnDis}
         style="font-size:9px;padding:3px 8px;background:${btnBg};border:1px solid ${btnBd};color:${btnCol};font-family:'Cinzel',serif;border-radius:3px;cursor:${btnCur};">${btnTxt}</button>
     </div>`;
   });
   html += `<div class="trade-gold-bar" style="margin-top:8px;">
-    <span class="tgb-icon">⚜</span>
+    <span class="tgb-icon">🔷</span>
     <span class="tgb-label">Treasury</span>
     <span class="tgb-amount" id="roam-gold-display">${G.ship.gold}</span>
-    <span class="tgb-label">gold</span>
+    <span class="tgb-label">TS</span>
   </div>`;
   resEl.innerHTML = html;
 }
@@ -13113,7 +13225,7 @@ function roamBuyItem(itemId, price, stockIdx){
   const qtyEl = document.getElementById(`roam-qty-${stockIdx}`);
   const qty = qtyEl ? parseInt(qtyEl.value) || 1 : 1;
   const totalCost = price * qty;
-  if(G.ship.gold < totalCost) { addLog('Not enough gold.', 'dmg'); return; }
+  if(G.ship.gold < totalCost) { addLog('Not enough TS.', 'dmg'); return; }
   G.ship.gold -= totalCost;
   for(let q=0; q<qty; q++) G.ship.inv.push({...itm, uid:'roam_'+Date.now()+'_'+q});
   entry.remaining -= qty;
@@ -13123,7 +13235,7 @@ function roamBuyItem(itemId, price, stockIdx){
   updateUI();
   const gd = document.getElementById('roam-gold-display');
   if(gd) gd.textContent = G.ship.gold;
-  addLog(`Purchased ${qty > 1 ? qty+'× ' : ''}${itm.n} for ${totalCost} gold.`, 'gd');
+  addLog(`Purchased ${qty > 1 ? qty+'× ' : ''}${itm.n} for ${totalCost} TS.`, 'gd');
   snd('purchase', 0.7);
   const resEl = document.getElementById('roam-result');
   if(resEl) _buildRoamShopHTML(FACTIONS[_roamFactionId], resEl);
@@ -13157,7 +13269,7 @@ function roamHail(){
         <div style="font-size:12px;color:#ccaadd;margin-bottom:4px;"><b>${availQ.title}</b></div>
         <div style="font-size:11px;color:#998899;margin-bottom:8px;line-height:1.5;">${availQ.desc}</div>
         <div style="font-size:10px;color:#665577;">Pickup: ${pickupSphere?.n||availQ.pickup} → Deliver to: ${turninSphere?.n||availQ.turnin}</div>
-        <div style="font-size:10px;color:#886633;margin-top:2px;">Reward: ⚜ ${availQ.reward} gold</div>
+        <div style="font-size:10px;color:#886633;margin-top:2px;">Reward: 🔷 ${availQ.reward} TS</div>
         <button onclick="roamAcceptQuest('${availQ.id}')"
           style="margin-top:10px;width:100%;padding:8px;background:rgba(5,20,50,0.9);border:1px solid #2255aa55;
           color:#88aaff;font-family:'Cinzel',serif;font-size:11px;cursor:pointer;border-radius:4px;">
@@ -13178,7 +13290,7 @@ function roamAcceptQuest(questId){
     `<div style="color:#ffcc44;">📋 Mission accepted: <b>${q.title}</b><br>
     <span style="font-size:11px;color:#aa8833;line-height:1.6;">
       First, dock at <b>${pickupSphere?.n||q.pickup}</b> to collect the cargo.<br>
-      Then deliver it to <b>${turninSphere?.n||q.turnin}</b> for ⚜ ${q.reward} gold.
+      Then deliver it to <b>${turninSphere?.n||q.turnin}</b> for 🔷 ${q.reward} TS.
     </span></div>`;
   addLog(`📋 MISSION: ${q.title} — collect cargo at ${pickupSphere?.n||q.pickup}, then deliver to ${turninSphere?.n||q.turnin}.`,'imp');
   updateUI();
@@ -13250,7 +13362,7 @@ function checkQuestPickup(sphereId){
     // Show a port notification with collect button
     setTimeout(()=>{
       showMsg(`📦 Cargo Ready: ${q.title}`,
-        `${FACTIONS[q.faction]?.n||'Your contact'} has left a cargo package at this dock for you.\n\n"${q.cargo.n}"\n\n${q.cargo.desc}\n\nCollect it now and deliver it to ${G.spheres.find(s=>s.id===q.turnin)?.n||q.turnin} for ⚜ ${q.reward} gold.`,
+        `${FACTIONS[q.faction]?.n||'Your contact'} has left a cargo package at this dock for you.\n\n"${q.cargo.n}"\n\n${q.cargo.desc}\n\nCollect it now and deliver it to ${G.spheres.find(s=>s.id===q.turnin)?.n||q.turnin} for 🔷 ${q.reward} TS.`,
         '📦 Take Cargo',
         ()=>{
           q.state='active';
@@ -13273,11 +13385,13 @@ function checkQuestTurnin(sphereId){
     G.ship.gold += q.reward;
     q.state='complete';
     G.completedQuests.add(q.id);
+    if(!G._questRefreshDay) G._questRefreshDay = {};
+    G._questRefreshDay[q.id] = G.watch?.day || 1; // start 10-day cooldown
     applyRep(q.faction, q.repGain);
-    addLog(`✅ MISSION COMPLETE: ${q.title} — Reward: ${q.reward} gold.`,'imp');
+    addLog(`✅ MISSION COMPLETE: ${q.title} — Reward: ${q.reward} TS.`,'imp');
     snd('fragment_collect', 0.9);
     updateUI();
-    setTimeout(()=>showMsg(`✅ Mission Complete`,`"${q.title}" delivered successfully.\n\nReward: ${q.reward} gold\n${FACTIONS[q.faction].n} reputation increased.`,'Excellent!',()=>{
+    setTimeout(()=>showMsg(`✅ Mission Complete`,`"${q.title}" delivered successfully.\n\nReward: ${q.reward} TS\n${FACTIONS[q.faction].n} reputation increased.`,'Excellent!',()=>{
       if(G._afterTurninCb){ const cb=G._afterTurninCb; G._afterTurninCb=null; cb(); }
     }),400);
   });
@@ -13810,7 +13924,7 @@ function _buildSaveEntry(slot, name) {
     hull:      G.ship.hull,
     maxHull:   G.ship.maxHull,
     crew:      G.ship.crew,
-    gold:      G.ship.gold,
+    TS:      G.ship.gold,
     frags:     G.frags,
     loc:       G.spheres.find(s => s.id === G.ship.loc)?.n || G.ship.loc,
     data: JSON.stringify({
@@ -14001,7 +14115,7 @@ function _slotHTML(save, slotId, isAuto) {
       <div class="save-slot">
         <div class="save-info">
           <div class="save-name">${isAuto ? '🔄' : '💾'} ${name}</div>
-          <div class="save-detail">${save.shipName} · ${save.loc} · ${save.frags}/6 Fragments · ⚜ ${save.gold} · Hull ${pct}%</div>
+          <div class="save-detail">${save.shipName} · ${save.loc} · ${save.frags}/6 Fragments · 🔷 ${save.gold} · Hull ${pct}%</div>
           <div class="save-detail" style="color:#443355;font-size:10px;">${date}</div>
         </div>
         <div class="save-actions" style="display:flex;flex-direction:column;gap:4px;align-items:flex-end;">
@@ -14103,7 +14217,7 @@ const LOCAL_QUEST_DATA = {
         name: 'Quartermaster Dael Morne',
         role: 'IEF Supply Corps — Fentheris System Station',
         portrait: '⚓', color: '#88bbff',
-        greet: "Captain. IEF Supply Corps at your service. We stock materiel approved for active field operations — including a few items you won't find at the standard docks. Gold accepted. Requisition orders appreciated but not required.",
+        greet: "Captain. IEF Supply Corps at your service. We stock materiel approved for active field operations — including a few items you won't find at the standard docks. TS accepted. Requisition orders appreciated but not required.",
         shop: true,
         quests: []
       },
@@ -14119,14 +14233,14 @@ const LOCAL_QUEST_DATA = {
             title: 'Signal Interference',
             desc: 'A harvester psychic field is corrupting IEF navigation crystals in the local lanes. The relay buoy in the outer arc needs purging before more ships go blind.',
             task: 'Travel to the outer arc and defeat the harvester disruption vessel before returning.',
-            reward: '⚜ 80 Gold + 💨 Full Air Supply',
+            reward: '🔷 80 TS + 💨 Full Air Supply',
             type: 'combat',
             checkDesc: 'Defeat a harvester ship in the Drift and return.',
             check: (G) => (G.localQuests?.realm_q1_kills || 0) >= 1,
             rewardFn: (G) => {
               G.ship.gold += 80;
               G.ship.air = G.ship.maxAir||12;
-              addLog('Ensign Vaen transfers 80 gold and restores your air supply. "Navigation is clear. Good hunting, Captain."', 'gd');
+              addLog('Ensign Vaen transfers 80 TS and restores your air supply. "Navigation is clear. Good hunting, Captain."', 'gd');
             },
             trigger: (G) => { G.localQuests.realm_q1_kills = 0; }
           }
@@ -14137,21 +14251,21 @@ const LOCAL_QUEST_DATA = {
         name: 'Tomas Wrenfold',
         role: 'Licensed Merchant — Toril Trading Co.',
         portrait: '🧑‍💼', color: '#ffcc66',
-        greet: "Ah, an IEF vessel. Good — I have a problem that requires someone with more weapons than a trade cog. Pirates. Not the usual opportunists — this is organized. Black Fleet Reavers have been intercepting my shipments along the Mystara lanes. If you discourage them, there's gold in it for you.",
+        greet: "Ah, an IEF vessel. Good — I have a problem that requires someone with more weapons than a trade cog. Pirates. Not the usual opportunists — this is organized. Black Fleet Reavers have been intercepting my shipments along the Mystara lanes. If you discourage them, there's TS in it for you.",
         quests: [
           {
             id: 'realm_q2',
             title: 'Clear the Lanes',
             desc: 'Black Fleet Reavers are systematically intercepting merchant convoys on the Mystara Flow. Wrenfold needs them pushed back before his next shipment.',
             task: 'Destroy 2 Black Fleet ships on the Fentheris System lanes.',
-            reward: '⚜ 120 Gold + 🔧 Hull Repair Kit (restores 30 hull in combat)',
+            reward: '🔷 120 TS + 🔧 Hull Repair Kit (restores 30 hull in combat)',
             type: 'combat',
             checkDesc: 'Defeat 2 Black Fleet Reavers and return.',
             check: (G) => (G.localQuests?.realm_q2_kills || 0) >= 2,
             rewardFn: (G) => {
               G.ship.gold += 120;
               G.ship.inv.push({...ITEMS['levblood'], uid: uid(), n: 'Hull Repair Kit', desc:'Use: Restores 30 hull in combat (merchant grade).', use:'hp30'});
-              addLog("Wrenfold counts out 120 gold and passes over a hull repair kit. 'The lanes are breathing again. Much obliged, Captain.'", 'gd');
+              addLog("Wrenfold counts out 120 TS and passes over a hull repair kit. 'The lanes are breathing again. Much obliged, Captain.'", 'gd');
             },
             trigger: (G) => { G.localQuests.realm_q2_kills = 0; }
           }
@@ -14169,7 +14283,7 @@ const LOCAL_QUEST_DATA = {
             title: 'Resonance Components',
             desc: "The Archivist needs a Sentinel Optical Array to calibrate his Fragment resonance scanner. Sentinel Drone Carriers patrol the Cluster-Realm war lane — a dangerous but reliable source.",
             task: 'Bring Archivist Dusan a Sentinel Optical Array from your cargo.',
-            reward: '⚜ 60 Gold + 🔮 Psionic Amplifier (stuns enemy next action)',
+            reward: '🔷 60 TS + 🔮 Psionic Amplifier (stuns enemy next action)',
             type: 'delivery',
             checkDesc: 'Have a Sentinel Optical Array in cargo.',
             check: (G) => G.ship.inv.some(i => i.uid && i.n === 'Sentinel Optical Array'),
@@ -14196,7 +14310,7 @@ const LOCAL_QUEST_DATA = {
             title: 'Operation Mindbreak',
             desc: 'Three Shell Drifter scouts have been spotted in local space running reconnaissance for the Trull Overmind. Commander Thessan needs them eliminated before they can relay targeting data.',
             task: 'Destroy 3 void ships and return to Commander Thessan.',
-            reward: '⚜ 150 Gold + ⚙️ Rapid Reload Component (−1 weapon cooldown)',
+            reward: '🔷 150 TS + ⚙️ Rapid Reload Component (−1 weapon cooldown)',
             type: 'combat',
             checkDesc: 'Defeat 3 Shell Drifters in the Drift.',
             check: (G) => (G.localQuests?.realm_q4_kills || 0) >= 3,
@@ -14205,10 +14319,10 @@ const LOCAL_QUEST_DATA = {
               // Grant a cdreduce upgrade if not already owned
               if(!G.ship.upgrades.includes('cdreduce')){
                 G.ship.upgrades.push('cdreduce');
-                addLog("Commander Thessan transfers 150 gold and has a Rapid Reload System installed on your hull. All weapon cooldowns reduced by 1.", 'gd');
+                addLog("Commander Thessan transfers 150 TS and has a Rapid Reload System installed on your hull. All weapon cooldowns reduced by 1.", 'gd');
               } else {
-                G.ship.gold += 100; // bonus gold if already have upgrade
-                addLog("Commander Thessan transfers 250 gold total — you already had the upgrade, so she doubled the bonus pay.", 'gd');
+                G.ship.gold += 100; // bonus TS if already have upgrade
+                addLog("Commander Thessan transfers 250 TS total — you already had the upgrade, so she doubled the bonus pay.", 'gd');
               }
             },
             trigger: (G) => { G.localQuests.realm_q4_kills = 0; }
@@ -14245,7 +14359,7 @@ const LOCAL_QUEST_DATA = {
         name: 'Quartermaster Rugdim Brassbeard',
         role: 'IEF Supply Corps — Korreth Attachment',
         portrait: '⚓', color: '#88bbff',
-        greet: "Aye, Captain. Rugdim Brassbeard, IEF Supply Corps. We're attached to the dwarven station here — their forge work is exceptional, and we've had some custom pieces made that you won't find in the standard catalogs. The dwarves charge in sweat and skill; we charge in gold.",
+        greet: "Aye, Captain. Rugdim Brassbeard, IEF Supply Corps. We're attached to the dwarven station here — their forge work is exceptional, and we've had some custom pieces made that you won't find in the standard catalogs. The dwarves charge in sweat and skill; we charge in TS.",
         shop: true,
         quests: []
       },
@@ -14295,7 +14409,7 @@ const LOCAL_QUEST_DATA = {
             title: "The Prospector's Wreck",
             desc: "Old Bram found a pre-Sundering debris field in the deep lanes but won't risk his cog to investigate. He wants the wreck's log beacon — which would require cutting through whatever is guarding it.",
             task: 'Fight through the Drift lanes and bring back an Astral Silk or Arcane Core component.',
-            reward: '⚜ 90 Gold + ⚙️ Void Sailing Core Shard',
+            reward: '🔷 90 TS + ⚙️ Void Sailing Core Shard',
             type: 'delivery',
             checkDesc: 'Have Astral Silk or a Void Sailing Core Shard in cargo.',
             check: (G) => G.ship.inv.some(i => i.n === 'Astral Silk' || i.n === 'Void Sailing Core Shard'),
@@ -14322,7 +14436,7 @@ const LOCAL_QUEST_DATA = {
             title: 'The Lost Crew',
             desc: "Mira's merchant cog was taken by Shell Drifters. The survivors were either enslaved or left aboard the drifting hull. She wants someone to investigate — and deal with whatever is still aboard.",
             task: 'Defeat a Harvester or Trull Slaver in the Korreth lanes and return to Mira.',
-            reward: "⚜ 50 Gold + 🧵 Astral Silk + 🍺 Crew's Courage Mead",
+            reward: "🔷 50 TS + 🧵 Astral Silk + 🍺 Crew's Courage Mead",
             type: 'combat',
             checkDesc: 'Defeat a Harvester or Trull Slaver in the lanes and return to Mira.',
             check: (G) => (G.localQuests?.grey_q3_kills || 0) >= 1,
@@ -14372,7 +14486,7 @@ const LOCAL_QUEST_DATA = {
             title: "Kezzix's Errand",
             desc: "Port-Boss Kezzix needs a delivery verified — a shipment that was supposed to arrive from the outer lanes never showed. She wants someone to make a run out and confirm whether the courier is dead, fled, or just slow.",
             task: 'Travel to any other sphere and return to Kezzix to confirm the lanes are clear.',
-            reward: '⚜ 120 Gold + 💰 Plundered Merchant Gold (trade good)',
+            reward: '🔷 120 TS + 💰 Plundered Merchant TS (trade good)',
             type: 'explore',
             checkDesc: 'Travel to any sphere and return to Kezzix.',
             check: (G) => (G.localQuests?.cluster_q3_visited || false),
@@ -14397,7 +14511,7 @@ const LOCAL_QUEST_DATA = {
             title: "The Relic Hunter's Prize",
             desc: "Saja Vell has located a pre-Sundering wreck and needs a Star Elven Coin Hoard to authenticate its provenance to a buyer. The coins drop from Drift Corsair and Black Fleet ships on the outer lanes.",
             task: 'Bring Saja a Star Elven Coin Hoard from your cargo.',
-            reward: '⚜ 140 Gold + 💍 Thrall Binding Ring (equip: +3 max crew)',
+            reward: '🔷 140 TS + 💍 Thrall Binding Ring (equip: +3 max crew)',
             type: 'delivery',
             checkDesc: 'Have a Star Elven Coin Hoard in cargo.',
             check: (G) => G.ship.inv.some(i => i.n === 'Star Elven Coin Hoard'),
@@ -14424,7 +14538,7 @@ const LOCAL_QUEST_DATA = {
             title: "Scratch's Reckoning",
             desc: "A former pirate called Scratch is hunting a Harvester slaver that cost him his crew. He needs two Harvesters eliminated in the outer lanes — proof the hunting ground has been cleared.",
             task: 'Destroy 2 Harvester ships in the Drift lanes and return to Scratch.',
-            reward: '⚜ 160 Gold + 🌀 Anti-Magic Sphere Shard (equip: −3 incoming damage)',
+            reward: '🔷 160 TS + 🌀 Anti-Magic Sphere Shard (equip: −3 incoming damage)',
             type: 'combat',
             checkDesc: 'Destroy 2 Harvester ships and return.',
             check: (G) => (G.localQuests?.cluster_q2_kills || 0) >= 2,
@@ -14481,14 +14595,14 @@ const LOCAL_QUEST_DATA = {
             title: "The Admiral's Debt",
             desc: "A Drift Corsair raider has been systematically targeting IEF supply runs from Refuge. Three crews lost, two helm cores stolen. Admiral Soreth wants retribution — and the cores back.",
             task: 'Destroy 2 Drift Corsair ships on any lane and return to Admiral Soreth.',
-            reward: '⚜ 200 Gold + 🗡️ Silver Astral Blade Fragment (artifact)',
+            reward: '🔷 200 TS + 🗡️ Silver Astral Blade Fragment (artifact)',
             type: 'combat',
             checkDesc: 'Destroy 2 Drift Corsair warships.',
             check: (G) => (G.localQuests?.refuge_q1_kills || 0) >= 2,
             rewardFn: (G) => {
               G.ship.gold += 200;
               G.ship.inv.push({...ITEMS['silblade'], uid: uid()});
-              addLog("The Admiral sets down a silver astral blade shard on the nav table. 'Recovered from one of our lost ships. It belongs with someone who will use it. 200 gold from the discretionary fund — the Admiral's aide need not know.'", 'gd');
+              addLog("The Admiral sets down a silver astral blade shard on the nav table. 'Recovered from one of our lost ships. It belongs with someone who will use it. 200 TS from the discretionary fund — the Admiral's aide need not know.'", 'gd');
             },
             trigger: (G) => { G.localQuests.refuge_q1_kills = 0; }
           }
@@ -14506,7 +14620,7 @@ const LOCAL_QUEST_DATA = {
             title: 'Engine Field Test',
             desc: 'Chief Engineer Velt needs field test data from his experimental engine configuration. Just make a full run through the Drift and return — the onboard sensors will record everything.',
             task: 'Travel to any sphere and back to Refuge to complete the field test.',
-            reward: '⚜ 100 Gold + ⚡ Speed Engine upgrade installed free',
+            reward: '🔷 100 TS + ⚡ Speed Engine upgrade installed free',
             type: 'explore',
             checkDesc: 'Travel to any sphere and return to Refuge.',
             check: (G) => (G.localQuests?.refuge_q2_visited || false),
@@ -14518,7 +14632,7 @@ const LOCAL_QUEST_DATA = {
                 addLog("Velt downloads the sensor data with visible excitement. 'Performance nominal — better than nominal! Installing the engine module as promised. Enjoy the extra speed, Captain.'", 'gd');
               } else {
                 G.ship.gold += 80;
-                addLog("Velt downloads the data. 'You already have an engine upgrade — data is still valuable. Taking an extra 80 gold as field hazard pay.'", 'gd');
+                addLog("Velt downloads the data. 'You already have an engine upgrade — data is still valuable. Taking an extra 80 TS as field hazard pay.'", 'gd');
               }
             },
             trigger: (G) => { G.localQuests.refuge_q2_visited = false; }
@@ -15060,6 +15174,12 @@ function closeLsDock() {
   _lsLog('Departed station. Safe travels, Captain.');
 }
 
+function lsDockDeliverCargo() {
+  const sphereId = G.ship?.loc || 'realm';
+  checkQuestTurnin(sphereId);
+  _lsRefreshDock();
+}
+
 function lsDockDepart() {
   closeLsDock();
   closeLsOverlay();
@@ -15078,7 +15198,7 @@ function lsDockService(type) {
   if(type === 'hull') {
     if(s.hull >= s.maxHull) { _lsLog('Hull is already at full integrity.'); return; }
     const cost = Math.max(5, Math.floor((s.maxHull - s.hull) * 0.5));
-    if(s.gold < cost) { _lsLog(`Not enough gold for hull repair (${cost}g).`); return; }
+    if(s.gold < cost) { _lsLog(`Not enough TS for hull repair (${cost} TS).`); return; }
     s.gold -= cost; s.hull = s.maxHull;
     snd('repair_hull', 0.7); snd('purchase', 0.6);
     addLog('Hull fully repaired at Fentheris Orbital.','gd');
@@ -15086,14 +15206,14 @@ function lsDockService(type) {
     const maxAir = s.maxAir || 12;
     if(s.air >= maxAir) { _lsLog('Air supply already full.'); return; }
     const cost = Math.max(3, Math.floor((maxAir - s.air) * 0.5));
-    if(s.gold < cost) { _lsLog(`Not enough gold for air resupply (${cost}g).`); return; }
+    if(s.gold < cost) { _lsLog(`Not enough TS for air resupply (${cost} TS).`); return; }
     s.gold -= cost; s.air = maxAir;
     snd('purchase', 0.6);
     addLog('Air supply restored at Fentheris Orbital.','gd');
   } else if(type === 'crew') {
     if(s.crew >= s.maxCrew) { _lsLog('Crew already at full complement.'); return; }
     const cost = Math.max(5, (s.maxCrew - s.crew) * 3);
-    if(s.gold < cost) { _lsLog(`Not enough gold for crew hire (${cost}g).`); return; }
+    if(s.gold < cost) { _lsLog(`Not enough TS for crew hire (${cost} TS).`); return; }
     s.gold -= cost; s.crew = s.maxCrew;
     snd('purchase', 0.6);
     addLog('Crew fully replenished at Fentheris Orbital.','gd');
@@ -15110,6 +15230,19 @@ function _lsRefreshDock() {
   document.getElementById('ls-dock-air').textContent  = (s.air||0)+' days';
   document.getElementById('ls-dock-gold').textContent = s.gold;
 
+  // Show cargo delivery button with glow if player has cargo to turn in here
+  const _sphereId = G.ship?.loc || 'realm';
+  const _hasCargo = G.quests.some(q =>
+    q.turnin === _sphereId && q.state === 'active' &&
+    G.ship.inv.some(i => i.id === q.cargo?.id)
+  );
+  const _delBtn = document.getElementById('ls-dock-deliver-btn');
+  if(_delBtn) {
+    _delBtn.style.display = _hasCargo ? 'block' : 'none';
+    _delBtn.style.boxShadow = _hasCargo ? '0 0 10px #44ff44aa' : 'none';
+    _delBtn.style.animation = _hasCargo ? 'questPulse 1.2s ease-in-out infinite' : 'none';
+  }
+
   // Dynamic prices matching port formula
   const hullCost = s.hull >= s.maxHull ? 0 : Math.max(5, Math.floor((s.maxHull - s.hull) * 0.5));
   const airCost  = s.air  >= (s.maxAir||12) ? 0 : Math.max(3, Math.floor(((s.maxAir||12) - s.air) * 0.5));
@@ -15118,9 +15251,9 @@ function _lsRefreshDock() {
   const hBtn = document.getElementById('ls-svc-hull');
   const aBtn = document.getElementById('ls-svc-air');
   const cBtn = document.getElementById('ls-svc-crew');
-  if(hBtn){ hBtn.textContent = `⚜ ${hullCost}g`; hBtn.disabled = s.hull >= s.maxHull || s.gold < hullCost; }
-  if(aBtn){ aBtn.textContent = `⚜ ${airCost}g`;  aBtn.disabled = s.air  >= (s.maxAir||12) || s.gold < airCost; }
-  if(cBtn){ cBtn.textContent = `⚜ ${crewCost}g`; cBtn.disabled = s.crew >= s.maxCrew || s.gold < crewCost; }
+  if(hBtn){ hBtn.textContent = `🔷 ${hullCost} TS`; hBtn.disabled = s.hull >= s.maxHull || s.gold < hullCost; }
+  if(aBtn){ aBtn.textContent = `🔷 ${airCost} TS`;  aBtn.disabled = s.air  >= (s.maxAir||12) || s.gold < airCost; }
+  if(cBtn){ cBtn.textContent = `🔷 ${crewCost} TS`; cBtn.disabled = s.crew >= s.maxCrew || s.gold < crewCost; }
   // Build QM shop grid
   _lsBuildQmShop();
   // Build cargo sell grid
@@ -15151,12 +15284,12 @@ function _lsBuildCargoGrid() {
     const allRow = document.createElement('div');
     allRow.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:5px 8px;border-radius:4px;background:rgba(10,30,10,0.6);border:1px solid #33664433;';
     allRow.innerHTML = `<span style="font-size:0.625em;color:#44ee88;">💰 Sell All Cargo (${bulkSellable.length} items)</span>
-      <button class="btn" style="font-size:0.563em;padding:3px 10px;border-color:#33664455;color:#44ee88;">⚜ ${total}g</button>`;
+      <button class="btn" style="font-size:0.563em;padding:3px 10px;border-color:#33664455;color:#44ee88;">🔷 ${total} TS</button>`;
     allRow.querySelector('button').onclick = () => {
       G.ship.inv = G.ship.inv.filter(i => !['trade','component','artifact'].includes(i.type));
       G.ship.gold += total;
       snd('purchase', 0.7);
-      const _sellSphName = G.ship?.loc === 'refuge' ? 'IEF Refuge Station' : G.ship?.loc === 'grey' ? 'Ironhaven Station' : G.ship?.loc === 'cluster' ? 'Thousand Sails Freeport' : 'Fentheris Orbital'; addLog(`Sold all cargo at ${_sellSphName} for ${total} gold.`, 'gd');
+      const _sellSphName = G.ship?.loc === 'refuge' ? 'IEF Refuge Station' : G.ship?.loc === 'grey' ? 'Ironhaven Station' : G.ship?.loc === 'cluster' ? 'Thousand Sails Freeport' : 'Fentheris Orbital'; addLog(`Sold all cargo at ${_sellSphName} for ${total} TS.`, 'gd');
       updateUI(); _lsRefreshDock();
     };
     grid.appendChild(allRow);
@@ -15167,12 +15300,12 @@ function _lsBuildCargoGrid() {
     const row = document.createElement('div');
     row.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:4px 8px;border-radius:4px;background:rgba(8,4,20,0.5);border:1px solid #33224433;';
     row.innerHTML = `<span style="font-size:0.625em;color:#8899bb;">${item.ico||'📦'} ${item.n}</span>
-      <button class="btn" style="font-size:0.563em;padding:3px 8px;">⚜ ${item.val||0}g</button>`;
+      <button class="btn" style="font-size:0.563em;padding:3px 8px;">🔷 ${item.val||0} TS</button>`;
     row.querySelector('button').onclick = () => {
       G.ship.gold += item.val || 0;
       G.ship.inv = G.ship.inv.filter(i => i.uid !== item.uid);
       snd('purchase', 0.6);
-      addLog(`Sold ${item.n} for ${item.val} gold.`, 'gd');
+      addLog(`Sold ${item.n} for ${item.val} TS.`, 'gd');
       updateUI(); _lsRefreshDock();
     };
     grid.appendChild(row);
@@ -15206,12 +15339,12 @@ function _lsBuildCargoGrid() {
       const row = document.createElement('div');
       row.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:4px 8px;border-radius:4px;background:rgba(20,4,30,0.5);border:1px solid #44224455;';
       row.innerHTML = `<span style="font-size:0.625em;color:#aa88cc;">${item.ico||'⚗'} ${item.n}</span>
-        <button class="btn" style="font-size:0.563em;padding:3px 8px;border-color:#66336655;color:#cc99ee;">⚜ ${sellVal}g</button>`;
+        <button class="btn" style="font-size:0.563em;padding:3px 8px;border-color:#66336655;color:#cc99ee;">🔷 ${sellVal} TS</button>`;
       row.querySelector('button').onclick = () => {
         G.ship.gold += sellVal;
         G.ship.inv = G.ship.inv.filter(i => i.uid !== item.uid);
         snd('purchase', 0.6);
-        addLog(`Sold ${item.n} for ${sellVal} gold.`, 'gd');
+        addLog(`Sold ${item.n} for ${sellVal} TS.`, 'gd');
         updateUI(); _lsRefreshDock();
       };
       usableGrid.appendChild(row);
@@ -15315,7 +15448,7 @@ function _lsBuildQmShop() {
     const buyBtn = document.createElement('button');
     buyBtn.className = 'btn';
     buyBtn.style.cssText = 'font-size:0.563em;padding:3px 8px;flex-shrink:0;white-space:nowrap;';
-    buyBtn.textContent = `⚜ ${item.cost}g`;
+    buyBtn.textContent = `🔷 ${item.cost} TS`;
     buyBtn.disabled = soldOut || !canAfford;
     if(!soldOut && canAfford) {
       buyBtn.onclick = () => {
@@ -16058,6 +16191,22 @@ function _lsRender(cx, W, H, dt) {
       cx.font='13px Arial'; cx.textAlign='center'; cx.textBaseline='middle';
       cx.fillText('⚓', p.x, p.y);
       cx.textBaseline='alphabetic';
+      // Cargo turnin ! marker on dock
+      if(lsDockHasTurnin()) {
+        const _qPulse = 0.75 + 0.25*Math.sin(LS.t*3.5);
+        cx.save();
+        cx.globalAlpha = _qPulse;
+        cx.fillStyle = 'rgba(60,30,0,0.88)';
+        cx.strokeStyle = '#ffaa22';
+        cx.lineWidth = 1.5;
+        cx.beginPath(); cx.arc(p.x+22, p.y-22, 10, 0, Math.PI*2); cx.fill(); cx.stroke();
+        cx.font = 'bold 13px Arial'; cx.textAlign='center'; cx.textBaseline='middle';
+        cx.fillStyle = '#ffaa22';
+        cx.fillText('!', p.x+22, p.y-22);
+        cx.textBaseline='alphabetic';
+        cx.globalAlpha = 1;
+        cx.restore();
+      }
     } else if(p.type==='fragment') {
       // Pulsing crystal
       const fpulse = 0.5+0.5*Math.sin(LS.t*2.2);
@@ -16460,7 +16609,7 @@ function buildArmoryGrid() {
       <div style="font-size:0.563em;color:#665533;margin-top:2px;">${w.d[0]}d${w.d[1]} · avg ${avgDmg} · ${w.cd===0?'no reload':w.cd+'-rd reload'}</div>
       <div style="font-size:0.5em;color:#443322;margin-top:1px;">${w.info}</div>
       ${w.farRealm?'<div style="font-size:0.5em;color:#993333;margin-top:1px;">⚠ Void Rift weapon</div>':''}
-      <div style="font-size:0.5em;color:#554422;margin-top:2px;">Sell value: ⚜ ${item.val}g</div>`;
+      <div style="font-size:0.5em;color:#554422;margin-top:2px;">Sell value: 🔷 ${item.val} TS</div>`;
     row.appendChild(info);
 
     // Equip button
@@ -16478,7 +16627,7 @@ function buildArmoryGrid() {
     const sbtn = document.createElement('button');
     sbtn.className = 'btn';
     sbtn.style.cssText = 'font-size:0.563em;padding:5px 8px;flex-shrink:0;';
-    sbtn.textContent = `⚜ ${item.val}g`;
+    sbtn.textContent = `🔷 ${item.val} TS`;
     sbtn.title = 'Sell (requires port or station dock)';
     const canSell = G.phase==='port' || document.getElementById('ls-dock-panel')?.classList.contains('on');
     sbtn.disabled = !canSell;
@@ -16486,7 +16635,7 @@ function buildArmoryGrid() {
       if(!canSell){showMsg('Cannot Sell','Dock at a port or station to sell weapons.');return;}
       G.ship.gold += item.val;
       G.ship.inv = G.ship.inv.filter(i => i.uid !== item.uid);
-      addLog(`Sold ${item.n} for ${item.val} gold.`, 'gd');
+      addLog(`Sold ${item.n} for ${item.val} TS.`, 'gd');
       updateUI(); buildArmoryGrid();
     };
     row.appendChild(sbtn);
@@ -16695,7 +16844,7 @@ function lqRenderLoop(ts=0) {
 
     // Status badge
     if(questStatus === 'turnin') {
-      // Pulsing gold ring
+      // Pulsing TS ring
       const p = 0.5+0.5*Math.sin(LQ.t*3);
       cx.strokeStyle = `rgba(255,220,0,${0.6+p*0.4})`; cx.lineWidth = 2;
       cx.beginPath(); cx.arc(nx,ny,14+p*3,0,Math.PI*2); cx.stroke();
@@ -16738,6 +16887,15 @@ function lqNpcOverallStatus(npc) {
   }
   if(statuses.every(s => s === 'rewarded')) return 'done';
   return 'available';
+}
+
+// Returns true if there is a cargo mission ready to turn in at the current sphere
+function lsDockHasTurnin() {
+  const sphereId = G.ship?.loc || 'realm';
+  return !!(G.quests?.some(q =>
+    q.turnin === sphereId && q.state === 'active' &&
+    G.ship?.inv?.some(i => i.id === q.cargo?.id)
+  ));
 }
 
 // ── NPC CLICK HANDLER ─────────────────────────────────────────
@@ -16892,12 +17050,12 @@ function showLqShop(npc) {
     d.className = 'lq-shop-item' + (canAfford ? '' : ' dis');
     d.innerHTML = `<div class="lq-si-name">${itemName}</div>
       <div class="lq-si-desc">${item.desc}</div>
-      <div class="lq-si-cost">⚜ ${item.cost}</div>`;
+      <div class="lq-si-cost">🔷 ${item.cost}</div>`;
 
     if(canAfford) {
       d.onclick = () => {
         if(G.ship.gold < item.cost) return;
-        // Weapons go through slot picker — no gold deducted yet
+        // Weapons go through slot picker — no TS deducted yet
         if(item.wk && WPN[item.wk]) {
           wpnPickerOpen({...item, act:'wpn'}, 'lq');
           return;
@@ -17101,7 +17259,7 @@ const _J_UPGRADE = [
 ];
 const _J_LOOT_VOIDWELDER = "Recovered a Void Welder from the wreckage. The IEF stamp is still legible on the housing — this was ours once. The war scattered equipment across half the Drift. We are still finding it.";
 const _J_REP = {
-  ien_high:   "Word has reached the IEF quartermaster before we did. The reception at port was noticeably warmer. Reputation is a currency with a longer shelf life than gold.",
+  ien_high:   "Word has reached the IEF quartermaster before we did. The reception at port was noticeably warmer. Reputation is a currency with a longer shelf life than TS.",
   trull_low:   "We have made enemies. The Trull have not forgotten what we did to their patrol — I did not expect them to. The crew has been briefed to stay alert in Trull space.",
   harvester_low:  "The Harvester blacklist us now. This is the correct outcome. There is no diplomatic solution with a species that treats sapient beings as inventory.",
   far_realm:  "Something in the Void Rift has noticed us. I am not certain how I know this. I know it.",
@@ -17298,7 +17456,7 @@ function runDebugCmd(){
       G.ship.hull=G.ship.maxHull; G.ship.gold+=5000; G.frags=6;
       updateUI(); updateFragUI();
       if(G.phase==='port') buildShop();
-      dbOut('✓ CHEAT: godmode + instakill + breach unlocked + 5000g + 6 frags','#00ff88'); break;
+      dbOut('✓ CHEAT: godmode + instakill + breach unlocked + 5000 TS + 6 frags','#00ff88'); break;
     case 'unlock':
       G.postVictory=true; G.breachEntered=true;
       if(!G.breachIntel) G.breachIntel=new Set();
@@ -17340,10 +17498,10 @@ function runDebugCmd(){
       G.ship.hull=G.ship.maxHull; updateUI();
       if(G.phase==='port') buildShop();
       dbOut('✓ Hull restored to maximum','#00ff88'); break;
-    case 'gold':
+    case 'TS':
       G.ship.gold+=10000; updateUI();
       if(G.phase==='port') buildShop();
-      dbOut('✓ +10,000 gold added','#ffcc44'); break;
+      dbOut('✓ +10,000 TS added','#ffcc44'); break;
     case 'frags':
       G.frags=6; updateUI(); updateFragUI();
       dbOut('✓ All 6 fragments granted','#ffaa00'); break;
@@ -17367,7 +17525,7 @@ function runDebugCmd(){
       loadShipImages();
       dbOut('Reloading all ship images…','#88aaff'); break;
     case 'help':
-      dbOut('Commands: cheat · unlock · god · instakill · heal · gold · frags · kill · imgcheck · imgreload · wbunlock · wbkill','#88aacc'); break;
+      dbOut('Commands: cheat · unlock · god · instakill · heal · TS · frags · kill · imgcheck · imgreload · wbunlock · wbkill','#88aacc'); break;
     default:
       dbOut(`Unknown command: "${cmd}" — try "help"`, '#ff6644');
   }
@@ -17828,8 +17986,18 @@ document.addEventListener('DOMContentLoaded', () => {
       <div class="b-section">
         <div class="b-head">⚓ Your Mission</div>
         <div class="b-body">
-          You command a void sailing vessel for the <strong>International Earth Federation</strong>, launching from <em>Refuge</em> — a hidden IEF base sealed inside an artificial Planet. The known spheres are under threat: an <strong>Trull Overmind Flagship</strong> drifts through The Far Dark, consuming all conscious thought in its path.<br><br>
-          Your orders: travel the Drift, recover all <strong>six Navigation Cores</strong> hidden across six Planets, assemble the completed chart, unlock The Far Dark, and destroy the Flagship before it reaches the inner worlds. Each Fragment is guarded — you'll need to find clues at each sphere's port before you can locate and fight for them.
+          You command a void sailing vessel for the <strong>International Earth Federation (IEF)</strong>, launching from <em>Refuge Station</em> — a hidden IEF forward base. The known spheres are under threat from the <strong>Trull Overmind Flagship</strong>, drifting through The Far Dark and consuming all conscious life in its path.<br><br>
+          Your orders: travel the Drift, recover all <strong>six Navigation Cores</strong> hidden across six spheres, assemble the completed chart, unlock The Far Dark, and destroy the Flagship before it reaches the inner worlds. Each Core is guarded — find clues at each sphere's dock before you can locate and fight for them.
+        </div>
+      </div>
+
+      <!-- CURRENCY -->
+      <div class="b-section">
+        <div class="b-head">🔷 Currency — Topazine Shards (TS)</div>
+        <div class="b-body">
+          The currency of the Known Spheres is the <strong>Topazine Shard (TS)</strong> — named for the yellow gems the ancient dragons of Fentheris used as trade tokens during their reign. The topazine dragons had shimmering yellow scales and were masters of storms; their shards became the universal medium of exchange long after the last dragon vanished.<br><br>
+          TS is earned from <strong>combat loot</strong>, <strong>selling cargo</strong>, and <strong>completing quests</strong>. Spent on hull repairs, crew, weapons, ship upgrades, and supplies. Each sphere's dock and quartermaster sets its own prices — Thousand Sails Freeport charges freeport rates. Ironhaven on Korreth charges dwarven rates. Plan accordingly.<br><br>
+          <em>Other Fentheris currencies exist — Emerine, Rubine, Sapphirian Shards, and the ultra-rare Thermian Crest — but Topazine Shards are what the Drift runs on.</em>
         </div>
       </div>
 
@@ -17837,19 +18005,29 @@ document.addEventListener('DOMContentLoaded', () => {
       <div class="b-section">
         <div class="b-head">🗺 Navigation &amp; The Map</div>
         <div class="b-body">
-          The main screen shows the <strong>Drift</strong> — the flammable sea between Planets. Spheres appear as glowing circles. <strong>Lanes</strong> connect them as glowing lines across the void.<br><br>
+          The main screen shows the <strong>Drift</strong> — the space between spheres. Spheres appear as glowing circles. <strong>Lanes</strong> connect them across the void.<br><br>
           <strong>To travel:</strong> tap any sphere to chart a course. Your ship animates across the Drift.<br>
-          <strong>To dock:</strong> tap your <em>current sphere</em> (the one you're already at) to enter port.<br>
-          <strong>Locked spheres</strong> show a lock icon — some require story progress or Fragments to reach.<br><br>
+          <strong>To dock:</strong> arrive at a sphere — you'll automatically enter its local space.<br>
+          <strong>Locked spheres</strong> show a lock icon — some require story progress or Navigation Cores to reach.<br><br>
+          <strong>Drift Flow Rivers</strong> — each lane carries a <em>current</em>. Watch which way the glowing particles drift — that is the flow direction. Travelling <em>with</em> the current is faster and costs fewer days. Travelling <em>against</em> it takes longer.<br><br>
+          <strong>Waypoints</strong> — small icons in the Drift — are supply caches, relay stations, and derelict vessels. Tap one to intercept it for supplies, air, or crew.<br><br>
+          <strong>Air Supply</strong> counts down during travel. Reaches zero? Your crew suffocates — voyage over. Always refill before long journeys.
+        </div>
+      </div>
 
-          <strong>Drift Flow Rivers</strong> — the lanes are not static. Each one carries a <em>current</em> called a <strong>Flow River</strong>, animated as glowing particles drifting along the lane.<br><br>
-          &nbsp;&nbsp;• <strong>Watch which way the particles drift</strong> — that is the direction the river flows. Travelling <em>with</em> the current (in the direction particles move) is faster and costs fewer travel days. Travelling <em>against</em> it takes longer and costs more.<br>
-          &nbsp;&nbsp;• <strong>Bidirectional lanes</strong> show particles drifting <em>both ways</em> — these lanes have no dominant current and are equally fast in either direction.<br>
-          &nbsp;&nbsp;• <strong>Particle colour</strong> indicates danger — cyan for safe lanes, shifting through blue and orange to red for the most hostile routes.<br>
-          &nbsp;&nbsp;• You can adjust particle density (or turn them off entirely) in the <strong>⚙ Sound &amp; Display</strong> panel via the ✦ Density slider.<br><br>
-
-          <strong>Waypoints</strong> — small icons scattered across the Drift — are supply caches, relay stations, and derelict vessels. Tap one to intercept it for supplies, air, or crew.<br><br>
-          <strong>Air Supply</strong> counts down during travel. If it hits zero your crew suffocates — you lose. Refill at any port before long journeys. The <em>Air Recycler</em> upgrade doubles how long your air lasts.
+      <!-- LOCAL SPACE -->
+      <div class="b-section">
+        <div class="b-head">🌐 Local Space</div>
+        <div class="b-body">
+          Arriving at a sphere automatically opens its <strong>Local Space</strong> — a top-down exploration zone where you pilot your ship directly.<br><br>
+          <strong>Moving:</strong> WASD keys, virtual joystick (mobile), or tap/click anywhere to set a destination.<br>
+          <strong>Points of Interest:</strong> approach any POI to interact with it. The dock, NPC ships, fragment sites, and hazard zones all have their own interactions.<br><br>
+          <strong>The Dock (⚓):</strong> Approach and tap Dock for hull repair, air resupply, crew hire, and the sphere's Quartermaster shop. A 🔷 pulsing amber <strong>!</strong> on the dock means you have a cargo mission ready to turn in there — tap <em>Deliver Cargo Mission</em>.<br><br>
+          <strong>NPC Ships:</strong> Exclamation marks (!) above a ship mean they have a quest available or ready to turn in. Approach and hail them. QM NPCs show their shop via an <em>Open Shop</em> button after the quest dialog.<br><br>
+          <strong>Fragment Sites (🔮):</strong> Approach to attempt to claim the Navigation Core. A guardian stands in your way — you'll enter combat. Come prepared.<br><br>
+          <strong>Hazard Zones (⚠):</strong> Enemy-heavy regions. Enemies spawn more frequently here. Avoid if your hull is low.<br><br>
+          <strong>Enemies</strong> patrol the outer fringes. They have vision cones — if they see you, they give chase. Get intercepted and combat triggers. Enemies respawn every 30 days.<br><br>
+          <strong>Tap outside any open panel</strong> to dismiss it and move simultaneously — one-tap workflow on mobile.
         </div>
       </div>
 
@@ -17857,12 +18035,11 @@ document.addEventListener('DOMContentLoaded', () => {
       <div class="b-section">
         <div class="b-head">🧩 Navigation Cores</div>
         <div class="b-body">
-          Fragments are not simply collected by visiting spheres — they must be <strong>hunted down</strong>.<br><br>
-          <strong>Step 1 — Find the Clue.</strong> Each sphere holds an NPC who knows something. Dock at a port and speak to them. They'll describe a hidden location within or near that sphere — a vault, a derelict, a dark mote, a broker's cache — where a Fragment is being guarded.<br><br>
-          <strong>Step 2 — Mark the Location.</strong> Accept the clue to mark the Fragment Site on your chart. The site then appears as a glowing marker you can navigate to directly.<br><br>
-          <strong>Step 3 — Defeat the Guardian.</strong> Each Fragment is protected by a named Guardian — a powerful enemy unique to that sphere. Corsair captains, iron wardens, void prophets, ancient vault-keepers. These are harder than standard encounters. Come prepared.<br><br>
-          <strong>Step 4 — Claim the Fragment.</strong> Defeat the Guardian and the Fragment is yours. Collect all 6 to unlock The Far Dark and face the final battle.<br><br>
-          <em>Tip: Guardians are significantly tougher than regular enemies. Stock up on hull repair items, upgrade your weapons, and consider having crew-restore items on hand before engaging one.</em>
+          Navigation Cores must be <strong>hunted down</strong> — they are not simply collected by visiting spheres.<br><br>
+          <strong>Step 1 — Find the Clue.</strong> Dock at a sphere and speak to the dockmaster. They know something. Accept their clue to mark the Fragment Site on your chart.<br><br>
+          <strong>Step 2 — Locate the Site.</strong> The Fragment Site appears in local space as a glowing 🔮 marker. Navigate to it.<br><br>
+          <strong>Step 3 — Defeat the Guardian.</strong> Each Core is guarded by a named, unique enemy. These are significantly tougher than standard encounters. Stock up first.<br><br>
+          <strong>Step 4 — Claim the Core.</strong> Defeat the Guardian and the Core is yours. Collect all six to unlock The Far Dark.
         </div>
       </div>
 
@@ -17871,10 +18048,10 @@ document.addEventListener('DOMContentLoaded', () => {
         <div class="b-head">📊 Your Four Resources</div>
         <div class="b-body">
           Losing any one of these ends your voyage:<br><br>
-          <strong>⚔ Hull</strong> — Your ship's structural integrity. Reaches 0? The ship breaks apart — defeat. Repair at port or use hull items mid-combat.<br>
-          <strong>👥 Crew</strong> — Your sailors. If crew reaches 0, the helm goes dark and the ship drifts — defeat, even at full hull. Crew can be lost to enemy boarding attacks and certain specials. Hire crew at port.<br>
-          <strong>💨 Air Supply</strong> — Consumed during travel. Runs out mid-voyage? Everyone suffocates. Always refill before leaving port.<br>
-          <strong>⚜ Gold</strong> — Earned from combat loot and selling cargo. Spent on repairs, upgrades, weapons, and supplies. Never drops below 0 — but you can run out.
+          <strong>⚔ Hull</strong> — Ship structure. Reaches 0 = broken apart. Repair at dock or use hull items mid-combat.<br>
+          <strong>👥 Crew</strong> — Your sailors. Reaches 0 = helm goes dark, ship drifts. Lost to boarding attacks. Hire crew at dock.<br>
+          <strong>💨 Air Supply</strong> — Consumed during travel. Runs out mid-voyage = suffocation. Always refill before leaving.<br>
+          <strong>🔷 TS (Topazine Shards)</strong> — Currency of the Drift. Earned from loot and cargo sales. Spent on everything. Never goes negative — but you can run out.
         </div>
       </div>
 
@@ -17882,11 +18059,10 @@ document.addEventListener('DOMContentLoaded', () => {
       <div class="b-section">
         <div class="b-head">⚔ Combat — The Basics</div>
         <div class="b-body">
-          Random encounters fire during travel. Combat is <strong>strictly turn-based</strong> — you act first, then the enemy acts, then back to you.<br><br>
-          The combat screen splits into two panels at the bottom:<br>
-          <strong>Left panel — Your Weapons:</strong> tap any ready weapon card to fire it. Green glow = ready. Dimmed with a number = reloading that many rounds.<br>
-          <strong>Right panel — Enemy Systems:</strong> shows the enemy's named weapons with threat ratings (◆◆◆◆◆). High-threat weapons are worth disabling.<br><br>
-          <strong>Hull bars</strong> track both ships above the combat log. The enemy also shows a <strong>crew bar</strong> — drain their crew to 0 and their specials go offline and attacks weaken.
+          Random encounters fire during travel. Combat is <strong>strictly turn-based</strong> — you act first, then the enemy, then back to you.<br><br>
+          <strong>Left panel — Your Weapons:</strong> tap any ready weapon card to fire it. Green glow = ready. Dimmed with a number = reloading.<br>
+          <strong>Right panel — Enemy Systems:</strong> named weapons with threat ratings (◆◆◆◆◆). High-threat weapons are worth disabling.<br><br>
+          <strong>Hull bars</strong> track both ships. The enemy also shows a <strong>crew bar</strong> — drain their crew to 0 and their specials go offline.
         </div>
       </div>
 
@@ -17894,12 +18070,11 @@ document.addEventListener('DOMContentLoaded', () => {
       <div class="b-section">
         <div class="b-head">⚔ Combat — Your Actions</div>
         <div class="b-body">
-          All actions appear below the weapon panels:<br><br>
-          <strong>🔥 Fire Weapon</strong> — Tap a weapon card. Each weapon has a reload time (shown in rounds). The Ballista fires every round; heavier weapons take 1–4 rounds to reload. You can only fire one weapon per turn unless you have special upgrades.<br><br>
-          <strong>🌀 Evasive Maneuver</strong> — 50% chance to dodge the <em>next enemy attack entirely</em>. Use before a known heavy hit. Seeking weapons (Drift Corsair Silver Swords) cannot be dodged.<br><br>
-          <strong>🔧 Emergency Repair</strong> — Spends 2 Crew to restore up to 25 Hull. Be careful — losing crew is dangerous. Only appears when hull is damaged and crew &gt; 2.<br><br>
-          <strong>Item Buttons</strong> — Any usable item in your cargo hold appears here. Tap to use it instantly.<br><br>
-          <strong>💨 Flee</strong> — 50% chance of escape. On failure, the enemy still attacks. Some items (Emergency Beacon) guarantee a successful flee.
+          <strong>🔥 Fire Weapon</strong> — Tap a weapon card. Each has a reload time in rounds. Ballista fires every round; heavier weapons take 1–5 rounds.<br><br>
+          <strong>🌀 Evasive Maneuver</strong> — 50% chance to dodge the next enemy attack entirely. Seeking weapons cannot be dodged.<br><br>
+          <strong>🔧 Emergency Repair</strong> — Spends 2 Crew to restore up to 25 Hull. Only appears when hull is damaged and crew &gt; 2.<br><br>
+          <strong>Item Buttons</strong> — Any usable item in your hold appears here. Tap to use instantly.<br><br>
+          <strong>💨 Flee</strong> — 50% chance of escape. On failure the enemy still attacks. Emergency Beacon guarantees escape.
         </div>
       </div>
 
@@ -17907,68 +18082,77 @@ document.addEventListener('DOMContentLoaded', () => {
       <div class="b-section">
         <div class="b-head">⚔ Combat — Special Upgrades</div>
         <div class="b-body">
-          Purchase these from port shops to unlock powerful combat options:<br><br>
-          <strong>🎯 Linked Fire</strong> (Fire Control System upgrade) — Fire two ready weapons simultaneously once per few rounds.<br>
-          <strong>🌊 Volley Fire</strong> (Volley Array upgrade) — Fire <em>all</em> ready weapons at once. Replaces Linked Fire when installed.<br>
-          <strong>⚡ Chain Reaction Crystal</strong> — Every hit has a 30% chance to trigger a free bonus shot.<br>
-          <strong>🔄 Rapid Reload</strong> — All weapon cooldowns reduced by 1 round permanently.
+          Purchase from dock shops to unlock powerful combat options:<br><br>
+          <strong>🎯 Linked Fire</strong> (Fire Control System) — Fire two ready weapons simultaneously once per few rounds.<br>
+          <strong>🌊 Volley Fire</strong> (Volley Array) — Fire <em>all</em> ready weapons at once. Replaces Linked Fire.<br>
+          <strong>⚡ Chain Reaction Crystal</strong> — Every hit has a 30% chance to trigger a free bonus shot. Exclusive to Varuun (Thousand Sails Freeport).<br>
+          <strong>🔄 Rapid Reload</strong> — All weapon cooldowns permanently reduced by 1 round.
         </div>
       </div>
 
-      <!-- SHIP SIGNATURES -->
+      <!-- SHIP SIGS -->
       <div class="b-section">
         <div class="b-head">🚀 Ship Signature Abilities</div>
         <div class="b-body">
-          Each ship class (except the starting Pinnace) has a <strong>built-in signature ability</strong> that upgrades up to three tiers. Buy upgrades at any port.<br><br>
-          <strong>🦑 Void Runner — Tentacle Grapple:</strong> Binds the enemy, halving their attack damage for 2 full turns. No damage at Tier 1 — pure defense. Tier 2 adds 8 direct damage. Tier 3 stuns the enemy entirely for one turn plus 15 damage. Cooldown: 5–6 rounds.<br><br>
-          <strong>🔨 Ironhull — Siege Ram:</strong> Rams the enemy for 2d10–4d10 impact damage — but you take 2–5 hull damage yourself from the collision. High risk, high reward. Tier 3 permanently reduces the enemy's max hull by 10. Cooldown: 5–6 rounds.<br><br>          <strong>⚓ Sovereign — Starfire Broadside:</strong> Fires all ready weapons simultaneously in one devastating salvo — no individual cooldown penalties applied. Tier 2 adds a +20% damage bonus to each shot. Tier 3 also suppresses the enemy's next attack. The capital ship's defining move. Cooldown: 5–7 rounds.
+          Each ship class (except the starting Pinnace) has a <strong>built-in signature ability</strong> with three upgrade tiers:<br><br>
+          <strong>🦑 Void Runner — Tentacle Grapple:</strong> Halves enemy attack damage for 2 turns. Tier 2 adds 8 damage. Tier 3 stuns for one turn + 15 damage. Cooldown: 5–6 rounds.<br><br>
+          <strong>🔨 Ironhull — Siege Ram:</strong> 2d10–4d10 impact damage but you take 2–5 hull damage from the collision. Tier 3 permanently reduces enemy max hull by 10. High risk, high reward. Cooldown: 5–6 rounds.<br><br>
+          <strong>⚓ Sovereign — Starfire Broadside:</strong> Fires all ready weapons simultaneously. Tier 2 adds +20% damage. Tier 3 suppresses enemy's next attack. Cooldown: 5–7 rounds.
         </div>
       </div>
 
       <!-- ENEMY WEAPONS -->
       <div class="b-section">
-        <div class="b-head">👁 Enemy Weapon Systems</div>
+        <div class="b-head">👁 Dangerous Enemy Weapons</div>
         <div class="b-body">
-          Every enemy has <strong>named weapon systems</strong> shown in the right combat panel. Threat ratings run from ◆ (low) to ◆◆◆◆◆ (extreme).<br><br>
-          <strong>Dangerous weapons to watch for:</strong><br>
-          <strong>Sentinel Drone — Disintegration Beam ◆◆◆◆◆</strong> — Each hit <em>permanently</em> reduces your max hull. Disable it immediately.<br>
+          Threat ratings run from ◆ (low) to ◆◆◆◆◆ (extreme). Prioritise disabling these:<br><br>
+          <strong>Sentinel Drone — Disintegration Beam ◆◆◆◆◆</strong> — Permanently reduces your max hull per hit. Disable immediately.<br>
           <strong>Shell Drifter — Psionic Lancer ◆◆◆◆</strong> — Stuns your crew, skipping your next turn.<br>
-          <strong>Astral Leviathan — Void Breath Cannon ◆◆◆◆◆</strong> — Adds +2 reload rounds to <em>all</em> your weapons.<br>
+          <strong>Astral Leviathan — Void Breath Cannon ◆◆◆◆◆</strong> — Adds +2 reload rounds to all your weapons.<br>
           <strong>Harvester — Web Cannon ◆◆◆</strong> — Disables a random player weapon for 2 rounds.<br>
-          <strong>Trull — Rage Cannon ◆◆◆◆◆</strong> — Damage escalates every round it keeps firing. Kill it or disable it fast.<br>
-          <strong>Void Rift Stalker — Reality Shear ◆◆◆◆◆</strong> — Ignores all your damage resistance entirely.<br>
+          <strong>Trull Command — Rage Cannon ◆◆◆◆◆</strong> — Damage escalates every round. Kill or disable fast.<br>
+          <strong>Void Rift Stalker — Reality Shear ◆◆◆◆◆</strong> — Ignores all your damage resistance.<br>
           <strong>Trull Overmind — Void Singularity ◆◆◆◆◆</strong> — Pierces resistance AND permanently shreds max hull by 8 per hit.
         </div>
       </div>
 
-      <!-- DISABLING WEAPONS -->
+      <!-- DISABLING -->
       <div class="b-section">
         <div class="b-head">⬡ Disabling Enemy Weapons</div>
         <div class="b-body">
-          Use a <strong>Phase Disruptor</strong> or <strong>Phase Disruptor Mk.II</strong> from your cargo to enter targeting mode. All enemy weapon cards glow gold — tap the one you want to shut down. It goes dark for 2–3 turns and cannot fire. The Mk.II disables for 3 turns instead of 2.<br><br>
-          <em>Tip: always disable the highest-threat weapon first — especially Disintegration Beams and Rage Cannons. A disabled weapon is far more valuable than one point of extra damage.</em>
+          Use a <strong>Phase Disruptor</strong> or <strong>Phase Disruptor Mk.II</strong> from your cargo to enter targeting mode. Enemy weapon cards glow — tap the one you want to disable. Goes dark for 2–3 turns.<br><br>
+          <em>Always disable the highest-threat weapon first. A disabled Disintegration Beam or Rage Cannon is worth more than any damage you could deal instead.</em>
         </div>
       </div>
 
-      <!-- ENEMY HEALING -->
+      <!-- PERM HULL -->
       <div class="b-section">
-        <div class="b-head">💊 Enemy Healing &amp; Buffs</div>
+        <div class="b-head">💀 Permanent Hull Damage</div>
         <div class="b-body">
-          Many enemies have a <strong>heal or buff ability</strong> that triggers when their hull drops low. This fires as a separate event — they spend their action recovering instead of attacking you.<br><br>
-          Watch for the warning in the enemy panel: <em>"⚠ [Ability] approaching…"</em> — that's your cue to burst them down before they recover.<br><br>
-          Notable examples: <strong>Astral Leviathan</strong> heals 25 HP once per fight. <strong>Harvester</strong> sacrifices 2 of its own crew to heal 20 HP. <strong>Trull Overmind</strong> heals 40 HP below half health. <strong>Drift Corsair</strong> gains +3 damage resistance for 2 turns instead of healing.<br><br>
-          Killing enemy crew with the <strong>Psionic Lance</strong> weapon also suppresses their healing specials — zero crew disables all special abilities.
+          Certain weapons <strong>permanently reduce your maximum hull</strong> — not restored by repairs or items.<br><br>
+          <strong>Sentinel Drone — Disintegration Beam:</strong> −4 max hull per hit.<br>
+          <strong>Trull Overmind — Void Singularity:</strong> −8 max hull per hit.<br>
+          <strong>World Bosses — Sphere Unmaking Pulse:</strong> −8 max hull per hit.<br><br>
+          <strong>Restore lost max hull via:</strong><br>
+          🔩⚡ <strong>Void Welder</strong> — Consumable. Restores 20 max hull. Rare loot from Sentinel Drones.<br>
+          ⚙️ <strong>Structural Drydock</strong> — Available at Refuge, Fentheris System, and Vael. Fully restores max hull for 8 TS per lost point.
         </div>
       </div>
 
       <!-- PORT -->
       <div class="b-section">
-        <div class="b-head">⚓ Port — Supplies &amp; Arms</div>
+        <div class="b-head">⚓ Ports, Docks &amp; Quartermasters</div>
         <div class="b-body">
-          Tap your current sphere to dock. The port has two tabs:<br><br>
-          <strong>Supplies &amp; Arms:</strong> repair hull, hire crew, refill air, buy weapons, purchase ship upgrades, and buy usable items. Prices vary by location and faction reputation.<br>
-          <strong>Sell Cargo:</strong> convert looted trade goods, components, and artifacts into gold. Always sell before buying — you may have more than you think.<br><br>
-          <strong>Faction Reputation</strong> affects prices: high IEF rep gives you discounts; negative Trull rep may add a surcharge. Build rep by completing local quests and making allied choices.
+          Each sphere has its own dock with a <strong>Quartermaster (QM)</strong> who stocks sphere-specific items. Shops restock every <strong>30 in-game days</strong>.<br><br>
+          <strong>Services at every dock:</strong> hull repair, air resupply, crew hire.<br>
+          <strong>Sell Cargo:</strong> convert trade goods, components, and artifacts to TS. Usable items can also be sold via the Sell Usable Items section.<br>
+          <strong>Deliver Cargo Missions:</strong> if you have a mission cargo item for this sphere, the 📦 Deliver button appears with an amber ! — tap it to complete the delivery without leaving local space.<br><br>
+          <strong>Sphere QM highlights:</strong><br>
+          &nbsp;&nbsp;• <strong>Refuge Station</strong> — Starter upgrades: Hull Plating, Speed Engine, <strong>Crew Quarters</strong>, Air Recycler.<br>
+          &nbsp;&nbsp;• <strong>Fentheris System (Realm)</strong> — Light Cannon, upgrade components, full supplies.<br>
+          &nbsp;&nbsp;• <strong>Korreth (Grey)</strong> — Super Ballista, <strong>Siege Bombard</strong>, heavy forge-grade gear.<br>
+          &nbsp;&nbsp;• <strong>Varuun (Cluster)</strong> — Void Ram, Force Cannon, <strong>Chain Reaction Crystal</strong> (exclusive).<br>
+          &nbsp;&nbsp;• <strong>Vael, Thyss, Serath</strong> — Endgame weapons and upgrades as you explore further out.
         </div>
       </div>
 
@@ -17976,12 +18160,12 @@ document.addEventListener('DOMContentLoaded', () => {
       <div class="b-section">
         <div class="b-head">🚀 Ship Classes</div>
         <div class="b-body">
-          Upgrade your ship at port shipyards. Larger ships have more weapon slots, higher hull, and bigger crews — but cost significantly more gold:<br><br>
-          <strong>Pinnace</strong> — Starting ship. 2 weapon slots, 65 hull, 6 crew. Fast and cheap but fragile. No signature ability.<br>
-          <strong>🦑 Void Runner (350g)</strong> — 3 weapon slots, 80 hull, 8 crew. Gains Tentacle Grapple — a powerful defensive ability that halves enemy damage for 2 turns.<br>
-          <strong>🔨 Ironhull (700g)</strong> — 4 weapon slots, 100 hull, 12 crew. Gains Siege Ram — brutal high-damage ram attack with self-damage risk.<br>
-          <strong>⚓ Sovereign (1,400g)</strong> — 5 weapon slots, 130 hull, 16 crew. Gains Starfire Broadside — fires all ready weapons simultaneously. The ultimate endgame vessel.<br><br>
-          <em>Tip: upgrade when you have reliable income and at least one good weapon already purchased.</em>
+          Upgrade your ship at port shipyards. Larger ships have more weapon slots, higher hull, and bigger crews:<br><br>
+          <strong>Pinnace</strong> — Starting ship. 2 weapon slots, 65 hull, 6 crew. No signature ability.<br>
+          <strong>🦑 Void Runner (350 TS)</strong> — 3 slots, 80 hull, 8 crew. Tentacle Grapple.<br>
+          <strong>🔨 Ironhull (700 TS)</strong> — 4 slots, 100 hull, 12 crew. Siege Ram.<br>
+          <strong>⚓ Sovereign (1,400 TS)</strong> — 5 slots, 130 hull, 16 crew. Starfire Broadside.<br><br>
+          <em>Upgrade when you have reliable income and at least one solid weapon already purchased. Crew Quarters (Refuge QM) doubles your crew capacity on any ship — buy it early.</em>
         </div>
       </div>
 
@@ -17989,63 +18173,68 @@ document.addEventListener('DOMContentLoaded', () => {
       <div class="b-section">
         <div class="b-head">🔫 Weapons Guide</div>
         <div class="b-body">
-          Weapons range from basic to devastating. Each occupies one weapon slot:<br><br>
-          <strong>Ballista</strong> — Free. Fires every round. Low damage (1d6) but never reloads — reliable bread-and-butter.<br>
-          <strong>Light Cannon</strong> — 1 round reload. Decent damage (2d6). Good second weapon for Pinnace.<br>
-          <strong>Heavy Cannon</strong> — 2 round reload. Strong damage (3d8). Standard mid-game weapon.<br>
-          <strong>Psionic Lance</strong> — Unique. Attacks enemy <em>crew</em> directly, not hull. Great for suppressing enemy specials on Shell Drifters and Sentinel Drones.<br>
-          <strong>Inferno Cannon</strong> — Applies burn DoT. Enemy takes fire damage every turn for 3 rounds.<br>
-          <strong>Null Bolt</strong> — Suppresses enemy specials for 2 turns in addition to hull damage.<br>
-          <strong>Void Rift weapons</strong> (Void Torrent, Warp Cannon, etc.) — Extreme damage but destabilize your hull slightly. Endgame power.
+          Each weapon occupies one slot. Mix fast low-damage with slow high-damage for best results:<br><br>
+          <strong>Ballista</strong> — Free. Fires every round. 1d6. Reliable baseline — never skip a turn.<br>
+          <strong>Light Cannon</strong> — 1 round reload. 2d6. Good second weapon for Pinnace.<br>
+          <strong>Heavy Ballista Mk.II</strong> — 0 reload. 3d6. Upgraded Ballista — fires every round, higher damage.<br>
+          <strong>Heavy Cannon</strong> — 2 round reload. 3d8. Strong mid-game weapon.<br>
+          <strong>Super Ballista</strong> — 0 reload. 3d6. Elven-forged, never jams. Korreth exclusive.<br>
+          <strong>Siege Bombard</strong> — 5 round reload. 4d10. Hull-cracker. Reward from Korreth quest.<br>
+          <strong>Void Sailing Ram</strong> — 4 round reload. 5d6. Bone-shattering impact. Varuun exclusive.<br>
+          <strong>Force Cannon</strong> — 3 round reload. 4d8. Heavy shot. Varuun market.<br>
+          <strong>Psionic Lance</strong> — Attacks enemy <em>crew</em> directly. Suppresses specials.<br>
+          <strong>Inferno Cannon</strong> — Applies burn DoT for 3 rounds.<br>
+          <strong>Null Bolt</strong> — Suppresses enemy specials for 2 turns plus hull damage.<br>
+          <strong>Void Rift weapons</strong> — Extreme damage. Endgame power at cost of hull stability.
         </div>
       </div>
 
-      <!-- CARGO & ITEMS -->
+      <!-- CARGO -->
       <div class="b-section">
         <div class="b-head">📦 Cargo &amp; Usable Items</div>
         <div class="b-body">
-          Items found in loot or purchased at port occupy your cargo hold. Three categories:<br><br>
-          <strong>Hull Repair (use in combat or at sea):</strong><br>
-          🔩 Emergency Repair Kit — +20 hull<br>
-          🧪 Leviathan Blood Vial — +30 hull<br>
-          ⚗️ Astral Forge Elixir — +50 hull, also clears burn damage<br><br>
+          <strong>Hull Repair:</strong><br>
+          🔩 Emergency Repair Kit — +20 hull &nbsp;|&nbsp; 🧪 Leviathan Blood Vial — +30 hull &nbsp;|&nbsp; ⚗️ Astral Forge Elixir — +50 hull, clears burn<br><br>
           <strong>Crew Restore:</strong><br>
-          🍺 Crew's Courage Mead — +3 crew<br>
-          💉 Void Sailer Stimpack — +6 crew<br>
-          🎖️ IEF Surge Rations — +10 crew<br><br>
+          🍺 Crew's Courage Mead — +3 crew &nbsp;|&nbsp; 💉 Void Sailer Stimpack — +6 crew &nbsp;|&nbsp; 🎖️ IEF Surge Rations — +10 crew<br><br>
           <strong>Combat Utility:</strong><br>
           🔮 Psionic Amplifier — Stuns enemy, skips their next action<br>
-          💥 Null Sphere Grenade — Stuns enemy AND deals 15 direct damage<br>
-          ⬡ Phase Disruptor — Enter targeting mode, disable one enemy weapon for 2 turns<br>
-          ⬡ Phase Disruptor Mk.II — Same but 3 turns disabled<br>
-          🔔 Emergency Beacon — 100% guaranteed flee, no roll needed<br>
-          🩹 Alchemist's Mend — Restores 20 hull AND 1 crew simultaneously<br>
-          🫧 Void Salve — Clears all burn damage, restores 15 hull<br><br>
-          <strong>Equippables</strong> (install from Cargo Manifest tab for permanent buffs):<br>
-          Hull plates, resist plating, crew quarters, and more. Once installed, they're permanent.
+          💥 Null Sphere Grenade — Stuns enemy + 15 direct damage<br>
+          ⬡ Phase Disruptor — Disable one enemy weapon for 2 turns<br>
+          ⬡ Phase Disruptor Mk.II — Same, 3 turns<br>
+          🔔 Emergency Beacon — 100% guaranteed flee<br>
+          🩹 Alchemist's Mend — +20 hull AND +1 crew simultaneously<br>
+          🫧 Void Salve — Clears burn, +15 hull<br><br>
+          <strong>Equippables</strong> (install from Cargo Manifest → permanent buffs):<br>
+          Hull Plating (+50 max hull), Speed Engine (+2 speed), Crew Quarters (double max crew), Air Recycler (double air supply), Resist Plating (−3 damage), Thrall Binding Ring (+3 max crew), Anti-Magic Shard (−3 incoming damage).
         </div>
       </div>
 
       <!-- QUESTS -->
       <div class="b-section">
-        <div class="b-head">📋 Local Quests &amp; Reputation</div>
+        <div class="b-head">📋 Quests — Local &amp; Cargo</div>
         <div class="b-body">
-          Many ports offer <strong>local quests</strong> — side missions that reward gold, items, or reputation. Check the quest board when docked. Quests typically ask you to defeat a specific enemy, deliver cargo, or visit a nearby sphere.<br><br>
-          <strong>Faction Reputation</strong> builds separately with the IEF, Trull, Harvester, and others. Higher rep with a faction unlocks better prices at their ports, exclusive items, and special dialogue. Negative rep means surcharges and potentially hostile encounters.
+          <strong>Local Quests</strong> — Each sphere has NPCs with side missions. Approach and hail them in local space. Quest types:<br>
+          &nbsp;&nbsp;• <strong>Delivery</strong> — Bring a specific item from your cargo to the NPC.<br>
+          &nbsp;&nbsp;• <strong>Combat</strong> — Defeat a number of specific enemy types in the lanes.<br>
+          &nbsp;&nbsp;• <strong>Explore</strong> — Travel to another sphere and return to the NPC.<br><br>
+          <strong>Cargo Missions</strong> — Offered by roaming NPC ships during travel. Accept a mission to pick up a package at one sphere and deliver it to another. Cargo missions refresh every <strong>10 in-game days</strong> after completion — the same route can appear again once the cooldown expires.<br><br>
+          <strong>Delivering cargo in Local Space</strong> — when you arrive at the target sphere and have the cargo, the dock shows a pulsing amber <strong>!</strong> and a 📦 Deliver button. Tap it to turn in the mission without leaving local space.<br><br>
+          <strong>Faction Reputation</strong> builds separately with IEF, Trull, Merchants, and others. Higher rep unlocks better prices and exclusive dialogue. Negative rep means surcharges.
         </div>
       </div>
 
+      <!-- ROAM NPCs -->
       <div class="b-section">
-        <div class="b-head">💀 Permanent Hull Damage</div>
+        <div class="b-head">📡 Roaming NPC Ships</div>
         <div class="b-body">
-          Certain enemy weapons don't just deal damage — they <strong>permanently reduce your maximum hull</strong>. This is not restored by repairs or healing items.<br><br>
-          <strong>Sentinel Drone — Disintegration Beam:</strong> −4 max hull per hit.<br>
-          <strong>Trull Overmind — Void Singularity Pulse:</strong> −8 max hull per hit.<br>
-          <strong>World Bosses — Sphere Unmaking Pulse:</strong> −8 max hull per hit.<br><br>
-          <strong>Two ways to restore lost max hull:</strong><br>
-          <strong>🔩⚡ Void Welder (field kit)</strong> — A consumable item that restores 20 max hull per use. Found as rare loot from Sentinel Drones and the Trull Overmind, or purchased at ports with a Structural Drydock. Carry one into any Sentinel Drone fight.<br>
-          <strong>⚙️ Structural Drydock (port service)</strong> — Available at <em>Refuge</em>, <em>Fentheris System</em>, and <em>Vael</em>. Fully restores all lost max hull for 8 gold per lost point. The only way to fully recover after a brutal fight.<br><br>
-          <em>Tip: if you're below your ship's max hull cap, the Drydock option will appear in the port shop automatically.</em>
+          During travel, <strong>friendly faction ships</strong> may appear approaching from various directions. You can hail them or let them pass.<br><br>
+          <strong>Hailing</strong> triggers a diplomatic exchange — the faction ship stands down and may:<br>
+          &nbsp;&nbsp;• Offer a <strong>cargo mission</strong> if one is available for that faction<br>
+          &nbsp;&nbsp;• Share a piece of <strong>Fentheris world lore</strong> if no mission is available<br>
+          &nbsp;&nbsp;• Open a <strong>small trade stock</strong> of faction-specific items<br><br>
+          Each faction's roaming ships carry different lore. IEF ships discuss the Collapse and Fentheris history. Merchant ships discuss trade routes and Fentheris geography. Trull ships speak of the Overmind. The Void Rift Touched discuss what presses through from the other side.<br><br>
+          <em>Hailing improves faction reputation slightly. It costs nothing and often grants information you won't find anywhere else.</em>
         </div>
       </div>
 
@@ -18053,8 +18242,8 @@ document.addEventListener('DOMContentLoaded', () => {
       <div class="b-section">
         <div class="b-head">💾 Saving &amp; Loading</div>
         <div class="b-body">
-          The game <strong>auto-saves</strong> every time you arrive at a new sphere or leave port. You can also press the <em>💾 Save</em> button in the top header at any time to manually save to one of three slots.<br><br>
-          Load a saved voyage from the main menu's <em>Load Game</em> option. Auto-save is always overwritten — manual saves let you keep multiple voyages.
+          The game <strong>auto-saves</strong> every time you arrive at a new sphere or leave port. Manually save anytime via the 💾 Save button in the header. Three manual save slots available.<br><br>
+          Load a saved voyage from <em>Main Menu → Load Game</em>. Auto-save is always overwritten by the latest session.
         </div>
       </div>
 
@@ -18062,15 +18251,17 @@ document.addEventListener('DOMContentLoaded', () => {
       <div class="b-section">
         <div class="b-head">💡 Captain's Tips</div>
         <div class="b-body">
+          • <strong>Buy Crew Quarters at Refuge first.</strong> It doubles your crew capacity on every ship — the single most impactful early purchase.<br>
           • <strong>Never leave port with less than 15 air.</strong> Long voyages kill captains who forget to refill.<br>
-          • <strong>Sell cargo before buying supplies.</strong> You may already have enough gold.<br>
-          • <strong>Crew matters as much as hull.</strong> 0 crew = defeat even at full hull. Protect them.<br>
-          • <strong>Disable the scariest weapon first.</strong> Sentinel Drone Disintegration Beam and Trull Rage Cannon become exponentially worse the longer they fire.<br>
-          • <strong>Evasive Maneuver before a known big hit.</strong> It's wasted after the attack lands.<br>
-          • <strong>The Squid's Tentacle Grapple stacks with Evasive Maneuver.</strong> Combined, you can survive terrifying enemy turns with minimal damage.<br>
-          • <strong>Sovereign Broadside on a full reload cycle</strong> deals more burst damage than any other single action in the game — save it for boss fights.<br>
-          • <strong>Drain enemy crew with the Psionic Lance</strong> on tough enemies — at 0 crew they lose their specials and deal reduced damage.<br>
-          • <strong>The Ironhull Ram has self-damage.</strong> Don't use it when you're already low on hull.
+          • <strong>Sell cargo before buying supplies.</strong> You may already have enough TS.<br>
+          • <strong>Crew matters as much as hull.</strong> 0 crew = defeat even at full hull.<br>
+          • <strong>Disable the scariest weapon first.</strong> Disintegration Beam and Rage Cannon get exponentially worse the longer they fire.<br>
+          • <strong>Evasive Maneuver before a known big hit</strong> — wasted after the attack lands.<br>
+          • <strong>Hail every roaming NPC ship.</strong> It's free rep and free lore.<br>
+          • <strong>The ! markers in local space tell you where to go.</strong> Amber ! on the dock = cargo delivery ready. Yellow ! on an NPC = quest available or ready to turn in.<br>
+          • <strong>Enemies on the fringes of local space are tougher per sphere.</strong> Hazard zones are marked — don't wander into them at low hull.<br>
+          • <strong>Drain enemy crew with the Psionic Lance</strong> — 0 crew disables all enemy specials and reduces damage.<br>
+          • <strong>Sovereign Broadside on a full reload cycle</strong> deals more burst damage than any other single action — save it for boss fights.
         </div>
       </div>
 
@@ -18144,7 +18335,7 @@ document.addEventListener('DOMContentLoaded', () => {
   <div style="display:flex;gap:8px;align-items:center;">
     <span style="color:#00ff88;font-size:12px;">$</span>
     <input id="debug-input" type="text"
-      placeholder="cheat | unlock | heal | gold | imgcheck…"
+      placeholder="cheat | unlock | heal | TS | imgcheck…"
       autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
       style="flex:1;background:transparent;border:none;border-bottom:1px solid #00ff8855;color:#88ffcc;font-family:'Courier New',monospace;font-size:14px;outline:none;padding:4px 4px;"
       onkeydown="if(event.key==='Enter')runDebugCmd();if(event.key==='Escape')toggleDebugCon();" />
@@ -18155,7 +18346,7 @@ document.addEventListener('DOMContentLoaded', () => {
   <!-- Quick-tap common commands on mobile -->
   <div id="debug-quickbtns" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;">
     <button onclick="document.getElementById('debug-input').value='heal';runDebugCmd();"    style="background:#001a0e;border:1px solid #00ff8833;color:#44cc88;font-size:10px;padding:4px 8px;cursor:pointer;border-radius:2px;">heal</button>
-    <button onclick="document.getElementById('debug-input').value='gold';runDebugCmd();"    style="background:#1a1400;border:1px solid #ffcc0033;color:#ccaa44;font-size:10px;padding:4px 8px;cursor:pointer;border-radius:2px;">gold</button>
+    <button onclick="document.getElementById('debug-input').value='TS';runDebugCmd();"    style="background:#1a1400;border:1px solid #ffcc0033;color:#ccaa44;font-size:10px;padding:4px 8px;cursor:pointer;border-radius:2px;">TS</button>
     <button onclick="document.getElementById('debug-input').value='frags';runDebugCmd();"   style="background:#1a0a00;border:1px solid #ff880033;color:#cc8844;font-size:10px;padding:4px 8px;cursor:pointer;border-radius:2px;">frags</button>
     <button onclick="document.getElementById('debug-input').value='kill';runDebugCmd();"    style="background:#1a0000;border:1px solid #ff444433;color:#cc4444;font-size:10px;padding:4px 8px;cursor:pointer;border-radius:2px;">kill</button>
     <button onclick="document.getElementById('debug-input').value='imgcheck';runDebugCmd();" style="background:#0a001a;border:1px solid #8844ff33;color:#8866cc;font-size:10px;padding:4px 8px;cursor:pointer;border-radius:2px;">imgcheck</button>
