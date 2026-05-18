@@ -2722,7 +2722,7 @@ const SIG_ABILITY = {
 
 const ENM = {
   // ── Tier 0 — Green Lane (first lane, intro difficulty) ────────────────────
-  goblin_cutter: { name:"Goblin War-Cutter",    sub:'Scrapheap Raider',       hp:28,  maxHp:28,  crew:5,  maxCrew:5,  g:[5,14],
+  goblin_cutter: { name:"Goblin War-Cutter",    sub:'Scrapheap Raider',       hp:28,  maxHp:28,  crew:5,  maxCrew:5,  g:[2,6],
     atk:[{n:'Junk Volley',d:[1,4],txt:'A chaotic spray of scrap metal and broken bolts rattles your hull!'},{n:'Ramming Run',d:[1,6],txt:'The goblin cutter slams full speed into your flank — crude but painful!'}],
     sp:{n:'Panic Boarding',c:0.18,txt:'Goblins pour across in a screaming mob — one crew dragged off in the chaos!',fx:'crew',crewSteal:1},col:'#556611',diff:1,
     wpns:[
@@ -2740,7 +2740,7 @@ const ENM = {
 
 
   // ── Tier 0 — First Lane Additions ────────────────────────────────────────
-  goblin_rocketer: { name:"Goblin Rocket-Barge",  sub:'Fire-Crazed Pyromaniacs',  hp:32,  maxHp:32,  crew:5, maxCrew:5,  g:[6,15],
+  goblin_rocketer: { name:"Goblin Rocket-Barge",  sub:'Fire-Crazed Pyromaniacs',  hp:32,  maxHp:32,  crew:5, maxCrew:5,  g:[2,7],
     atk:[{n:'Wildfire Rocket',d:[1,6],txt:'A wobbling fire-rocket screams across the void and detonates against your hull!'},{n:'Bottle Bombs',d:[1,4],txt:'Goblins hurl flaming bottles from their barge — crude incendiary devices splash fire across your deck!'}],
     sp:{n:'Kamikaze Lunge',c:0.20,txt:'The barge surges forward in a suicidal charge — the goblin crew is screaming with glee!',fx:'summon',d:[1,8]},col:'#ff6600',diff:1,
     wpns:[
@@ -2748,7 +2748,7 @@ const ENM = {
       { n:'Bottle Bomb Volley', ico:'🍾', cd:2,    d:[1,4], threat:2, txt:'Burning drift bottles hurled in clusters — 20% chance to start a fire DoT (2 dmg/round for 2 rounds).', special:'burn' }
     ]},
 
-  goblin_shaman_boat: { name:"Goblin Shaman Skiff", sub:'Waaagh-Touched Vessel', hp:26, maxHp:26, crew:4, maxCrew:4, g:[5,12],
+  goblin_shaman_boat: { name:"Goblin Shaman Skiff", sub:'Waaagh-Touched Vessel', hp:26, maxHp:26, crew:4, maxCrew:4, g:[2,5],
     atk:[{n:'Hex Bolt',d:[1,4],txt:'The goblin shaman flings a crackling green hex-bolt — weapon systems flicker and stutter!'},{n:'Spirit Screech',d:[1,6],txt:'A wailing spirit-shriek from the shaman rattles your helm crew!',crew:1}],
     sp:{n:'Waaagh Surge',c:0.22,txt:"The shaman whips the crew into a frenzy — the skiff lurches forward at impossible speed!",fx:'dodge'},col:'#44aa22',diff:1,
     wpns:[
@@ -2774,7 +2774,7 @@ const ENM = {
     ]},
 
   // ── Tier 0-1 — Drift Natives ────────────────────────────────────────
-  phlog_mote: { name:"Drift Mote Swarm",   sub:'Living Fire Sprites',      hp:18,  maxHp:18,  crew:0,  maxCrew:0,  g:[4,10],
+  phlog_mote: { name:"Drift Mote Swarm",   sub:'Living Fire Sprites',      hp:18,  maxHp:18,  crew:0,  maxCrew:0,  g:[1,4],
     atk:[{n:'Ember Swarm',d:[1,4],txt:'Dozens of tiny living embers swarm across your hull, burning through seams and port seals!'},{n:'Flash Burst',d:[1,3],txt:'A blinding flash of pure drift ignites around your helm viewport!'}],
     sp:{n:'Ignition Cloud',c:0.28,txt:'The swarm coalesces into a dense ignition cloud — your hull is engulfed in slow-burning drift fire!',fx:'multi',d:[1,4]},col:'#ffcc00',diff:0,
     wpns:[
@@ -2838,7 +2838,7 @@ const ENM = {
       { n:'Fin Rake',            ico:'🪃', d:[1,8], cd:2, threat:3, txt:'Slashing pass — high variance, bone-edged fins.' }
     ]},
   // ── Tier 1 Bandits ────────────────────────────────────
-  corsair:   { name:'Void Corsairs',        sub:'Pirate Sloop',          hp:42,  maxHp:42,  crew:4,  maxCrew:4,  g:[9,21],
+  corsair:   { name:'Void Corsairs',        sub:'Pirate Sloop',          hp:42,  maxHp:42,  crew:4,  maxCrew:4,  g:[4,10],
     atk:[{n:'Rusty Broadside',d:[1,6],txt:'A ragged volley from their battered guns.'},{n:'Grappling Hook',d:[1,4],txt:'Hooks drag across your hull!',crew:1}],
     sp:{n:'Desperate Boarding',c:0.18,txt:'A mob of corsairs swings across on ropes — one crew is lost!',fx:'crew'},col:'#886633',diff:1,
     wpns:[
@@ -3068,15 +3068,15 @@ const ITEMS = {
 
 const LOOT = {
   // ── Tier 0 — Goblin Ships ──────────────────────────────────────────────────
-  goblin_cutter:     [{id:'gobsack',c:0.80},{id:'gobteeth',c:0.55},{id:'repkit',c:0.30},{id:'crewmead',c:0.25}],
-  goblin_rocketer:   [{id:'gobsack',c:0.75},{id:'gobteeth',c:0.50},{id:'repkit',c:0.25}],
-  goblin_shaman_boat:[{id:'gobsack',c:0.70},{id:'gobteeth',c:0.45},{id:'psiamp',c:0.15},{id:'crewmead',c:0.20}],
+  goblin_cutter:     [{id:'gobsack',c:0.45},{id:'gobteeth',c:0.30},{id:'repkit',c:0.12},{id:'crewmead',c:0.08}],
+  goblin_rocketer:   [{id:'gobsack',c:0.40},{id:'gobteeth',c:0.25},{id:'repkit',c:0.10}],
+  goblin_shaman_boat:[{id:'gobsack',c:0.40},{id:'gobteeth',c:0.22},{id:'psiamp',c:0.06},{id:'crewmead',c:0.08}],
   // ── Tier 0-1 — Trull Ships ─────────────────────────────────────────────────
   trull_patrol:   [{id:'trulltrophy',c:0.70},{id:'trlldogtag',c:0.65},{id:'crewmead',c:0.30},{id:'repkit',c:0.25},{id:'corskit',c:0.20}],
   trull_enforcer: [{id:'trulltrophy',c:0.75},{id:'trlldogtag',c:0.70},{id:'corskit',c:0.35},{id:'crewmead',c:0.30},{id:'starcoin',c:0.20}],
   trull_slaver:   [{id:'trulltrophy',c:0.80},{id:'trlldogtag',c:0.75},{id:'crewmead',c:0.50},{id:'corskit',c:0.30},{id:'starcoin',c:0.25},{id:'stimpack',c:0.15}],
   // ── Drift Creatures — natural harvests, no ship loot ──────────────────
-  phlog_mote:        [{id:'moteash',c:0.70},{id:'phlogmem',c:0.30}],
+  phlog_mote:        [{id:'moteash',c:0.40},{id:'phlogmem',c:0.15}],
   phlog_jellyfish:   [{id:'jellystem',c:0.75},{id:'phlogmem',c:0.55},{id:'phlogcore',c:0.30},{id:'predblood',c:0.20}],
   phlog_flamewing:   [{id:'flamequil',c:0.75},{id:'phlogcore',c:0.60},{id:'phlogmem',c:0.40},{id:'predblood',c:0.25}],
   phlog_vinecrawler: [{id:'vinespore',c:0.75},{id:'phlogmem',c:0.55},{id:'voidclaw',c:0.35},{id:'predblood',c:0.20}],
@@ -3386,23 +3386,53 @@ const QUEST_POOL = [
 // ── FRAGMENT GUARDIANS (named, tougher than lane mobs) ───
 const FRAG_GUARDIANS = {
   fg_realm:  { name:"Corsair Captain Aldren",  sub:'Fragment Guardian — Flotsam Field',    hp:160, maxHp:160, g:[80,120],
-    atk:[{n:'Command Broadside',d:[2,8],txt:'A coordinated volley from Aldren\'s entire fleet!'},{n:'Grappling Ram',d:[2,6],txt:'Aldren\'s crew swings across on boarding hooks — 1 crew lost!',crew:1}],
-    sp:{n:'Corsair Ambush',c:0.25,txt:'Hidden corsairs spring from the debris field — flanking strike!',fx:'summon',d:[2,6]}, col:'#cc8833', diff:2 },
+    atk:[{n:'Command Broadside',d:[3,10],txt:'A coordinated volley from Aldren\'s entire fleet!'},{n:'Grappling Ram',d:[2,8],txt:'Aldren\'s crew swings across on boarding hooks — 1 crew lost!',crew:1}],
+    sp:{n:'Corsair Ambush',c:0.25,txt:'Hidden corsairs spring from the debris field — flanking strike!',fx:'summon',d:[3,8]}, col:'#cc8833', diff:2,
+    wpns:[
+      { n:'Fleet Broadside',        ico:'💥', d:[3,10], cd:1, threat:3, txt:'Coordinated volley from the entire corsair fleet — relentless impact.' },
+      { n:'Grappling Ram Assault',  ico:'⚓', d:[2,8],  cd:2, threat:4, txt:'Boarding hooks punch into your hull — 1 crew seized!', crew:1 },
+      { n:'Flanking Fire',          ico:'🔥', d:[2,10], cd:3, threat:5, txt:'DANGER: Hidden corsairs emerge from debris — devastating flanking broadside.' }
+    ]},
   fg_grey:   { name:'Iron Warden Drekk',       sub:'Fragment Guardian — Dwarven Vault',    hp:178, maxHp:178, g:[90,135],
-    atk:[{n:'Siege Cannon Barrage',d:[3,8],txt:'Heavy dwarven siege guns pound your hull in sequence!'},{n:'Iron Boarding Party',d:[2,6],txt:'Armored marines storm your decks — crew lost!',crew:1}],
-    sp:{n:'Fortress Protocol',c:0.22,txt:'Fortress Protocol — the warden locks its hull plates into a deflection brace!',fx:'dodge'}, col:'#aa7722', diff:2 },
+    atk:[{n:'Siege Cannon Barrage',d:[3,10],txt:'Heavy dwarven siege guns pound your hull in sequence!'},{n:'Iron Boarding Party',d:[2,8],txt:'Armored marines storm your decks — crew lost!',crew:1}],
+    sp:{n:'Fortress Protocol',c:0.22,txt:'Fortress Protocol — the warden locks its hull plates into a deflection brace!',fx:'dodge'}, col:'#aa7722', diff:2,
+    wpns:[
+      { n:'Siege Cannon Battery',   ico:'🏰', d:[3,10], cd:1, threat:3, txt:'Dwarven siege guns — methodical, punishing, unceasing.' },
+      { n:'Iron Marine Boarding',   ico:'🪖', d:[2,8],  cd:2, threat:4, txt:'Armoured marines breach your hull — 1 crew lost.', crew:1 },
+      { n:'Fortress Suppression',   ico:'💣', d:[4,8],  cd:3, threat:5, txt:'DANGER: Concentrated suppression fire — all your weapon cooldowns +1 this round.', sabotage:true }
+    ]},
   fg_krynn:  { name:"War-Commander Zith'ral",  sub:"Fragment Guardian — The Star Nest",   hp:172, maxHp:172, g:[88,128],
-    atk:[{n:'Silver Sword Salvo',d:[3,8],txt:'Elite Drift Corsair warriors unleash a devastating broadside!'},{n:'Astral Boarding',d:[2,8],txt:'Warriors phase through your hull — crew dragged away!',crew:2}],
-    sp:{n:'Planar Step Formation',c:0.28,txt:'Planar Step Formation — the entire formation blinks sideways, breaking your targeting lock!',fx:'dodge'}, col:'#dd8833', diff:3 },
+    atk:[{n:'Silver Sword Salvo',d:[3,10],txt:'Elite Drift Corsair warriors unleash a devastating broadside!'},{n:'Astral Boarding',d:[2,8],txt:'Warriors phase through your hull — crew dragged away!',crew:2}],
+    sp:{n:'Planar Step Formation',c:0.28,txt:'Planar Step Formation — the entire formation blinks sideways, breaking your targeting lock!',fx:'dodge'}, col:'#dd8833', diff:3,
+    wpns:[
+      { n:'Silver Sword Salvo',     ico:'⚔️', d:[3,10], cd:1, threat:3, txt:'Elite warrior broadside — precision and power combined.' },
+      { n:'Astral Boarding Party',  ico:'🌌', d:[2,8],  cd:2, threat:4, txt:'Warriors phase through your hull — 2 crew dragged into the void!', crew:2 },
+      { n:'Void Rend',              ico:'🌀', d:[4,8],  cd:3, threat:5, txt:'DANGER: Reality tears open around your ship — ignores all resistance.', pierceres:true }
+    ]},
   fg_cluster:{ name:'The Broker',              sub:"Fragment Guardian — The Broker's Cache", hp:158, maxHp:158, g:[85,125],
-    atk:[{n:'Venom Barrage',d:[2,8],txt:'Harvester venom-bolts corrode your hull plating!'},{n:'Thrall Wave',d:[1,8],txt:'Mind-controlled thralls storm your ship — crew lost!',crew:2}],
-    sp:{n:'Enslave Crew',c:0.28,txt:"The Broker's psychic web ensnares two of your crew — they turn against you!",fx:'crew'}, col:'#bb5511', diff:3 },
+    atk:[{n:'Venom Barrage',d:[3,10],txt:'Harvester venom-bolts corrode your hull plating!'},{n:'Thrall Wave',d:[2,8],txt:'Mind-controlled thralls storm your ship — crew lost!',crew:2}],
+    sp:{n:'Enslave Crew',c:0.28,txt:"The Broker's psychic web ensnares two of your crew — they turn against you!",fx:'crew'}, col:'#bb5511', diff:3,
+    wpns:[
+      { n:'Venom Bolt Barrage',     ico:'🐛', d:[3,10], cd:1, threat:3, txt:'Corrosive venom rounds eat into your hull plating every round.' },
+      { n:'Thrall Assault Wave',    ico:'🧠', d:[2,8],  cd:2, threat:4, txt:'Mind-enslaved crew storm your decks — 2 crew lost.', crew:2 },
+      { n:'Psychic Shatter',        ico:'💜', d:[3,8],  cd:3, threat:5, txt:'DANGER: Psionic shockwave — stuns your helm crew next round.', sabotage:true }
+    ]},
   fg_hero:   { name:'Vault-Keeper Xorrath',    sub:'Fragment Guardian — Pre-Sundering Vault', hp:188, maxHp:188, g:[100,150],
-    atk:[{n:'Disintegration Beam',d:[4,8],txt:'A concentrated disintegration ray tears through your hull!'},{n:'Anti-Magic Pulse',d:[2,6],txt:'Anti-magic energy disrupts your weapons and helm!'}],
-    sp:{n:'Eye Ray Storm',c:0.30,txt:'A storm of eye rays lances from every angle simultaneously!',fx:'multi',d:[3,8]}, col:'#ff3399', diff:4 },
+    atk:[{n:'Disintegration Beam',d:[4,10],txt:'A concentrated disintegration ray tears through your hull!'},{n:'Anti-Magic Pulse',d:[2,8],txt:'Anti-magic energy disrupts your weapons and helm!'}],
+    sp:{n:'Eye Ray Storm',c:0.30,txt:'A storm of eye rays lances from every angle simultaneously!',fx:'multi',d:[3,8]}, col:'#ff3399', diff:4,
+    wpns:[
+      { n:'Disintegration Beam',    ico:'🔴', d:[4,10], cd:1, threat:4, txt:'DANGER: Concentrated disintegration ray — massive hull damage.' },
+      { n:'Anti-Magic Pulse',       ico:'🌐', d:[2,8],  cd:2, threat:3, txt:'Disrupts weapon systems — disables one of your weapons for 1 round.', sabotage:true },
+      { n:'Eye Ray Barrage',        ico:'👁️', d:[3,10], cd:3, threat:5, txt:'DANGER: Multi-spectrum eye rays — bypasses all resistance.', pierceres:true }
+    ]},
   fg_dark:   { name:'The Void Prophet',        sub:'Fragment Guardian — The Dark Mote',   hp:200, maxHp:200, g:[110,160],
-    atk:[{n:'Void Slam',d:[4,8],txt:'Reality warps — the impact arrives before the sound.'},{n:'Dark Breath',d:[3,8],txt:'Lightless void energy floods your ship from within!'}],
-    sp:{n:'Phase Rift',c:0.30,txt:'The Prophet tears a phase rift — your next attack passes straight through!',fx:'phase'}, col:'#6633cc', diff:4 },
+    atk:[{n:'Void Slam',d:[4,10],txt:'Reality warps — the impact arrives before the sound.'},{n:'Dark Breath',d:[3,8],txt:'Lightless void energy floods your ship from within!'}],
+    sp:{n:'Phase Rift',c:0.30,txt:'The Prophet tears a phase rift — your next attack passes straight through!',fx:'phase'}, col:'#6633cc', diff:4,
+    wpns:[
+      { n:'Void Slam',              ico:'⬛', d:[4,10], cd:1, threat:4, txt:'Reality warps — the impact arrives before the sound. Massive damage.' },
+      { n:'Dark Breath',            ico:'🌑', d:[3,10], cd:2, threat:4, txt:'Lightless void energy floods your ship from within — no resistance applies.', pierceres:true },
+      { n:'Unmaking Wave',          ico:'🕳️', d:[4,8],  cd:3, threat:5, txt:'DANGER: Existential damage — reduces your max hull by 6 until repaired.', special:'corrode' }
+    ]},
 };
 
 // ── FRAGMENT SITES (hidden until clue from associated sphere) ───
@@ -12096,6 +12126,39 @@ async function enemyTurn() {
     return;
   }
 
+  // ── Extra enemy attacks (multi-enemy stacking from local space) ──────────
+  if(G.cbt._lsExtraQueue && G.cbt._lsExtraQueue.length > 0) {
+    for(const extra of G.cbt._lsExtraQueue) {
+      if(G.phase !== 'combat') return;
+      const xd = extra.data;
+      // Pick a random atk entry for the extra enemy
+      const xAtks = ENM[extra.key]?.atk || [{n:'Weapons Fire',d:[1,6],txt:'Fire from the flanking vessel!'}];
+      const xAtk  = xAtks[Math.floor(Math.random() * xAtks.length)];
+      const xRaw  = roll(xAtk.d[0], xAtk.d[1]);
+      const xRes  = G.ship.resist || 0;
+      const xDmg  = Math.max(1, xRaw - xRes);
+      cLogSep(`— ${xd.name || extra.key} —`);
+      cLog(`${xd.name}: ${xAtk.n} — ${xAtk.txt}`, 'dmg');
+      await sleep(350);
+      if(G.phase !== 'combat') return;
+      triggerAnim(pCV(), 'anim-shake');
+      snd('player_hit', 0.65);
+      if(!G._godMode) {
+        G.ship.hull -= xDmg;
+        floatDmg(pCV(), xDmg, false);
+        cLog(`Flanking attack hits for ${xDmg} hull damage!`, 'dmg');
+        if(xAtk.crew) {
+          G.ship.crew = Math.max(0, G.ship.crew - xAtk.crew);
+          cLog(`☠ ${xAtk.crew} crew lost to ${xd.name}!`, 'dmg');
+        }
+      }
+      updateCbtUI();
+      await sleep(500);
+      if(G.ship.hull <= 0) { doDefeat('hull_combat'); return; }
+      if(G.ship.crew !== undefined && G.ship.crew <= 0) { doDefeat('crew_combat'); return; }
+    }
+  }
+
   updateCbtUI();
   await sleep(700);  // let enemy action visuals settle before player can act
   if(G.phase !== 'combat') return;
@@ -12134,6 +12197,41 @@ function cbtWin(){
   if(e._key) lqTrackKill(e._key);
   snd('enemy_explode', 1.0);
   updateCbtUI();
+
+  // ── Multi-enemy queue: if extras remain, bank this loot and fight the next ──
+  if(G.cbt._lsExtraQueue && G.cbt._lsExtraQueue.length > 0) {
+    // Bank gold and items for the batch payout
+    G.cbt._lsBatchGold  = (G.cbt._lsBatchGold  || 0) + g;
+    G.cbt._lsBatchItems = (G.cbt._lsBatchItems || []).concat(items);
+    // Shift next enemy from queue into the main slot
+    const next = G.cbt._lsExtraQueue.shift();
+    const nt   = ENM[next.key];
+    const nextWpns    = (nt.wpns||[]).map(w=>({...w}));
+    G.cbt.enemy       = next.data;
+    G.cbt.eWpns       = nextWpns;
+    G.cbt.eCds        = nextWpns.map(()=>0);
+    G.cbt.eDisabled   = nextWpns.map(()=>0);
+    G.cbt.pendingLootKey = next.key;
+    G.cbt.rageStacks  = 0;
+    G.cbt.eStat       = 'normal';
+    G.cbt.pTurn       = true;
+    const remaining   = G.cbt._lsExtraQueue.length;
+    cLog(`☠ ${e.name} destroyed!`, 'gd');
+    cLog(`⚔ ${next.data.name} closes in! ${remaining > 0 ? remaining+' more behind them.' : 'Final attacker!'}`, 'dmg');
+    document.getElementById('ct-ename').textContent = `${next.data.name} · ${nt.sub}`;
+    document.getElementById('ct-title').textContent = `⚔ ${(next.data.name).toUpperCase()} ⚔`;
+    drawCbtShips(next.key);
+    updateCbtUI(); buildCbtBtns();
+    return; // stay in combat
+  }
+
+  // ── Final enemy defeated — combine batch loot if this was a multi-fight ──
+  const totalGold  = (G.cbt._lsBatchGold  || 0) + g;
+  const totalItems = (G.cbt._lsBatchItems || []).concat(items);
+  const wasBatch   = !!(G.cbt._lsBatchGold);
+  // Clear batch state
+  G.cbt._lsBatchGold = 0; G.cbt._lsBatchItems = [];
+
   document.getElementById('ov-combat').classList.remove('on');
   // Check if this was a fragment guardian fight
   const fragSite = G._pendingFragSite;
@@ -12153,13 +12251,16 @@ function cbtWin(){
       : `Fragment ${G.frags} of 6 secured. ${6-G.frags} remain scattered across the Drift.\n\nWell fought, Captain.`;
     setTimeout(()=>snd('fragment_collect', 1.0), 300);
     setTimeout(()=>snd('victory_combat', 0.7), 900);
-    showMsg(congTitle, congMsg, '⚓ Claim Loot', ()=>showLootOverlay(lootKey, g, items));
+    showMsg(congTitle, congMsg, '⚓ Claim Loot', ()=>showLootOverlay(lootKey, totalGold, totalItems));
   } else {
     setTimeout(()=>snd('victory_combat', 0.85), 600);
-    addLog(`${e.name} destroyed!`,'gd');
-    // Only log journal entry for regular combats (not world bosses — those get logged at claimLoot)
+    if(wasBatch) {
+      addLog(`All hostiles destroyed! Combined haul: ${totalGold} TS, ${totalItems.length} items.`,'gd');
+    } else {
+      addLog(`${e.name} destroyed!`,'gd');
+    }
     if(!e._worldBoss) jlogCombatWin(e.name);
-    showLootOverlay(lootKey, g, items);
+    showLootOverlay(lootKey, totalGold, totalItems);
   }
 }
 
@@ -15828,6 +15929,8 @@ function closeLsOverlay() {
   document.getElementById('ls-npc-dialog')?.classList.remove('on');
   if(LS.animId) { cancelAnimationFrame(LS.animId); LS.animId = null; }
   LS.keys = {};
+  // Stop engine hum when leaving local space
+  if(LS._humActive) { stopTravelHum(); LS._humActive = false; }
   setTag('Navigation'); updateUI();
   _syncWatchHudVisibility();
 }
@@ -16576,6 +16679,11 @@ function _lsUpdatePlayer(dt) {
   LS.px += LS.pvx * dt;
   LS.py += LS.pvy * dt;
 
+  // Engine hum — fade in when moving, fade out when stopped
+  const _lsSpd = Math.sqrt(LS.pvx*LS.pvx + LS.pvy*LS.pvy);
+  if(_lsSpd > 8 && !LS._humActive) { startTravelHum(); LS._humActive = true; }
+  else if(_lsSpd < 3 && LS._humActive) { stopTravelHum(); LS._humActive = false; }
+
   // Circular boundary clamp — matches the visual sphere border ring exactly
   const _bR   = Math.min(LS.W, LS.H) * 0.498; // same radius as drawn border
   const _wallMargin = 55;                        // stop slightly inside the ring
@@ -16705,19 +16813,60 @@ function _lsUpdateEnemies(dt) {
 }
 
 function _lsTriggerCombat(enemy) {
-  // Remove from local space enemies list
+  // Remove the triggering enemy from local space
   LS.enemies = LS.enemies.filter(e => e.uid !== enemy.uid);
-  // Flash alert on log
-  _lsLog('⚔ INTERCEPT — BATTLE STATIONS!', 'danger');
-  // Brief delay then open combat
+
+  // ── Multi-enemy bundling: find any other enemies within aggro range ──
+  // If multiple hostiles are nearby when combat starts, they all pile in.
+  const BUNDLE_RANGE = 280;
+  const extras = [];
+  LS.enemies = LS.enemies.filter(e => {
+    const dx = e.x - enemy.x, dy = e.y - enemy.y;
+    if(Math.sqrt(dx*dx+dy*dy) < BUNDLE_RANGE && ENM[e.key]) {
+      extras.push(e);
+      return false; // remove from LS
+    }
+    return true;
+  });
+
+  if(extras.length > 0) {
+    _lsLog(`⚔ INTERCEPT — ${1 + extras.length} ENEMIES ENGAGING!`, 'danger');
+  } else {
+    _lsLog('⚔ INTERCEPT — BATTLE STATIONS!', 'danger');
+  }
+
   setTimeout(() => {
-    // Pause LS loop but keep overlay hidden behind combat
     document.getElementById('ov-localspace').classList.remove('on');
-    G.phase = 'map'; // startCombat needs phase=map or combat
-    // After combat, re-open local space
+    if(LS._humActive) { stopTravelHum(); LS._humActive = false; }
+    G.phase = 'map';
     _lsPendingReturn = true;
-    startCombat(enemy.key);
+    if(extras.length > 0) {
+      _lsStartMultiCombat(enemy, extras);
+    } else {
+      startCombat(enemy.key);
+    }
   }, 600);
+}
+
+// ── Multi-enemy combat: queue extras onto G.cbt after primary starts ──────
+function _lsStartMultiCombat(primary, extras) {
+  // Start combat with primary as usual
+  startCombat(primary.key);
+  // Store the extra enemy queue on the combat state
+  // Each entry: { key, data (full ENM copy with live hp/crew) }
+  G.cbt._lsExtraQueue = extras.map(e => {
+    const t = ENM[e.key];
+    return { key: e.key, data: {...t, hp: t.maxHp, crew: t.crew !== undefined ? t.crew : undefined,
+      burnLeft:0, stunsNext:false, _key:e.key, _healUsed:false,
+      _buffResist:0, _buffResistTurns:0, _buffAtk:0, _buffAtkTurns:0 } };
+  });
+  G.cbt._lsBatchGold  = 0;   // accumulate gold from all enemies in this battle
+  G.cbt._lsBatchItems = [];   // accumulate items
+  const names = extras.map(e => ENM[e.key]?.name || e.key).join(', ');
+  setTimeout(() => {
+    cLog(`⚠ MULTIPLE HOSTILES: ${names} also engage!`, 'dmg');
+    cLog(`Enemy formation: ${1 + extras.length} ships. Each will attack on the enemy turn.`, 'dmg');
+  }, 800);
 }
 
 // Flag so we re-open LS after combat ends when coming from LS
@@ -17563,6 +17712,7 @@ function _lsCheckReturnAfterCombat() {
     if(_fdFragPoi) _fdFragPoi._cleared = true;
     document.getElementById('ov-fragsitee')?.classList.remove('on');
     if(FD.animId){ cancelAnimationFrame(FD.animId); FD.animId = null; }
+    if(FD._humActive){ stopTravelHum(); FD._humActive = false; }
     setTimeout(() => openLocalSpace(), 600);
     return;
   }
@@ -18429,6 +18579,11 @@ function _fdUpdatePlayer(dt){
   else if(_fdIsInFloor(FD.px,ny)){FD.py=ny;FD.pvx=0;}
   else                           {FD.pvx=0;FD.pvy=0;}
 
+  // Engine hum — fade in when moving in dungeon, fade out when stopped
+  const _fdSpd=Math.sqrt(FD.pvx*FD.pvx+FD.pvy*FD.pvy);
+  if(_fdSpd>8&&!FD._humActive){startTravelHum();FD._humActive=true;}
+  else if(_fdSpd<3&&FD._humActive){stopTravelHum();FD._humActive=false;}
+
   const spd=Math.sqrt(FD.pvx*FD.pvx+FD.pvy*FD.pvy);
   if(spd>3){
     const ta=Math.atan2(FD.pvy,FD.pvx);
@@ -18491,6 +18646,7 @@ function _fdTriggerCombat(idx){
   FD.canvas?.removeEventListener('click',_fdHandleClick);
   document.removeEventListener('keydown',_fdKeyDown);
   document.removeEventListener('keyup',_fdKeyUp);
+  if(FD._humActive){stopTravelHum();FD._humActive=false;}
   document.getElementById('ov-fragsitee').classList.remove('on');
   setTimeout(()=>{_lsPendingReturn=true;startCombat(e.key);},400);
 }
@@ -18564,10 +18720,12 @@ function _fdLaunchGuardianFight(){
   FD.canvas?.removeEventListener('click',_fdHandleClick);
   document.removeEventListener('keydown',_fdKeyDown);
   document.removeEventListener('keyup',_fdKeyUp);
+  if(FD._humActive){stopTravelHum();FD._humActive=false;}
   document.getElementById('ov-fragsitee').classList.remove('on');
   // Also hide LS overlay — ov-guardian is z-index 40, below LS's 65, so it must be clear
   document.getElementById('ov-localspace').classList.remove('on');
   if(LS.animId){cancelAnimationFrame(LS.animId);LS.animId=null;}
+  if(LS._humActive){stopTravelHum();LS._humActive=false;}
   FD._fromDungeon=true; _lsPendingReturn=true; _lsPendingFragment=FD.site;
   setTimeout(()=>{G.phase='map'; showGuardianConfirm(FD.site);},300);
 }
