@@ -15162,7 +15162,7 @@ function _lsBuildCargoGrid() {
     grid.appendChild(allRow);
   }
 
-  // Individual items
+  // Individual cargo/component/artifact/weapon rows
   sellable.forEach(item => {
     const row = document.createElement('div');
     row.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:4px 8px;border-radius:4px;background:rgba(8,4,20,0.5);border:1px solid #33224433;';
@@ -15177,6 +15177,46 @@ function _lsBuildCargoGrid() {
     };
     grid.appendChild(row);
   });
+
+  // ── Sell Usables section ─────────────────────────────────────────────
+  const usables = G.ship.inv.filter(i => i.type === 'usable');
+  if(usables.length > 0) {
+    // Section header with toggle
+    const usableHeader = document.createElement('div');
+    usableHeader.style.cssText = 'display:flex;justify-content:space-between;align-items:center;margin-top:8px;padding:4px 0 2px;border-top:1px solid #33224433;cursor:pointer;';
+    usableHeader.innerHTML = `
+      <span style="font-family:'Cinzel',serif;font-size:0.563em;color:#aa77ff;letter-spacing:1px;">⚗ SELL USABLE ITEMS</span>
+      <span id="ls-usable-toggle" style="font-size:0.625em;color:#664499;">▼</span>`;
+    grid.appendChild(usableHeader);
+
+    const usableGrid = document.createElement('div');
+    usableGrid.id = 'ls-usable-grid';
+    usableGrid.style.cssText = 'display:none;flex-direction:column;gap:3px;margin-top:3px;';
+    grid.appendChild(usableGrid);
+
+    // Toggle open/closed
+    usableHeader.onclick = () => {
+      const isOpen = usableGrid.style.display !== 'none';
+      usableGrid.style.display = isOpen ? 'none' : 'flex';
+      document.getElementById('ls-usable-toggle').textContent = isOpen ? '▼' : '▲';
+    };
+
+    usables.forEach(item => {
+      const sellVal = Math.max(1, Math.floor((item.val || 10) * 0.6)); // 60% of item value
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:4px 8px;border-radius:4px;background:rgba(20,4,30,0.5);border:1px solid #44224455;';
+      row.innerHTML = `<span style="font-size:0.625em;color:#aa88cc;">${item.ico||'⚗'} ${item.n}</span>
+        <button class="btn" style="font-size:0.563em;padding:3px 8px;border-color:#66336655;color:#cc99ee;">⚜ ${sellVal}g</button>`;
+      row.querySelector('button').onclick = () => {
+        G.ship.gold += sellVal;
+        G.ship.inv = G.ship.inv.filter(i => i.uid !== item.uid);
+        snd('purchase', 0.6);
+        addLog(`Sold ${item.n} for ${sellVal} gold.`, 'gd');
+        updateUI(); _lsRefreshDock();
+      };
+      usableGrid.appendChild(row);
+    });
+  }
 }
 
 function _lsGetQmStock() {
