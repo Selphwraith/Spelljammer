@@ -2875,7 +2875,7 @@ const ITEMS = {
   ebtiss:    { n:'Trull Overmind Tissue',     ico:'🧠', type:'artifact',  val:200, desc:'A sample of Trull Overmind tissue, pulsing with malevolent intelligence.' },
   silblade:  { n:'Silver Astral Blade Frag',ico:'🗡️',type:'artifact', val:150, desc:'A fragment of a silver astral blade. Said to cut through any defense.' },
   // ── Bandit-specific drops ─────────────────────────────
-  plunder:   { n:'Plundered Merchant TS', ico:'💰', type:'trade',     val:32,  desc:'Stolen coinage and valuables looted from a dozen merchant vessels.' },
+  plunder:   { n:'Plundered Merchant Gold', ico:'💰', type:'trade',     val:32,  desc:'Stolen coinage and valuables looted from a dozen merchant vessels.' },
   corskit:   { n:'Corsair Weapon Cache',    ico:'⚓', type:'component', val:40,  desc:'A crate of salvaged ballista bolts and powder charges. Sellable to any armorer.' },
   bfmanif:   { n:'Black Fleet Manifest',    ico:'📋', type:'artifact',  val:110, desc:'A coded Black Fleet operations log. The IEF Admiral will pay handsomely for this intelligence.' },
   // ── Void Rift drops ────────────────────────────────────────────────
@@ -14486,7 +14486,7 @@ const LOCAL_QUEST_DATA = {
             title: "Kezzix's Errand",
             desc: "Port-Boss Kezzix needs a delivery verified — a shipment that was supposed to arrive from the outer lanes never showed. She wants someone to make a run out and confirm whether the courier is dead, fled, or just slow.",
             task: 'Travel to any other sphere and return to Kezzix to confirm the lanes are clear.',
-            reward: '🔷 120 TS + 💰 Plundered Merchant TS (trade good)',
+            reward: '🔷 120 TS + 💰 Plundered Merchant Gold (trade good)',
             type: 'explore',
             checkDesc: 'Travel to any sphere and return to Kezzix.',
             check: (G) => (G.localQuests?.cluster_q3_visited || false),
@@ -15815,7 +15815,7 @@ function _lsShowInteract(poi) {
 
   if(poi.type === 'dock') {
     document.getElementById('ls-interact-prompt').textContent =
-      "Fentheris Orbital Station — IEF docking ring. Hull, air, crew and quartermaster supplies available.";
+      (()=>{ const _sp=G.ship?.loc||'realm'; const _dn={refuge:'IEF Refuge Station',grey:'Ironhaven Station',cluster:'Thousand Sails Freeport'}[_sp]||'Fentheris Orbital Station'; return _dn+' — dock for hull repair, air resupply, crew hire, and the sphere Quartermaster.'; })();
     const dockBtn = document.createElement('button');
     dockBtn.className='btn'; dockBtn.textContent='⚓ Dock';
     dockBtn.onclick = () => {
@@ -16170,6 +16170,12 @@ function _lsRender(cx, W, H, dt) {
         cx.fillStyle = qCol;
         cx.fillText('!', p.x, p.y-32);
         cx.textBaseline='alphabetic';
+        // NPC name label next to the ! so player knows who has the quest
+        cx.globalAlpha = qPulse * 0.9;
+        cx.font = '10px sans-serif'; cx.textAlign='left';
+        cx.fillStyle = qCol;
+        cx.fillText(p.label, p.x + 14, p.y - 28);
+        cx.textAlign='center';
         cx.globalAlpha = 1;
         cx.restore();
       }
