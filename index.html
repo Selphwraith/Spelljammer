@@ -18736,6 +18736,7 @@ const FD_CONFIGS = {
     name: 'The Flotsam Field',
     entryLog: 'Entering the Flotsam Field. Wreckage closes in on all sides. Automated sentinels are active.',
     guardianWarning: "Corsair Captain Aldren commands this site with a full complement of advance scouts and automated wreck-sentinels. The Navigation Core is at the far end of the field.",
+    floorImg:     'images/fd_floor_realm.png',
     floorColor:   '#201408',
     accentColor:  '#cc8833',
     minRooms: 5, maxRooms: 7,
@@ -18817,6 +18818,13 @@ function openFragDungeon(fs) {
 
   FD.canvas   = document.getElementById('fd-canvas');
   FD.ctx      = FD.canvas.getContext('2d');
+  FD._floorPattern = null;
+  FD._floorImg = null;
+  if(cfg.floorImg){
+    const fi=new Image();
+    fi.src=cfg.floorImg;
+    fi.onload=()=>{ FD._floorImg=fi; FD._floorPattern=null; }; // pattern rebuilt on next render
+  }
   FD.mmCanvas = document.getElementById('fd-minimap-canvas');
   FD.mmCtx    = FD.mmCanvas.getContext('2d');
   FD.canvas.addEventListener('click', _fdHandleClick);
@@ -18834,6 +18842,7 @@ function _fdReopen() {
   _fdLog('Back in the site. Proceed to the guardian chamber.'); _fdUpdateHud();
   FD.canvas   = document.getElementById('fd-canvas');
   FD.ctx      = FD.canvas.getContext('2d');
+  FD._floorPattern = null; // force pattern rebuild for new ctx
   FD.mmCanvas = document.getElementById('fd-minimap-canvas');
   FD.mmCtx    = FD.mmCanvas.getContext('2d');
   FD.canvas.addEventListener('click', _fdHandleClick);
@@ -18856,51 +18865,157 @@ function closeFragDungeon() {
   setTimeout(()=>openLocalSpace(), 300);
 }
 
-// ── Room generation ────────────────────────────────────────────────────────
-function _fdGenLayout(nRooms) {
-  const CORR_H=64, GAP_MIN=70, GAP_MAX=140;
-  const SIZES=[{w:280,h:230},{w:320,h:250},{w:360,h:265},{w:400,h:280},{w:450,h:300}];
-  const rooms=[], corridors=[];
-  let curX=160, curCY=FD.H/2;
-
-  for(let i=0;i<nRooms;i++){
-    const sz=SIZES[Math.floor(Math.random()*SIZES.length)];
-    const type = i===0?'entry':i===nRooms-1?'guardian':Math.random()<0.55?'encounter':'loot';
-    const room={
-      id:i, type,
-      x:curX, y:curCY-sz.h/2, w:sz.w, h:sz.h,
-      cx:curX+sz.w/2, cy:curCY,
-      revealed:false, visible:false,
-      enemies:[], loots:[], guardianDefeated:false,
-    };
-    rooms.push(room);
-
-    if(i>0){
-      const prev=rooms[i-1];
-      const oTop=Math.max(prev.y,room.y)+8;
-      const oBot=Math.min(prev.y+prev.h,room.y+room.h)-8;
-      const overlap=oBot-oTop;
-      const corrH=overlap>=CORR_H?CORR_H:Math.max(overlap,24);
-      const corrY=overlap>=corrH
-        ?(oTop+oBot)/2-corrH/2
-        :(prev.cy+room.cy)/2-corrH/2;
-      corridors.push({
-        id:i-1,
-        x:prev.x+prev.w,
-        y:corrY,
-        w:room.x-(prev.x+prev.w),
-        h:corrH,
-        roomA:i-1, roomB:i,
-        revealed:false, visible:false,
-      });
-    }
-
-    const gap=GAP_MIN+Math.floor(Math.random()*(GAP_MAX-GAP_MIN));
-    curX+=sz.w+gap;
-    const dy=(Math.random()-0.5)*110;
-    curCY=Math.max(sz.h/2+80, Math.min(FD.H-sz.h/2-80, curCY+dy));
+// ── Room / corridor factory helpers ───────────────────────────────────────
+const FD_ROOM_SIZES = [
+  {w:240,h:190},{w:280,h:220},{w:320,h:250},{w:360,h:265},{w:400,h:280},{w:450,h:300},
+];
+function _fdPickSz(){ return FD_ROOM_SIZES[Math.floor(Math.random()*FD_ROOM_SIZES.length)]; }
+function _fdMakeRoom(id,type,x,y,sz){
+  x=Math.round(x); y=Math.round(y);
+  return{id,type,x,y,w:sz.w,h:sz.h,cx:x+sz.w/2,cy:y+sz.h/2,
+         revealed:false,visible:false,enemies:[],loots:[],guardianDefeated:false,_branch:false};
+}
+// Returns segment array — single rect for straight corridors, two rects for L-shapes
+function _fdCorrSegs(c){ return c.segs||[{x:c.x,y:c.y,w:c.w,h:c.h}]; }
+// Build an L-shaped (or straight) corridor between two rooms
+function _fdMakeCorr(rA,rB,id){
+  const CW=58+Math.floor(Math.random()*14);
+  const aCX=rA.cx,aCY=rA.cy,aRX=rA.x+rA.w,aLX=rA.x,aBY=rA.y+rA.h;
+  const bCX=rB.cx,bCY=rB.cy,bLX=rB.x,bRX=rB.x+rB.w,bTY=rB.y,bBY=rB.y+rB.h;
+  function mk(segs){
+    const s0=segs[0];
+    return{id,roomA:rA.id,roomB:rB.id,revealed:false,visible:false,
+           x:s0.x,y:s0.y,w:s0.w,h:s0.h,segs};
   }
-  return {rooms,corridors};
+  // B right of A
+  if(bLX>=aRX-10){
+    if(Math.abs(aCY-bCY)<=CW+4){
+      return mk([{x:aRX,y:(aCY+bCY)/2-CW/2,w:Math.max(10,bLX-aRX),h:CW}]);
+    }
+    const h={x:aRX,y:aCY-CW/2,w:Math.max(CW,bCX-aRX),h:CW};
+    const v={x:bCX-CW/2,y:Math.min(aCY,bCY)-CW/2,w:CW,h:Math.abs(bCY-aCY)+CW};
+    return mk([h,v]);
+  }
+  // A right of B
+  if(aLX>=bRX-10){
+    if(Math.abs(aCY-bCY)<=CW+4){
+      return mk([{x:bRX,y:(aCY+bCY)/2-CW/2,w:Math.max(10,aLX-bRX),h:CW}]);
+    }
+    const h={x:bRX,y:bCY-CW/2,w:Math.max(CW,aCX-bRX),h:CW};
+    const v={x:aCX-CW/2,y:Math.min(aCY,bCY)-CW/2,w:CW,h:Math.abs(bCY-aCY)+CW};
+    return mk([h,v]);
+  }
+  // B below A
+  if(bTY>=aBY-10){
+    if(Math.abs(aCX-bCX)<=CW+4){
+      return mk([{x:(aCX+bCX)/2-CW/2,y:aBY,w:CW,h:Math.max(10,bTY-aBY)}]);
+    }
+    const v={x:aCX-CW/2,y:aBY,w:CW,h:Math.max(CW,bCY-aBY)};
+    const h={x:Math.min(aCX,bCX)-CW/2,y:bCY-CW/2,w:Math.abs(bCX-aCX)+CW,h:CW};
+    return mk([v,h]);
+  }
+  // A below B
+  if(rA.y>=bBY-10){
+    if(Math.abs(aCX-bCX)<=CW+4){
+      return mk([{x:(aCX+bCX)/2-CW/2,y:bBY,w:CW,h:Math.max(10,rA.y-bBY)}]);
+    }
+    const v={x:bCX-CW/2,y:bBY,w:CW,h:Math.max(CW,aCY-bBY)};
+    const h={x:Math.min(aCX,bCX)-CW/2,y:aCY-CW/2,w:Math.abs(bCX-aCX)+CW,h:CW};
+    return mk([v,h]);
+  }
+  // Fallback diagonal L
+  const h={x:Math.min(aCX,bCX)-CW/2,y:aCY-CW/2,w:Math.abs(bCX-aCX)+CW,h:CW};
+  const v={x:bCX-CW/2,y:Math.min(aCY,bCY)-CW/2,w:CW,h:Math.abs(bCY-aCY)+CW};
+  return mk([h,v]);
+}
+
+// ── Layout generator — procedural multi-directional with branch rooms ──────
+function _fdGenLayout(nRooms) {
+  const rooms=[], corridors=[];
+  const MX=FD.W, MY=FD.H;
+  const GAP_MIN=65, GAP_MAX=130;
+
+  // Entry room fixed at left-centre
+  const entrySz={w:320,h:260};
+  rooms.push(_fdMakeRoom(0,'entry',180,MY/2-entrySz.h/2,entrySz));
+
+  // Build main chain
+  const mainChain=[0];
+  for(let i=1;i<nRooms;i++){
+    const isLast=(i===nRooms-1);
+    const type=isLast?'guardian':(Math.random()<0.55?'encounter':'loot');
+    const sz=isLast?{w:520,h:380}:_fdPickSz();
+    let placed=false;
+
+    for(let att=0;att<30&&!placed;att++){
+      const parent=rooms[mainChain[mainChain.length-1]];
+      const gap=GAP_MIN+Math.floor(Math.random()*(GAP_MAX-GAP_MIN));
+      let nx,ny;
+
+      // Occasionally detour up/down from an earlier room (25% chance, not for first 2 or last)
+      if(i>2&&!isLast&&Math.random()<0.25){
+        const srcIdx=mainChain[Math.floor(Math.random()*Math.max(1,mainChain.length-1))];
+        const src=rooms[srcIdx];
+        const goDown=Math.random()<0.5;
+        nx=src.cx-sz.w/2+(Math.random()-0.5)*60;
+        ny=goDown?(src.y+src.h+gap):(src.y-sz.h-gap);
+      } else {
+        nx=parent.x+parent.w+gap;
+        ny=parent.cy-sz.h/2+(Math.random()-0.5)*100;
+      }
+
+      nx=Math.max(80,Math.min(MX-sz.w-80,nx));
+      ny=Math.max(80,Math.min(MY-sz.h-80,ny));
+      const nr=_fdMakeRoom(i,type,nx,ny,sz);
+      const PAD=50;
+      if(!rooms.some(r=>!(nr.x+nr.w+PAD<r.x||nr.x>r.x+r.w+PAD||nr.y+nr.h+PAD<r.y||nr.y>r.y+r.h+PAD))){
+        const corrParent=mainChain[mainChain.length-1];
+        rooms.push(nr);
+        corridors.push(_fdMakeCorr(rooms[corrParent],nr,corridors.length));
+        mainChain.push(i);
+        placed=true;
+      }
+    }
+    // Force-place if all attempts fail
+    if(!placed){
+      const parent=rooms[mainChain[mainChain.length-1]];
+      const nx=Math.min(MX-sz.w-80,parent.x+parent.w+GAP_MIN);
+      const ny=Math.max(80,Math.min(MY-sz.h-80,parent.cy-sz.h/2));
+      const nr=_fdMakeRoom(i,type,nx,ny,sz);
+      rooms.push(nr);
+      corridors.push(_fdMakeCorr(parent,nr,corridors.length));
+      mainChain.push(i);
+    }
+  }
+
+  // Add 1–2 branch dead-end loot rooms off the main chain
+  const branchCount=1+Math.floor(Math.random()*2);
+  for(let b=0;b<branchCount;b++){
+    const bid=rooms.length;
+    const sz={w:220+Math.floor(Math.random()*80),h:175+Math.floor(Math.random()*60)};
+    const cands=mainChain.filter(idx=>rooms[idx].type!=='guardian'&&rooms[idx].type!=='entry');
+    if(!cands.length) break;
+    const parent=rooms[cands[Math.floor(Math.random()*cands.length)]];
+    const dirs=[{dx:0,dy:-1},{dx:0,dy:1},{dx:-1,dy:0},{dx:1,dy:0}].sort(()=>Math.random()-0.5);
+    for(const dir of dirs){
+      const gap=65+Math.floor(Math.random()*60);
+      let nx,ny;
+      if     (dir.dx===1) {nx=parent.x+parent.w+gap;ny=parent.cy-sz.h/2+(Math.random()-0.5)*50;}
+      else if(dir.dx===-1){nx=parent.x-sz.w-gap;    ny=parent.cy-sz.h/2+(Math.random()-0.5)*50;}
+      else if(dir.dy===1) {nx=parent.cx-sz.w/2+(Math.random()-0.5)*50;ny=parent.y+parent.h+gap;}
+      else                {nx=parent.cx-sz.w/2+(Math.random()-0.5)*50;ny=parent.y-sz.h-gap;}
+      nx=Math.max(80,Math.min(MX-sz.w-80,nx));
+      ny=Math.max(80,Math.min(MY-sz.h-80,ny));
+      const nr=_fdMakeRoom(bid,'loot',nx,ny,sz);
+      nr._branch=true;
+      const PAD=40;
+      if(!rooms.some(r=>!(nr.x+nr.w+PAD<r.x||nr.x>r.x+r.w+PAD||nr.y+nr.h+PAD<r.y||nr.y>r.y+r.h+PAD))){
+        rooms.push(nr); corridors.push(_fdMakeCorr(parent,nr,corridors.length)); break;
+      }
+    }
+  }
+
+  return{rooms,corridors};
 }
 
 function _fdPopulateRooms(cfg){
@@ -18937,8 +19052,8 @@ function _fdPopulateRooms(cfg){
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 function _fdIsInFloor(wx,wy){
-  for(const r of FD.rooms)    if(wx>=r.x&&wx<=r.x+r.w&&wy>=r.y&&wy<=r.y+r.h) return true;
-  for(const c of FD.corridors)if(wx>=c.x&&wx<=c.x+c.w&&wy>=c.y&&wy<=c.y+c.h) return true;
+  for(const r of FD.rooms) if(wx>=r.x&&wx<=r.x+r.w&&wy>=r.y&&wy<=r.y+r.h) return true;
+  for(const c of FD.corridors) for(const s of _fdCorrSegs(c)) if(wx>=s.x&&wx<=s.x+s.w&&wy>=s.y&&wy<=s.y+s.h) return true;
   return false;
 }
 
@@ -18962,10 +19077,14 @@ function _fdUpdateVisibility(){
     r.visible=los; if(los) r.revealed=true;
   });
   FD.corridors.forEach(c=>{
-    const dx=(c.x+c.w/2)-FD.px, dy=(c.y+c.h/2)-FD.py;
-    const inRange=Math.sqrt(dx*dx+dy*dy)<R+Math.max(c.w,c.h)*0.6;
-    const los=inRange&&_fdLOS(FD.px,FD.py,c.x+c.w/2,c.y+c.h/2);
-    c.visible=los; if(los) c.revealed=true;
+    const segs=_fdCorrSegs(c);
+    let vis=false;
+    for(const s of segs){
+      const scx=s.x+s.w/2, scy=s.y+s.h/2;
+      const dx=scx-FD.px, dy=scy-FD.py;
+      if(Math.sqrt(dx*dx+dy*dy)<FD_VISION_R+Math.max(s.w,s.h)*0.6&&_fdLOS(FD.px,FD.py,scx,scy)){vis=true;break;}
+    }
+    c.visible=vis; if(vis) c.revealed=true;
   });
 }
 
@@ -19180,37 +19299,74 @@ function _fdRender(cx,cW,cH){
   cx.globalAlpha=1;
 
   // Revealed floors (dim history)
+  const floorColor=FD.config?.floorColor||'#201408';
+  const accentColor=FD.config?.accentColor||'#cc8833';
   cx.fillStyle='#130d06';
   FD.rooms.forEach(r=>{if(r.revealed&&!r.visible)cx.fillRect(r.x,r.y,r.w,r.h);});
-  FD.corridors.forEach(c=>{if(c.revealed&&!c.visible)cx.fillRect(c.x,c.y,c.w,c.h);});
+  FD.corridors.forEach(c=>{if(c.revealed&&!c.visible) for(const s of _fdCorrSegs(c)) cx.fillRect(s.x,s.y,s.w,s.h);});
 
-  // Visible floors (fully lit)
+  // Build or reuse floor pattern
+  if(FD._floorImg&&!FD._floorPattern){
+    try{FD._floorPattern=cx.createPattern(FD._floorImg,'repeat');}catch(e){}
+  }
+
+  // Visible room floors
   FD.rooms.forEach(r=>{
     if(!r.visible) return;
-    cx.fillStyle=r.type==='guardian'?'#2a1508':r.type==='loot'?'#1e180a':'#201408';
-    cx.fillRect(r.x,r.y,r.w,r.h);
-    // Grid lines
-    cx.strokeStyle='#2a1c0a'; cx.lineWidth=1;
-    for(let lx=r.x+40;lx<r.x+r.w;lx+=40){cx.beginPath();cx.moveTo(lx,r.y);cx.lineTo(lx,r.y+r.h);cx.stroke();}
-    for(let ly=r.y+40;ly<r.y+r.h;ly+=40){cx.beginPath();cx.moveTo(r.x,ly);cx.lineTo(r.x+r.w,ly);cx.stroke();}
-    cx.strokeStyle='#443318'; cx.lineWidth=3; cx.strokeRect(r.x+1,r.y+1,r.w-2,r.h-2);
-    // Type ambiance
+    if(FD._floorPattern){
+      cx.fillStyle=FD._floorPattern;
+      cx.save(); cx.globalAlpha=0.7; cx.fillRect(r.x,r.y,r.w,r.h); cx.restore();
+      const tint=r.type==='guardian'?'rgba(80,10,0,0.55)':r.type==='loot'?'rgba(55,45,0,0.38)':'rgba(25,12,0,0.42)';
+      cx.fillStyle=tint; cx.fillRect(r.x,r.y,r.w,r.h);
+    } else {
+      cx.fillStyle=r.type==='guardian'?'#2a1508':r.type==='loot'?'#1e180a':floorColor;
+      cx.fillRect(r.x,r.y,r.w,r.h);
+      // Grid lines
+      cx.strokeStyle=r.type==='guardian'?'#3a1508':'#2a1c0a'; cx.lineWidth=1;
+      for(let lx=r.x+40;lx<r.x+r.w;lx+=40){cx.beginPath();cx.moveTo(lx,r.y);cx.lineTo(lx,r.y+r.h);cx.stroke();}
+      for(let ly=r.y+40;ly<r.y+r.h;ly+=40){cx.beginPath();cx.moveTo(r.x,ly);cx.lineTo(r.x+r.w,ly);cx.stroke();}
+    }
+    // Border
+    cx.strokeStyle=accentColor+'55'; cx.lineWidth=3; cx.strokeRect(r.x+1,r.y+1,r.w-2,r.h-2);
+    // Type ambiance glow
     if(r.type==='guardian'){
-      const g=cx.createRadialGradient(r.x+r.w/2,r.y+r.h/2,20,r.x+r.w/2,r.y+r.h/2,r.w*0.55);
-      g.addColorStop(0,'rgba(200,40,0,0.12)');g.addColorStop(1,'transparent');
+      const g=cx.createRadialGradient(r.cx,r.cy,20,r.cx,r.cy,r.w*0.55);
+      g.addColorStop(0,'rgba(200,40,0,0.18)');g.addColorStop(1,'transparent');
       cx.fillStyle=g;cx.fillRect(r.x,r.y,r.w,r.h);
     } else if(r.type==='loot'){
-      const g=cx.createRadialGradient(r.x+r.w/2,r.y+r.h/2,10,r.x+r.w/2,r.y+r.h/2,r.w*0.45);
-      g.addColorStop(0,'rgba(200,160,0,0.09)');g.addColorStop(1,'transparent');
+      const g=cx.createRadialGradient(r.cx,r.cy,10,r.cx,r.cy,r.w*0.45);
+      g.addColorStop(0,'rgba(200,160,0,0.12)');g.addColorStop(1,'transparent');
       cx.fillStyle=g;cx.fillRect(r.x,r.y,r.w,r.h);
     }
     const lbl={entry:'ENTRY',guardian:'GUARDIAN CHAMBER',loot:'CACHE',encounter:''}[r.type]||'';
-    if(lbl){cx.font='bold 9px Cinzel,serif';cx.textAlign='center';cx.fillStyle='#443318';cx.fillText(lbl,r.x+r.w/2,r.y+13);cx.textAlign='left';}
+    if(lbl){cx.font='bold 9px Cinzel,serif';cx.textAlign='center';cx.fillStyle=accentColor+'88';cx.fillText(lbl,r.cx,r.y+13);cx.textAlign='left';}
   });
+
+  // Visible corridors — draw each segment with tunnel-edge darkening
   FD.corridors.forEach(c=>{
     if(!c.visible)return;
-    cx.fillStyle='#1a1006';cx.fillRect(c.x,c.y,c.w,c.h);
-    cx.strokeStyle='#332211';cx.lineWidth=2;cx.strokeRect(c.x,c.y,c.w,c.h);
+    for(const s of _fdCorrSegs(c)){
+      // Floor fill
+      if(FD._floorPattern){
+        cx.fillStyle=FD._floorPattern;
+        cx.save(); cx.globalAlpha=0.6; cx.fillRect(s.x,s.y,s.w,s.h); cx.restore();
+        cx.fillStyle='rgba(25,12,0,0.5)'; cx.fillRect(s.x,s.y,s.w,s.h);
+      } else {
+        cx.fillStyle=floorColor; cx.fillRect(s.x,s.y,s.w,s.h);
+      }
+      // Edge darkening — gradient along short axis
+      const isH=s.w>=s.h;
+      const eg=isH
+        ?cx.createLinearGradient(s.x,s.y,s.x,s.y+s.h)
+        :cx.createLinearGradient(s.x,s.y,s.x+s.w,s.y);
+      eg.addColorStop(0,'rgba(0,0,0,0.58)');
+      eg.addColorStop(0.28,'rgba(0,0,0,0)');
+      eg.addColorStop(0.72,'rgba(0,0,0,0)');
+      eg.addColorStop(1,'rgba(0,0,0,0.58)');
+      cx.fillStyle=eg; cx.fillRect(s.x,s.y,s.w,s.h);
+      // Thin border
+      cx.strokeStyle=accentColor+'33'; cx.lineWidth=1.5; cx.strokeRect(s.x,s.y,s.w,s.h);
+    }
   });
 
   // POIs in visible rooms
@@ -19313,7 +19469,7 @@ function _fdApplyFog(cx,cW,cH){
   fc.save();
   fc.beginPath();
   FD.rooms.forEach(r=>{ if(r.visible) fc.rect(r.x-FD.camX,r.y-FD.camY,r.w,r.h); });
-  FD.corridors.forEach(c=>{ if(c.visible) fc.rect(c.x-FD.camX,c.y-FD.camY,c.w,c.h); });
+  FD.corridors.forEach(c=>{ if(c.visible) for(const s of _fdCorrSegs(c)) fc.rect(s.x-FD.camX,s.y-FD.camY,s.w,s.h); });
   fc.clip();
   fc.globalCompositeOperation='destination-out';
   const px=FD.px-FD.camX,py=FD.py-FD.camY,R=FD_VISION_R;
@@ -19328,7 +19484,7 @@ function _fdApplyFog(cx,cW,cH){
   fc.save();
   fc.beginPath();
   FD.rooms.forEach(r=>{ if(r.revealed&&!r.visible) fc.rect(r.x-FD.camX,r.y-FD.camY,r.w,r.h); });
-  FD.corridors.forEach(c=>{ if(c.revealed&&!c.visible) fc.rect(c.x-FD.camX,c.y-FD.camY,c.w,c.h); });
+  FD.corridors.forEach(c=>{ if(c.revealed&&!c.visible) for(const s of _fdCorrSegs(c)) fc.rect(s.x-FD.camX,s.y-FD.camY,s.w,s.h); });
   fc.clip();
   fc.globalCompositeOperation='source-over';
   fc.fillStyle='rgba(6,2,1,0.65)'; fc.fillRect(0,0,cW,cH);
@@ -19353,7 +19509,7 @@ function _fdRenderMinimap(){
   FD.corridors.forEach(c=>{
     if(!c.revealed)return;
     mx.fillStyle=c.visible?'#886644':'#332211';
-    mx.fillRect(ox+c.x*scX,oy+c.y*scY,c.w*scX,c.h*scY);
+    for(const s of _fdCorrSegs(c)) mx.fillRect(ox+s.x*scX,oy+s.y*scY,s.w*scX,s.h*scY);
   });
   mx.fillStyle='#4488ff';
   mx.beginPath();mx.arc(ox+FD.px*scX,oy+FD.py*scY,3,0,Math.PI*2);mx.fill();
