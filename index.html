@@ -338,6 +338,8 @@ body {
 .port-tabs { display:flex; gap:6px; }
 .ptab { font-family:'Cinzel',serif; font-size: 0.625em; letter-spacing:1px; padding:5px 12px; border:1px solid #33005566; border-radius:3px; background:rgba(10,2,28,0.8); color:#6655aa; cursor:pointer; transition:all 0.15s; text-transform:uppercase; }
 .ptab:hover,.ptab.act { border-color:#9966dd; color:#cc99ff; background:rgba(40,10,80,0.9); }
+#sell-filter-tabs { display:none; }
+#sell-filter-tabs.on { display:flex !important; }
 
 /* ── TRAVEL BAR ── */
 #tvlbar { position:absolute; bottom:14px; left:50%; transform:translateX(-50%); background:rgba(6,0,18,0.94); border:1px solid #5522aa; border-radius:4px; padding:8px 16px; display:none; text-align:center; min-width:180px; }
@@ -2165,7 +2167,14 @@ body {
     </div>
     <div class="port-tabs">
       <button class="ptab act" id="tab-supplies" onclick="portTab('supplies',this)">Supplies &amp; Arms</button>
-      <button class="ptab" id="tab-cargo" onclick="portTab('cargo',this)">Sell Cargo</button>
+      <button class="ptab" id="tab-cargo" onclick="portTab('cargo',this)">Sell Items</button>
+    </div>
+    <!-- Sell filter tabs — shown only when Sell Items is active -->
+    <div id="sell-filter-tabs" style="display:none;gap:4px;justify-content:center;flex-wrap:wrap;padding:4px 0 6px;">
+      <button class="ptab act" id="sflt-all"     onclick="setSellFilter('all',this)">All</button>
+      <button class="ptab"     id="sflt-cargo"   onclick="setSellFilter('cargo',this)">Cargo</button>
+      <button class="ptab"     id="sflt-usable"  onclick="setSellFilter('usable',this)">Usables</button>
+      <button class="ptab"     id="sflt-weapon"  onclick="setSellFilter('weapon',this)">Weapons</button>
     </div>
     <div class="sgrid" id="shopgrid"></div>
   </div>
@@ -2420,7 +2429,14 @@ body {
       <div class="ls-dock-section" style="margin-top:6px;">🛒 IEF QUARTERMASTER</div>
       <div id="ls-dock-shop-grid" style="display:flex;flex-direction:column;gap:6px;margin-top:2px;"></div>
 
-      <div class="ls-dock-section" style="margin-top:6px;">💰 SELL CARGO</div>
+      <div class="ls-dock-section" style="margin-top:6px;">💰 SELL ITEMS</div>
+      <!-- Sell filter tabs -->
+      <div id="ls-sell-filter-tabs" style="display:flex;gap:3px;flex-wrap:wrap;margin:4px 0 3px;">
+        <button class="ptab act" id="ls-sflt-all"    onclick="lsSellFilter('all',this)"   style="font-size:8px;padding:3px 8px;">All</button>
+        <button class="ptab"     id="ls-sflt-cargo"  onclick="lsSellFilter('cargo',this)" style="font-size:8px;padding:3px 8px;">Cargo</button>
+        <button class="ptab"     id="ls-sflt-usable" onclick="lsSellFilter('usable',this)" style="font-size:8px;padding:3px 8px;">Usables</button>
+        <button class="ptab"     id="ls-sflt-weapon" onclick="lsSellFilter('weapon',this)" style="font-size:8px;padding:3px 8px;">Weapons</button>
+      </div>
       <div id="ls-dock-cargo-grid" style="display:flex;flex-direction:column;gap:5px;margin-top:2px;"></div>
 
       <div style="display:flex;gap:8px;justify-content:center;margin-top:10px;flex-wrap:wrap;">
@@ -7216,30 +7232,101 @@ function enterPort(sph){
 function portTab(tab,el){
   G.portTab=tab;
   document.querySelectorAll('.ptab').forEach(b=>b.classList.remove('act')); el.classList.add('act');
+  // Show/hide sell filter tabs
+  const fTabs = document.getElementById('sell-filter-tabs');
+  if(fTabs) {
+    if(tab === 'cargo') {
+      _sellFilter = 'all';
+      // Reset filter tab active state
+      document.querySelectorAll('#sell-filter-tabs .ptab').forEach(b=>b.classList.remove('act'));
+      const allBtn = document.getElementById('sflt-all');
+      if(allBtn) allBtn.classList.add('act');
+    } else {
+      fTabs.classList.remove('on');
+    }
+  }
   buildShop();
 }
 
+let _sellFilter = 'all';
+
+function setSellFilter(f, btn) {
+  _sellFilter = f;
+  document.querySelectorAll('#sell-filter-tabs .ptab').forEach(b => b.classList.remove('act'));
+  if(btn) btn.classList.add('act');
+  buildCargoSell();
+}
+
+function _sellPrice(item) {
+  if(item.type === 'usable') return Math.max(1, Math.floor((item.val || 10) * 0.6));
+  return item.val || 0;
+}
+
 function buildCargoSell(){
-  const grid=document.getElementById('shopgrid'); grid.innerHTML='';
-  const sellable=G.ship.inv.filter(i=>['trade','component','usable','equip','artifact','weapon'].includes(i.type));
-  if(sellable.length===0){
-    const d=document.createElement('div'); d.style.cssText='color:#5544aa;font-style:italic;font-size:13px;grid-column:1/-1;text-align:center;padding:20px';
-    d.textContent='No sellable items in hold.'; grid.appendChild(d); return;
+  const grid = document.getElementById('shopgrid');
+  grid.innerHTML = '';
+
+  const fTabs = document.getElementById('sell-filter-tabs');
+  if(fTabs) fTabs.classList.add('on');
+
+  const typeMap = { trade:true, component:true, artifact:true, usable:true, weapon:true, equip:true };
+  const all = G.ship.inv.filter(i => typeMap[i.type]);
+  const filtered = all.filter(i => {
+    if(_sellFilter === 'cargo')  return ['trade','component','artifact','equip'].includes(i.type);
+    if(_sellFilter === 'usable') return i.type === 'usable';
+    if(_sellFilter === 'weapon') return i.type === 'weapon';
+    return true;
+  });
+
+  if(filtered.length === 0) {
+    const d = document.createElement('div');
+    d.style.cssText = 'color:#5544aa;font-style:italic;font-size:13px;grid-column:1/-1;text-align:center;padding:20px';
+    const labels = {all:'No sellable items in hold.',cargo:'No cargo in hold.',usable:'No usable items in hold.',weapon:'No weapons to sell.'};
+    d.textContent = labels[_sellFilter] || 'Nothing to sell.';
+    grid.appendChild(d); return;
   }
-  // Sell All button — trade/component/artifact only (never auto-sells potions, equip, or weapons)
-  const bulkSellable=G.ship.inv.filter(i=>i.type==='trade'||i.type==='component'||i.type==='artifact');
-  if(bulkSellable.length){
-    const all=document.createElement('div'); all.className='sitem'; all.style.borderColor='#44ee8866';
-    const total=bulkSellable.reduce((a,i)=>a+i.val,0);
-    all.innerHTML=`<div class="siname" style="color:#44ee88">💰 Sell All Cargo</div><div class="sidesc">${bulkSellable.length} trade/component/artifact items</div><div class="sicost" style="color:#44ee88">🔷 ${total} TS</div>`;
-    all.onclick=()=>sellAllTrade(); grid.appendChild(all);
+
+  if(filtered.length > 1) {
+    const sellAllVal = filtered.reduce((a,i) => a + _sellPrice(i), 0);
+    const allRow = document.createElement('div');
+    allRow.className = 'sitem'; allRow.style.borderColor = '#44ee8866';
+    const lbl = {all:'Everything',cargo:'All Cargo',usable:'All Usables',weapon:'All Weapons'}[_sellFilter];
+    allRow.innerHTML = `<div class="siname" style="color:#44ee88">💰 Sell ${lbl}</div>
+      <div class="sidesc">${filtered.length} items</div>
+      <div class="sicost" style="color:#44ee88">🔷 ${sellAllVal} TS</div>`;
+    allRow.onclick = () => {
+      const uids = new Set(filtered.map(i => i.uid));
+      G.ship.inv = G.ship.inv.filter(i => !uids.has(i.uid));
+      G.ship.gold += sellAllVal;
+      snd('purchase', 0.7);
+      addLog(`Sold ${filtered.length} items for ${sellAllVal} TS.`, 'gd');
+      updateUI(); buildShop();
+      document.getElementById('pt-gold').textContent = G.ship.gold;
+    };
+    grid.appendChild(allRow);
   }
-  sellable.forEach(item=>{
-    const isWpn = item.type==='weapon';
-    const d=document.createElement('div'); d.className='sitem';
-    if(isWpn) d.style.borderColor='#aa882255';
-    d.innerHTML=`<div style="font-size:18px">${item.ico}</div><div class="siname"${isWpn?' style="color:#ffcc88"':''}>${item.n}${isWpn?' <span style="font-size:9px;color:#665533;">[weapon]</span>':''}</div><div class="sicost">🔷 ${item.val}</div>`;
-    d.onclick=()=>{ G.ship.gold+=item.val; G.ship.inv=G.ship.inv.filter(i=>i.uid!==item.uid); addLog(`Sold ${item.n} for ${item.val} TS.`,'gd'); updateUI(); buildShop(); document.getElementById('pt-gold').textContent=G.ship.gold; };
+
+  filtered.forEach(item => {
+    const sv = _sellPrice(item);
+    const isWpn    = item.type === 'weapon';
+    const isUsable = item.type === 'usable';
+    const d = document.createElement('div');
+    d.className = 'sitem';
+    if(isWpn)    d.style.borderColor = '#aa882255';
+    if(isUsable) d.style.borderColor = '#66336655';
+    const badge = isWpn    ? ' <span style="font-size:9px;color:#665533;">[weapon]</span>'
+                : isUsable ? ' <span style="font-size:9px;color:#664499;">[usable — 60%]</span>' : '';
+    d.innerHTML = `<div style="font-size:18px">${item.ico||'📦'}</div>
+      <div class="siname"${isWpn?' style="color:#ffcc88"':isUsable?' style="color:#cc99ee"':''}>${item.n}${badge}</div>
+      <div class="sicost">🔷 ${sv}</div>`;
+    d.onclick = () => {
+      G.ship.gold += sv;
+      G.ship.inv = G.ship.inv.filter(i => i.uid !== item.uid);
+      snd('purchase', 0.6);
+      addLog(`Sold ${item.n} for ${sv} TS.`, 'gd');
+      updateUI(); buildShop();
+      document.getElementById('pt-gold').textContent = G.ship.gold;
+    };
     grid.appendChild(d);
   });
 }
@@ -16456,6 +16543,77 @@ function lsDockService(type) {
   _lsUpdateHud();
 }
 
+let _lsSellFilter = 'all';
+
+function lsSellFilter(f, btn) {
+  _lsSellFilter = f;
+  document.querySelectorAll('#ls-sell-filter-tabs .ptab').forEach(b => b.classList.remove('act'));
+  if(btn) btn.classList.add('act');
+  _lsBuildSellGrid();
+}
+
+function _lsBuildSellGrid() {
+  const grid = document.getElementById('ls-dock-cargo-grid');
+  if(!grid) return;
+  grid.innerHTML = '';
+
+  const typeMap = { trade:true, component:true, artifact:true, usable:true, weapon:true, equip:true };
+  const all = G.ship.inv.filter(i => typeMap[i.type]);
+  const filtered = all.filter(i => {
+    if(_lsSellFilter === 'cargo')  return ['trade','component','artifact','equip'].includes(i.type);
+    if(_lsSellFilter === 'usable') return i.type === 'usable';
+    if(_lsSellFilter === 'weapon') return i.type === 'weapon';
+    return true;
+  });
+
+  if(filtered.length === 0) {
+    const empty = document.createElement('div');
+    empty.style.cssText = 'font-size:0.625em;color:#443355;font-style:italic;text-align:center;padding:6px 0;';
+    const labels = {all:'No sellable items in hold.',cargo:'No cargo in hold.',usable:'No usable items in hold.',weapon:'No weapons to sell.'};
+    empty.textContent = labels[_lsSellFilter] || 'Nothing to sell.';
+    grid.appendChild(empty); return;
+  }
+
+  // Sell All row
+  if(filtered.length > 1) {
+    const sellAllVal = filtered.reduce((a,i) => a + _sellPrice(i), 0);
+    const allRow = document.createElement('div');
+    allRow.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:5px 8px;border-radius:4px;background:rgba(10,30,10,0.6);border:1px solid #33664433;';
+    const lbl = {all:'Sell All',cargo:'All Cargo',usable:'All Usables',weapon:'All Weapons'}[_lsSellFilter];
+    allRow.innerHTML = `<span style="font-size:0.625em;color:#44ee88;">💰 ${lbl} (${filtered.length})</span>
+      <button class="btn" style="font-size:0.563em;padding:3px 10px;border-color:#33664455;color:#44ee88;">🔷 ${sellAllVal} TS</button>`;
+    allRow.querySelector('button').onclick = () => {
+      const uids = new Set(filtered.map(i => i.uid));
+      G.ship.inv = G.ship.inv.filter(i => !uids.has(i.uid));
+      G.ship.gold += sellAllVal;
+      snd('purchase', 0.7);
+      addLog(`Sold ${filtered.length} items for ${sellAllVal} TS.`, 'gd');
+      updateUI(); _lsRefreshDock();
+    };
+    grid.appendChild(allRow);
+  }
+
+  filtered.forEach(item => {
+    const sv = _sellPrice(item);
+    const isUsable = item.type === 'usable';
+    const isWpn    = item.type === 'weapon';
+    const row = document.createElement('div');
+    row.style.cssText = `display:flex;justify-content:space-between;align-items:center;padding:4px 8px;border-radius:4px;background:rgba(8,4,20,0.5);border:1px solid ${isUsable?'#44224455':isWpn?'#aa882233':'#33224433'};`;
+    const badge = isUsable ? ' <span style="font-size:8px;color:#664499;">[60%]</span>'
+                : isWpn    ? ' <span style="font-size:8px;color:#665533;">[wpn]</span>' : '';
+    row.innerHTML = `<span style="font-size:0.625em;color:${isUsable?'#aa88cc':isWpn?'#ffcc88':'#8899bb'};">${item.ico||'📦'} ${item.n}${badge}</span>
+      <button class="btn" style="font-size:0.563em;padding:3px 8px;${isUsable?'border-color:#66336655;color:#cc99ee;':''}">🔷 ${sv} TS</button>`;
+    row.querySelector('button').onclick = () => {
+      G.ship.gold += sv;
+      G.ship.inv = G.ship.inv.filter(i => i.uid !== item.uid);
+      snd('purchase', 0.6);
+      addLog(`Sold ${item.n} for ${sv} TS.`, 'gd');
+      updateUI(); _lsRefreshDock();
+    };
+    grid.appendChild(row);
+  });
+}
+
 function _lsRefreshDock() {
   const s = G.ship;
   // Trigger cargo pickup notification once per dock session for accepted cargo quests
@@ -16502,99 +16660,7 @@ function _lsRefreshDock() {
   // Build QM shop grid
   _lsBuildQmShop();
   // Build cargo sell grid
-  _lsBuildCargoGrid();
-}
-
-function _lsBuildCargoGrid() {
-  const grid = document.getElementById('ls-dock-cargo-grid');
-  if(!grid) return;
-  grid.innerHTML = '';
-
-  const sellable = G.ship.inv.filter(i =>
-    ['trade','component','artifact','weapon'].includes(i.type)
-  );
-
-  if(sellable.length === 0) {
-    const empty = document.createElement('div');
-    empty.style.cssText = 'font-size:0.625em;color:#443355;font-style:italic;text-align:center;padding:6px 0;';
-    empty.textContent = 'No trade goods in hold.';
-    grid.appendChild(empty);
-    return;
-  }
-
-  // Sell All button — trade/component/artifact only (weapons require individual sale)
-  const bulkSellable = G.ship.inv.filter(i => ['trade','component','artifact'].includes(i.type));
-  if(bulkSellable.length) {
-    const total = bulkSellable.reduce((a,i) => a + (i.val||0), 0);
-    const allRow = document.createElement('div');
-    allRow.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:5px 8px;border-radius:4px;background:rgba(10,30,10,0.6);border:1px solid #33664433;';
-    allRow.innerHTML = `<span style="font-size:0.625em;color:#44ee88;">💰 Sell All Cargo (${bulkSellable.length} items)</span>
-      <button class="btn" style="font-size:0.563em;padding:3px 10px;border-color:#33664455;color:#44ee88;">🔷 ${total} TS</button>`;
-    allRow.querySelector('button').onclick = () => {
-      G.ship.inv = G.ship.inv.filter(i => !['trade','component','artifact'].includes(i.type));
-      G.ship.gold += total;
-      snd('purchase', 0.7);
-      const _sellSphName = G.ship?.loc === 'refuge' ? 'IEF Refuge Station' : G.ship?.loc === 'grey' ? 'Ironhaven Station' : G.ship?.loc === 'cluster' ? 'Thousand Sails Freeport' : G.ship?.loc === 'krynn' ? 'Palanthas Spindle' : G.ship?.loc === 'hero' ? 'Citadel Exalted' : G.ship?.loc === 'dark' ? 'Voidhaven' : 'Fentheris Orbital'; addLog(`Sold all cargo at ${_sellSphName} for ${total} TS.`, 'gd');
-      updateUI(); _lsRefreshDock();
-    };
-    grid.appendChild(allRow);
-  }
-
-  // Individual cargo/component/artifact/weapon rows
-  sellable.forEach(item => {
-    const row = document.createElement('div');
-    row.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:4px 8px;border-radius:4px;background:rgba(8,4,20,0.5);border:1px solid #33224433;';
-    row.innerHTML = `<span style="font-size:0.625em;color:#8899bb;">${item.ico||'📦'} ${item.n}</span>
-      <button class="btn" style="font-size:0.563em;padding:3px 8px;">🔷 ${item.val||0} TS</button>`;
-    row.querySelector('button').onclick = () => {
-      G.ship.gold += item.val || 0;
-      G.ship.inv = G.ship.inv.filter(i => i.uid !== item.uid);
-      snd('purchase', 0.6);
-      addLog(`Sold ${item.n} for ${item.val} TS.`, 'gd');
-      updateUI(); _lsRefreshDock();
-    };
-    grid.appendChild(row);
-  });
-
-  // ── Sell Usables section ─────────────────────────────────────────────
-  const usables = G.ship.inv.filter(i => i.type === 'usable');
-  if(usables.length > 0) {
-    // Section header with toggle
-    const usableHeader = document.createElement('div');
-    usableHeader.style.cssText = 'display:flex;justify-content:space-between;align-items:center;margin-top:8px;padding:4px 0 2px;border-top:1px solid #33224433;cursor:pointer;';
-    usableHeader.innerHTML = `
-      <span style="font-family:'Cinzel',serif;font-size:0.563em;color:#aa77ff;letter-spacing:1px;">⚗ SELL USABLE ITEMS</span>
-      <span id="ls-usable-toggle" style="font-size:0.625em;color:#664499;">▼</span>`;
-    grid.appendChild(usableHeader);
-
-    const usableGrid = document.createElement('div');
-    usableGrid.id = 'ls-usable-grid';
-    usableGrid.style.cssText = 'display:none;flex-direction:column;gap:3px;margin-top:3px;';
-    grid.appendChild(usableGrid);
-
-    // Toggle open/closed
-    usableHeader.onclick = () => {
-      const isOpen = usableGrid.style.display !== 'none';
-      usableGrid.style.display = isOpen ? 'none' : 'flex';
-      document.getElementById('ls-usable-toggle').textContent = isOpen ? '▼' : '▲';
-    };
-
-    usables.forEach(item => {
-      const sellVal = Math.max(1, Math.floor((item.val || 10) * 0.6)); // 60% of item value
-      const row = document.createElement('div');
-      row.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:4px 8px;border-radius:4px;background:rgba(20,4,30,0.5);border:1px solid #44224455;';
-      row.innerHTML = `<span style="font-size:0.625em;color:#aa88cc;">${item.ico||'⚗'} ${item.n}</span>
-        <button class="btn" style="font-size:0.563em;padding:3px 8px;border-color:#66336655;color:#cc99ee;">🔷 ${sellVal} TS</button>`;
-      row.querySelector('button').onclick = () => {
-        G.ship.gold += sellVal;
-        G.ship.inv = G.ship.inv.filter(i => i.uid !== item.uid);
-        snd('purchase', 0.6);
-        addLog(`Sold ${item.n} for ${sellVal} TS.`, 'gd');
-        updateUI(); _lsRefreshDock();
-      };
-      usableGrid.appendChild(row);
-    });
-  }
+  _lsBuildSellGrid();
 }
 
 function _lsGetQmStock() {
