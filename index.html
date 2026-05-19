@@ -12759,6 +12759,7 @@ function endCbt(won){
     if(G._resumeTravel){
       const rt=G._resumeTravel; G._resumeTravel=null;
       if(won) addLog('Enemy destroyed. Resuming voyage.','gd');
+      G.phase='map'; // startTravel guards on phase==='map' — must set before calling
       G.ship.midLanePos=rt.pausedPos||null;
       startTravel(rt.toId, rt.watchesRemaining, rt.pausedPos, rt.pausedProg, rt.laneOrigin);
       return;
@@ -12773,6 +12774,7 @@ function endCbt(won){
   if(G._resumeTravel){
     const rt=G._resumeTravel; G._resumeTravel=null;
     if(won) addLog('Resuming voyage.','');
+    G.phase='map'; // startTravel guards on phase==='map' — must set before calling
     G.ship.midLanePos=rt.pausedPos||null;
     startTravel(rt.toId, rt.watchesRemaining, rt.pausedPos, rt.pausedProg, rt.laneOrigin);
     return;
