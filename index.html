@@ -2284,6 +2284,17 @@ body {
     <div id="mtt-pool" style="font-size:10px;color:#664466;margin-top:4px;"></div>
   </div>
 
+  <!-- IDLE AUTO-DOCK OVERLAY — shown during bounce resupply instead of local space -->
+  <div class="ovlay" id="ov-idle-dock" style="z-index:200;display:none;align-items:center;justify-content:center;">
+    <div id="idle-dock-card" style="background:rgba(4,0,14,0.97);border:1px solid #5522aa88;border-radius:8px;padding:28px 32px;max-width:340px;width:92%;text-align:center;display:flex;flex-direction:column;gap:12px;box-shadow:0 0 60px #22006644;">
+      <div style="font-family:'Cinzel',serif;font-size:13px;color:#aa88ff;letter-spacing:2px;">⚙ IDLE — AUTO-DOCKING</div>
+      <div id="idle-dock-sphere" style="font-family:'Cinzel',serif;font-size:11px;color:#ccaaff;letter-spacing:1px;"></div>
+      <div id="idle-dock-status" style="font-size:11px;color:#8877aa;font-style:italic;min-height:16px;"></div>
+      <div id="idle-dock-log" style="font-size:10px;color:#665588;line-height:1.7;min-height:40px;text-align:left;background:rgba(0,0,0,0.3);border-radius:4px;padding:6px 10px;"></div>
+      <div style="font-size:9px;color:#443366;font-style:italic;">Press the Idle button to take manual control at any time.</div>
+    </div>
+  </div>
+
   <!-- WAYPOINT PORT (supplies only) -->
   <div class="ovlay" id="ov-waypoint">
     <div class="ovl-title-row">
@@ -7146,16 +7157,16 @@ function arrive(id){
     addLog('Breach lanes navigable. Return to the Trull Defector Commander at Voidhaven to report.', 'gd');
   }
   if(_LS_SPHERES.has(id)) {
+    // Idle bounce — intercept BEFORE opening local space; show auto-dock overlay
+    if(G._idleMode && G._idleBounce) {
+      _writeAutoSave();
+      _idleAutoDockOverlay(id);
+      return;
+    }
     addLog(`Arrived at ${sph.n}. Entering local space…`, '');
     const hasTurnin = G.quests.some(q=>q.turnin===id&&q.state==='active'&&G.ship.inv.some(i=>i.id===q.cargo.id));
     if(hasTurnin) {
-      // In idle bounce, skip popup and just set callback to open LS
-      if(G._idleMode && G._idleBounce) {
-        G._afterTurninCb = null;
-        setTimeout(()=>openLocalSpace(), 400);
-      } else {
-        G._afterTurninCb = () => { setTimeout(()=>openLocalSpace(), 300); };
-      }
+      G._afterTurninCb = () => { setTimeout(()=>openLocalSpace(), 300); };
     } else {
       setTimeout(() => openLocalSpace(), 400);
     }
@@ -16219,11 +16230,6 @@ function openLocalSpace() {
   LS.lastTs = 0;
   LS.animId = requestAnimationFrame(_lsLoop);
 
-  // Idle bounce — auto-navigate to dock, resupply, and depart
-  if(G._idleMode && G._idleBounce) {
-    setTimeout(() => _idleStartLsAutoRun(), 900);
-  }
-
   // Hide sidebar Local Quest button for realm (LS replaces it)
   const sLqBtn = document.getElementById('sidebar-lq-btn');
   if(sLqBtn) sLqBtn.style.display = 'none';
@@ -16236,8 +16242,6 @@ function closeLsOverlay() {
   document.getElementById('ls-npc-dialog')?.classList.remove('on');
   if(LS.animId) { cancelAnimationFrame(LS.animId); LS.animId = null; }
   LS.keys = {};
-  if(_idleLsNavTimer) { clearInterval(_idleLsNavTimer); _idleLsNavTimer = null; }
-  _idleLsStatusMsg(''); // clear status
   if(LS._humActive) { stopTravelHum(); LS._humActive = false; }
   setTag('Navigation'); updateUI();
   _syncWatchHudVisibility();
@@ -20075,8 +20079,7 @@ function toggleIdleMode() {
     _idleStopCombatLoop();
     if(_idleLsPollTimer)   { clearInterval(_idleLsPollTimer);  _idleLsPollTimer  = null; }
     if(_idleLsSafetyTimer) { clearTimeout(_idleLsSafetyTimer); _idleLsSafetyTimer = null; }
-    if(_idleLsNavTimer)    { clearInterval(_idleLsNavTimer);   _idleLsNavTimer   = null; }
-    LS._idleAutoDock = null;
+    _idleCloseDockOverlay();
     G._idleBounce = false;
     _idleReleaseWakeLock();
     addLog('⚙ Idle mode disabled.', '');
@@ -20274,205 +20277,110 @@ function _idleBounceDepart() {
   startTravel(dest);
 }
 
-// ── LS auto-run: navigate to dock, resupply, exit, depart ─────────────────
-let _idleLsSafetyTimer = null;
-let _idleLsPollTimer   = null;  // kept for cleanup compat
-let _idleLsNavTimer    = null;  // the actual nav driver
-
-function _idleStartLsAutoRun() {
+// ── Idle Auto-Dock Overlay (Option A) ────────────────────────────────────
+let _idleLsPollTimer   = null; // kept for cleanup compat
+let _idleLsSafetyTimer = null; // kept for cleanup compat
+// Called from arrive() when idle bounce is active — for ALL sphere types.
+// Never opens local space. Shows a brief overlay, resupplies, departs.
+function _idleAutoDockOverlay(sphereId) {
   if(!G._idleMode || !G._idleBounce) return;
 
-  // Clear any stale nav timer
-  if(_idleLsNavTimer) { clearInterval(_idleLsNavTimer); _idleLsNavTimer = null; }
-  if(_idleLsSafetyTimer) { clearTimeout(_idleLsSafetyTimer); _idleLsSafetyTimer = null; }
+  const sph     = G.spheres.find(s => s.id === sphereId);
+  const sphName = sph?.n || sphereId;
 
-  const dock = LS.pois?.find(p => p.id === 'dock');
-  if(!dock) {
-    addLog('⚙ Idle: no dock found — departing without resupply.', 'dmg');
-    _idleFlipAndDepart();
-    return;
+  // Dock name lookup (same as the LS dock labels)
+  const dockNames = {
+    realm:'Fentheris Orbital Station', refuge:'IEF Refuge Station',
+    grey:'Ironhaven Station', cluster:'Thousand Sails Freeport',
+    krynn:'Palanthas Spindle', hero:'Citadel Exalted', dark:'Voidhaven'
+  };
+  const dockName = dockNames[sphereId] || sphName;
+
+  // Show overlay
+  const ov = document.getElementById('ov-idle-dock');
+  if(ov) {
+    ov.style.display = 'flex';
+    document.getElementById('idle-dock-sphere').textContent = `⚓ ${dockName.toUpperCase()}`;
+    document.getElementById('idle-dock-status').textContent = 'Docking…';
+    document.getElementById('idle-dock-log').innerHTML = '';
   }
 
-  _idleLsStatusMsg('Idle: navigating to dock…');
-  addLog('⚙ Idle: navigating to dock…', '');
+  function _dockLog(msg, col) {
+    const el = document.getElementById('idle-dock-log');
+    if(!el) return;
+    el.innerHTML += `<div style="color:${col||'#8877aa'};">${msg}</div>`;
+  }
 
-  let arrived = false;
+  // Short docking delay — feels like the ship is pulling in
+  setTimeout(() => {
+    if(!G._idleMode || !G._idleBounce) { _idleCloseDockOverlay(); return; }
 
-  // Drive ship directly every 50ms — bypasses all input/autopilot systems
-  _idleLsNavTimer = setInterval(() => {
-    if(!G._idleMode || !G._idleBounce) {
-      clearInterval(_idleLsNavTimer); _idleLsNavTimer = null; return;
+    document.getElementById('idle-dock-status').textContent = 'Resupplying…';
+
+    const s = G.ship;
+    let totalCost = 0;
+    const repairs = [];
+
+    if(s.hull < s.maxHull) {
+      const cost = Math.floor((s.maxHull - s.hull) * 0.5);
+      repairs.push({ label:`Hull repair (+${s.maxHull - s.hull} HP)`, cost, apply:()=>{ s.hull = s.maxHull; } });
     }
-    if(!document.getElementById('ov-localspace')?.classList.contains('on')) {
-      clearInterval(_idleLsNavTimer); _idleLsNavTimer = null; return;
+    const maxAir = s.maxAir || 12;
+    if(s.air < maxAir) {
+      const cost = Math.floor((maxAir - s.air) * 0.6);
+      repairs.push({ label:`Air refill (+${maxAir - s.air} days)`, cost, apply:()=>{ s.air = maxAir; } });
     }
-    if(arrived) return;
+    if(s.crew < s.maxCrew) {
+      const cost = (s.maxCrew - s.crew) * 3;
+      repairs.push({ label:`Crew hire (+${s.maxCrew - s.crew})`, cost, apply:()=>{ s.crew = s.maxCrew; } });
+    }
+    totalCost = repairs.reduce((a,r) => a + r.cost, 0);
 
-    const dx = dock.x - LS.px;
-    const dy = dock.y - LS.py;
-    const dist = Math.sqrt(dx*dx + dy*dy);
-
-    if(dist <= dock.r + 15) {
-      // Arrived at dock
-      arrived = true;
-      clearInterval(_idleLsNavTimer); _idleLsNavTimer = null;
-      clearTimeout(_idleLsSafetyTimer); _idleLsSafetyTimer = null;
-      LS.pvx = 0; LS.pvy = 0;
-      LS.pTargetX = null; LS.pTargetY = null;
-      _idleLsStatusMsg('Idle: docked — resupplying…');
-      addLog('⚙ Idle: arrived at dock.', '');
-      setTimeout(() => _idleAutoResupplyAndDepart(), 400);
+    if(totalCost > s.gold) {
+      _dockLog(`⚠ Need ${totalCost} TS — only have ${s.gold} TS.`, '#ff6644');
+      _dockLog('Idle mode disabled.', '#ff6644');
+      document.getElementById('idle-dock-status').textContent = 'Insufficient funds.';
+      addLog(`⚙ Idle: need ${totalCost} TS to resupply but only have ${s.gold} TS — disabling idle.`, 'dmg');
+      setTimeout(() => { _idleCloseDockOverlay(); toggleIdleMode(); }, 2500);
       return;
     }
 
-    // Move ship directly — step toward dock at 180 px/s
-    const SPEED = 180; // px per second
-    const step  = SPEED * 0.05; // 50ms tick
-    const nx = LS.px + (dx/dist) * Math.min(step, dist);
-    const ny = LS.py + (dy/dist) * Math.min(step, dist);
-
-    // Wall clamp — stay within LS boundary
-    const _maxR = Math.min(LS.W, LS.H) * 0.498 - 55;
-    const _cx = LS.W/2, _cy = LS.H/2;
-    const _ddx = nx - _cx, _ddy = ny - _cy;
-    const _ddist = Math.sqrt(_ddx*_ddx + _ddy*_ddy);
-    if(_ddist <= _maxR) {
-      LS.px = nx; LS.py = ny;
+    if(repairs.length > 0) {
+      repairs.forEach(r => {
+        s.gold -= r.cost;
+        r.apply();
+        _dockLog(`✓ ${r.label} — ${r.cost} TS`, '#44ee88');
+      });
+      snd('repair_hull', 0.5);
+      setTimeout(() => snd('purchase', 0.5), 300);
+      addLog(`⚙ Idle: resupplied at ${dockName} (−${totalCost} TS).`, 'gd');
+    } else {
+      _dockLog('Ship at full readiness.', '#44ee88');
+      addLog(`⚙ Idle: arrived at ${dockName} — no resupply needed.`, '');
     }
-    LS.pAngle = Math.atan2(dy, dx);
-    // Keep velocity consistent with movement so engine hum fires
-    LS.pvx = (dx/dist) * SPEED;
-    LS.pvy = (dy/dist) * SPEED;
 
-    // Suppress dock panel from auto-opening
-    LS.dockOpen = false;
-    LS.interactOpen = false;
+    updateUI();
+    document.getElementById('idle-dock-status').textContent = 'Departing…';
 
-  }, 50); // 20 ticks/second — smooth enough, light on CPU
+    // Brief pause to show the log, then depart
+    setTimeout(() => {
+      if(!G._idleMode || !G._idleBounce) { _idleCloseDockOverlay(); return; }
+      _idleCloseDockOverlay();
+      _idleFlipAndDepart();
+    }, 1800);
 
-  // Safety: 60s hard timeout
-  _idleLsSafetyTimer = setTimeout(() => {
-    if(_idleLsNavTimer) { clearInterval(_idleLsNavTimer); _idleLsNavTimer = null; }
-    if(!arrived && G._idleMode && G._idleBounce) {
-      addLog('⚙ Idle: dock nav timed out — resupplying in place.', 'dmg');
-      _idleAutoResupplyAndDepart();
-    }
-  }, 60000);
+  }, 1200); // 1.2s "docking" feel
 }
 
-// Small on-screen status display for idle mode
-function _idleLsStatusMsg(msg) {
-  let el = document.getElementById('idle-ls-status');
-  if(!el) {
-    el = document.createElement('div');
-    el.id = 'idle-ls-status';
-    el.style.cssText = 'position:absolute;bottom:54px;left:50%;transform:translateX(-50%);' +
-      'background:rgba(0,10,30,0.88);border:1px solid #5522aa66;border-radius:4px;' +
-      'font-family:Cinzel,serif;font-size:9px;color:#aabbff;padding:4px 14px;' +
-      'pointer-events:none;z-index:200;letter-spacing:1px;white-space:nowrap;';
-    document.getElementById('ov-localspace')?.appendChild(el);
-  }
-  el.textContent = msg;
-  el.style.display = msg ? 'block' : 'none';
+function _idleCloseDockOverlay() {
+  const ov = document.getElementById('ov-idle-dock');
+  if(ov) ov.style.display = 'none';
 }
 
-function _idleAutoResupplyAndDepart() {
-  if(!G._idleMode || !G._idleBounce) return;
-  const s = G.ship;
-  let totalCost = 0;
-  const repairs = [];
-
-  // Calculate what's needed at standard dock rates
-  if(s.hull < s.maxHull) {
-    const cost = Math.floor((s.maxHull - s.hull) * 0.5);
-    repairs.push({ label:'hull', cost, apply:()=>{ s.hull = s.maxHull; } });
-  }
-  const maxAir = s.maxAir || 12;
-  if(s.air < maxAir) {
-    const cost = Math.floor((maxAir - s.air) * 0.6);
-    repairs.push({ label:'air', cost, apply:()=>{ s.air = maxAir; } });
-  }
-  if(s.crew < s.maxCrew) {
-    const cost = (s.maxCrew - s.crew) * 3;
-    repairs.push({ label:'crew', cost, apply:()=>{ s.crew = s.maxCrew; } });
-  }
-
-  totalCost = repairs.reduce((sum, r) => sum + r.cost, 0);
-
-  if(totalCost > s.gold) {
-    addLog(`⚙ Idle: need ${totalCost} TS for resupply but only have ${s.gold} TS — disabling idle.`, 'dmg');
-    toggleIdleMode();
-    return;
-  }
-
-  if(repairs.length > 0) {
-    repairs.forEach(r => { s.gold -= r.cost; r.apply(); });
-    snd('repair_hull', 0.6);
-    snd('purchase', 0.5);
-    addLog(`⚙ Idle: docked & resupplied — hull, air, crew restored (−${totalCost} TS).`, 'gd');
-  } else {
-    addLog('⚙ Idle: ship at full readiness — no resupply needed.', '');
-  }
-  updateUI();
-
-  // Brief docked pause, then exit LS and depart
-  _idleLsStatusMsg('Idle: resupplied — departing…');
-  setTimeout(() => _idleExitLsAndDepart(), 800);
-}
-
-function _idleExitLsAndDepart() {
-  if(!G._idleMode || !G._idleBounce) return;
-  if(document.getElementById('ov-localspace')?.classList.contains('on')) {
-    closeLsOverlay();
-  }
-  setTimeout(() => _idleFlipAndDepart(), 600);
-}
-
-function _idleFlipAndDepart() {
-  if(!G._idleMode || !G._idleBounce) return;
-  // Flip destinations for the return leg
-  const prev       = G._idleBounceTo;
-  G._idleBounceTo  = G._idleBounceAlt;
-  G._idleBounceAlt = prev;
-  setTimeout(() => {
-    if(G._idleMode && G._idleBounce) _idleBounceDepart();
-  }, 400);
-}
-
-// Called from arrive() for non-LS spheres only
-// (LS spheres use openLocalSpace → _idleStartLsAutoRun → _idleAutoResupplyAndDepart)
+// Called from arrive() for non-LS spheres (same logic, no overlay needed)
 function _idleOnArrive(sphereId) {
   if(!G._idleMode || !G._idleBounce) return;
-  const s = G.ship;
-  let totalCost = 0;
-  const repairs = [];
-
-  if(s.hull < s.maxHull) {
-    const cost = Math.floor((s.maxHull - s.hull) * 0.5);
-    repairs.push({ label:'hull', cost, apply:()=>{ s.hull = s.maxHull; } });
-  }
-  const maxAir = s.maxAir || 12;
-  if(s.air < maxAir) {
-    const cost = Math.floor((maxAir - s.air) * 0.6);
-    repairs.push({ label:'air', cost, apply:()=>{ s.air = maxAir; } });
-  }
-  if(s.crew < s.maxCrew) {
-    const cost = (s.maxCrew - s.crew) * 3;
-    repairs.push({ label:'crew', cost, apply:()=>{ s.crew = s.maxCrew; } });
-  }
-  totalCost = repairs.reduce((sum, r) => sum + r.cost, 0);
-
-  if(totalCost > s.gold) {
-    addLog(`⚙ Idle: need ${totalCost} TS but only have ${s.gold} TS — disabling idle.`, 'dmg');
-    toggleIdleMode(); return;
-  }
-  if(repairs.length > 0) {
-    repairs.forEach(r => { s.gold -= r.cost; r.apply(); });
-    snd('purchase', 0.5);
-    addLog(`⚙ Idle: resupplied at port (−${totalCost} TS).`, 'gd');
-  }
-  updateUI();
-  _idleFlipAndDepart();
+  _idleAutoDockOverlay(sphereId); // reuse same flow for consistency
 }
 
 // ── Background operation — Wake Lock + Page Visibility ────────────────────
