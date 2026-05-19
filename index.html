@@ -1355,6 +1355,20 @@ body {
 #ts-speed-btn:hover { border-color: #7755aa; color: #9977cc; }
 #ts-speed-btn.fast { border-color: #44ff88; color: #44ff88;
   background: rgba(0,20,8,0.9); }
+#idle-toggle-btn {
+  background: rgba(20,8,50,0.85); border: 1px solid #5522aa88;
+  color: #9977cc; font-family: 'Cinzel', serif; font-size: 10px;
+  padding: 5px 13px; cursor: pointer; border-radius: 4px;
+  transition: border-color 0.2s, color 0.2s;
+}
+#idle-toggle-btn:hover { border-color: #9955ee; color: #cc99ff; }
+#idle-toggle-btn.active { border-color: #44ff88; color: #44ff88;
+  background: rgba(0,20,8,0.9);
+  text-shadow: 0 0 8px #44ff8855; animation: idle-pulse 2s ease-in-out infinite; }
+@keyframes idle-pulse {
+  0%,100% { box-shadow: 0 0 4px #44ff8822; }
+  50%      { box-shadow: 0 0 14px #44ff8866; }
+}
 
 /* Event alert banner — appears when enemy/waypoint approaches */
 #ts-alert {
@@ -1922,6 +1936,9 @@ body {
   <!-- COMBAT -->
   <div class="ovlay" id="ov-combat">
     <div class="ctitle" id="ct-title">⚔ COMBAT ⚔</div>
+    <div id="idle-combat-bar" style="display:none;background:rgba(40,20,80,0.85);border:1px solid #5522aa55;border-radius:4px;padding:4px 14px;font-family:'Cinzel',serif;font-size:9px;color:#aa88ff;letter-spacing:1px;text-align:center;margin-bottom:4px;">
+      ⚙ IDLE MODE ACTIVE — <button onclick="toggleIdleMode()" style="background:none;border:1px solid #7744cc;border-radius:3px;color:#cc88ff;font-size:8px;padding:1px 8px;cursor:pointer;font-family:'Cinzel',serif;">DISABLE</button>
+    </div>
 
     <!-- Two-column battle arena — on mobile becomes true left/right split -->
     <div class="cbt-arena">
@@ -2208,6 +2225,23 @@ body {
     <div id="ts-controls">
       <button id="ts-speed-btn" onclick="tsToggleSpeed()">▶▶ Fast</button>
       <button id="ts-skip-btn" onclick="tsSkip()">⏭ Skip to Next</button>
+      <button id="idle-toggle-btn" onclick="toggleIdleMode()" title="Idle Mode: AI handles combat, waystations, and anchoring automatically">⚙ Idle: OFF</button>
+    </div>
+
+    <!-- Bounce config panel — shown when idle is active at map phase -->
+    <div id="idle-bounce-panel" style="display:none;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(6,2,18,0.97);border:1px solid #5522aa88;border-radius:8px;padding:20px 24px;z-index:300;min-width:260px;text-align:center;font-family:'Cinzel',serif;gap:10px;display:none;flex-direction:column;align-items:center;">
+      <div style="color:#aa88ff;font-size:13px;letter-spacing:2px;margin-bottom:6px;">⚙ IDLE BOUNCE</div>
+      <div style="color:#665599;font-size:10px;margin-bottom:8px;">Ship will travel perpetually between two spheres,<br>auto-fighting and resupplying on arrival.</div>
+      <div style="display:flex;gap:8px;align-items:center;justify-content:center;width:100%;">
+        <span style="color:#8866cc;font-size:10px;">FROM</span>
+        <span id="idle-bounce-from" style="color:#ccaaff;font-size:11px;background:rgba(40,20,80,0.6);padding:3px 10px;border-radius:3px;border:1px solid #44228844;">—</span>
+        <span style="color:#8866cc;font-size:10px;">→ TO</span>
+        <select id="idle-bounce-to-sel" style="background:rgba(10,4,28,0.95);border:1px solid #5522aa66;color:#ccaaff;font-family:'Cinzel',serif;font-size:10px;padding:3px 8px;border-radius:3px;"></select>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:6px;width:100%;justify-content:center;">
+        <button class="btn" id="idle-bounce-start-btn" onclick="startBounceTravel()" style="font-size:10px;padding:6px 14px;">⚡ Start Bouncing</button>
+        <button class="btn" onclick="document.getElementById('idle-bounce-panel').style.display='none'" style="font-size:10px;padding:6px 14px;border-color:#332255;color:#665599;">✕ Close</button>
+      </div>
     </div>
 
     <div id="ts-alert"></div>
@@ -2986,22 +3020,6 @@ const ENM = {
       { n:'Scout Crossbows',  ico:'🏹', d:[2,6], cd:0, threat:2, txt:'Disciplined patrol fire — every round.' },
       { n:'Boarding Grapple', ico:'⛓️', d:[1,6], cd:2, threat:3, txt:'Grapple-and-board — damage + 1 crew lost.', crew:1 }
     ]},
-
-  // ── GREY (Dwarven Vault) dungeon minions ──────────────────────────────
-  fd_grey_golem: { name:'Vault-Stone Golem', sub:'Dwarven Vault — Automated Guardian', hp:58, maxHp:58, crew:0, maxCrew:0, g:[18,30],
-    atk:[{n:'Granite Slam',d:[2,6],txt:'The golem drives a fist of solid forge-stone into your hull!'},{n:'Rune Pulse',d:[1,6],txt:'Dwarven runic energy discharges from the golem\'s core!'}],
-    sp:{n:'Stone Shell',c:0.22,txt:'The golem hardens its outer shell — taking 50% less damage next hit!',fx:'dodge'},col:'#8899aa',diff:2,
-    wpns:[
-      { n:'Granite Slam',    ico:'🪨', d:[2,6], cd:0, threat:2, txt:'Relentless forge-stone impact — hits every round.' },
-      { n:'Rune Discharge',  ico:'⚡', d:[2,5], cd:2, threat:3, txt:'Dwarven rune energy pulse — bypasses light plating.' }
-    ]},
-  fd_grey_rune: { name:'Rune Sentinel', sub:'Dwarven Vault — Rune Ward', hp:44, maxHp:44, crew:0, maxCrew:0, g:[14,26],
-    atk:[{n:'Rune Lance',d:[1,8],txt:'A focused rune-lance cuts across your hull like a blade!'},{n:'Ward Pulse',d:[1,6],txt:'The sentinel broadcasts a ward pulse — your weapons stutter!'}],
-    sp:{n:'Recall Rune',c:0.28,txt:'The sentinel activates a recall rune — teleporting to an advantageous flanking position!',fx:'dodge'},col:'#aabb88',diff:1,
-    wpns:[
-      { n:'Rune Lance',      ico:'🔷', d:[1,8], cd:1, threat:2, txt:'Focused runic beam — precise and fast.' },
-      { n:'Ward Disruption', ico:'🌀', d:[1,6], cd:2, threat:3, txt:'Disrupts your weapons — one weapon disabled for 1 round.', sabotage:true }
-    ]},
 };
 
 // the Unnamed — the true final boss, revealed mid-Trull Overmind fight
@@ -3133,8 +3151,6 @@ const LOOT = {
   // ── Fragment Dungeon Minion loot ─────────────────────────────────────────
   fd_realm_drone:  [{id:'moteash',c:0.70},{id:'repkit',c:0.55},{id:'starcoin',c:0.40},{id:'gobsack',c:0.35}],
   fd_realm_scout:  [{id:'plunder',c:0.75},{id:'silksw',c:0.60},{id:'crewmead',c:0.45},{id:'starcoin',c:0.50},{id:'corskit',c:0.35}],
-  fd_grey_golem:   [{id:'arccore',c:0.65},{id:'repkit',c:0.55},{id:'starcoin',c:0.50},{id:'runeshard',c:0.45}],
-  fd_grey_rune:    [{id:'runeshard',c:0.70},{id:'starcoin',c:0.55},{id:'arccore',c:0.40},{id:'repkit',c:0.35}],
   // ── Void Rift enemy loot ─────────────────────────────────────────────
   vodoniPatrol:[{id:'vodeml',c:0.55},{id:'starcoin',c:0.75},{id:'arccore',c:0.30},{id:'repkit',c:0.45},{id:'crewmead',c:0.25},{id:'vodncore',c:0.08}],
   scroBattle:  [{id:'trulltrophy',c:0.70},{id:'plunder',c:0.65},{id:'crewmead',c:0.40},{id:'starcoin',c:0.55},{id:'arccore',c:0.22}],
@@ -4175,7 +4191,10 @@ function watchExpiredMidJourney() {
   G.phase = 'map';
   tickLeg();
   stopTravelHum();
-  tsClose(); // pause travel sequence — reopens when travel resumes
+  tsClose();
+
+  // Idle mode — always auto-anchor
+  if(G._idleMode) { _idleAutoAnchor(); }
 
   // Auto-rest: silently anchor without showing the popup
   if (G._autoRest) {
@@ -4774,14 +4793,6 @@ const SHIP_IMAGE_DATA = {
   'wb_clutch':   'images/ship_wb_clutch.png?v=2',
   'wb_murmur':   'images/ship_wb_murmur.png?v=2',
   'npc_ship':    'images/ship_npc.png?v=2',
-  // Fragment dungeon — Realm (Flotsam Field)
-  'fd_realm_drone': 'images/ship_fd_realm_drone.png?v=2',
-  'fd_realm_scout': 'images/ship_fd_realm_scout.png?v=2',
-  'fg_realm':       'images/ship_fg_realm.png?v=2',
-  // Fragment dungeon — Grey (Dwarven Vault)
-  'fd_grey_golem':  'images/ship_fd_grey_golem.png?v=2',
-  'fd_grey_rune':   'images/ship_fd_grey_rune.png?v=2',
-  'fg_grey':        'images/ship_fg_grey.png?v=2',
 };
 const _SHIP_IMG = {};
 const _SHIP_IMG_FAILED = new Set();
@@ -4797,10 +4808,7 @@ function loadShipImages() {
       if(G.cbt && G.phase === 'combat') {
         const enemyKey = G.cbt.enemy?._key;
         // Map guardian keys to the image key they use in drawCbtShips
-        const guardianImgKey = {
-          fg_realm:'fg_realm', fg_grey:'fg_grey', fg_cluster:'harvester',
-          fg_krynn:'githyanki', fg_hero:'beholder', fg_dark:'leviathan'
-        };
+        const guardianImgKey = {fg_krynn:'githyanki', fg_hero:'beholder', fg_dark:'leviathan'};
         const resolvedEnemyImgKey = guardianImgKey[enemyKey] || enemyKey;
         if(key === resolvedEnemyImgKey || key === G.ship?.type) {
           drawCbtShips(enemyKey);
@@ -4816,10 +4824,7 @@ function loadShipImages() {
           if(key === 'pinnace') drawMenuShip();
           if(G.cbt && G.phase === 'combat') {
             const ek = G.cbt.enemy?._key;
-            const gik = {
-              fg_realm:'fg_realm', fg_grey:'fg_grey', fg_cluster:'harvester',
-              fg_krynn:'githyanki', fg_hero:'beholder', fg_dark:'leviathan'
-            };
+            const gik = {fg_krynn:'githyanki', fg_hero:'beholder', fg_dark:'leviathan'};
             if(key === (gik[ek] || ek) || key === G.ship?.type) drawCbtShips(ek);
           }
         };
@@ -7122,6 +7127,8 @@ function arrive(id){
     addLog('Breach lanes navigable. Return to the Trull Defector Commander at Voidhaven to report.', 'gd');
   }
   if(_LS_SPHERES.has(id)) {
+    // Idle bounce — skip local space, just resupply and re-depart
+    if(G._idleMode && G._idleBounce) { _writeAutoSave(); _idleOnArrive(id); return; }
     addLog(`Arrived at ${sph.n}. Entering local space…`, '');
     // If a cargo quest turn-in is pending let the msgbox show first, then open LS
     const hasTurnin = G.quests.some(q=>q.turnin===id&&q.state==='active'&&G.ship.inv.some(i=>i.id===q.cargo.id));
@@ -7134,6 +7141,8 @@ function arrive(id){
     return;
   }
   addLog(`Click the sphere again to dock at ${sph.n}.`,'');
+  // Idle bounce on a non-LS sphere
+  if(G._idleMode && G._idleBounce) { _writeAutoSave(); _idleOnArrive(id); return; }
   _writeAutoSave();
 }
 
@@ -9766,6 +9775,8 @@ function arriveAtWaypoint(wp){
 }
 
 function showWaystationOffer(ws){
+  // Idle mode — auto-pass, no stop
+  if(G._idleMode) { _idleAutoWaystation(ws); return; }
   const s = G.ship;
   const needsAnything = s.hull < s.maxHull || s.crew < s.maxCrew || s.air < (s.maxAir||12);
   showMsg(
@@ -9955,61 +9966,24 @@ function showGuardianConfirm(site){
   document.getElementById('grd-stats').textContent =
     `${gd.name}  ·  ${gd.hp} Hull Points  ·  ${gd.g[0]}–${gd.g[1]} TS`;
   document.getElementById('grd-lore').textContent  = site.lore;
-
-  // Draw guardian ship on canvas — use PNG if loaded, fall back to procedural
-  const grdCv = document.getElementById('grd-canvas');
-  const gc = grdCv.getContext('2d');
-
-  function _drawGuardianPreview() {
-    gc.clearRect(0,0,200,120);
-    gc.fillStyle='rgba(5,0,15,0.85)'; gc.fillRect(0,0,200,120);
-    // Starfield backdrop
-    for(let i=0;i<40;i++){
-      gc.fillStyle=`rgba(255,255,255,${0.08+Math.random()*0.22})`;
-      gc.beginPath(); gc.arc(Math.random()*200,Math.random()*120,Math.random()*1.3+0.3,0,Math.PI*2); gc.fill();
-    }
-    // Glow halo behind ship
-    const haloCol = gd.col || '#cc8833';
-    const halo = gc.createRadialGradient(100,60,0,100,60,60);
-    halo.addColorStop(0, haloCol+'33');
-    halo.addColorStop(1, 'transparent');
-    gc.fillStyle=halo; gc.fillRect(0,0,200,120);
-    // Ship image — PNG preferred, procedural fallback
-    const imgMap = {
-      fg_realm:'fg_realm', fg_grey:'fg_grey', fg_cluster:'harvester',
-      fg_krynn:'githyanki', fg_hero:'beholder', fg_dark:'leviathan'
-    };
-    const imgKey = imgMap[site.guardianKey] || site.guardianKey;
-    drawShipImg(imgKey, gc, 100, 60, 140, 88, false, () => {
-      if(site.guardianKey==='fg_realm')       drawSquid(gc,100,60,38,true);
-      else if(site.guardianKey==='fg_grey')    drawHammer(gc,100,60,38,true);
-      else if(site.guardianKey==='fg_krynn')   drawGithyanki(gc,100,60,38);
-      else if(site.guardianKey==='fg_cluster') drawSquid(gc,100,60,38,true);
-      else if(site.guardianKey==='fg_hero')    drawBeholder(gc,100,60,38);
-      else if(site.guardianKey==='fg_dark')    drawLeviathan(gc,100,60,38);
-    });
+  // Draw guardian ship on canvas
+  const gc = document.getElementById('grd-canvas').getContext('2d');
+  gc.clearRect(0,0,200,120);
+  gc.fillStyle='rgba(5,0,15,0.7)'; gc.fillRect(0,0,200,120);
+  // Starfield
+  for(let i=0;i<35;i++){
+    gc.fillStyle=`rgba(255,255,255,${0.1+Math.random()*0.25})`;
+    gc.beginPath(); gc.arc(Math.random()*200,Math.random()*120,Math.random()*1.2+0.3,0,Math.PI*2); gc.fill();
   }
-
-  _drawGuardianPreview();
-
-  // Poll until the PNG loads then redraw (handles slow connections)
-  const imgMap2 = {fg_realm:'fg_realm',fg_grey:'fg_grey',fg_cluster:'harvester',
-                   fg_krynn:'githyanki',fg_hero:'beholder',fg_dark:'leviathan'};
-  const waitKey = imgMap2[site.guardianKey] || site.guardianKey;
-  if(!_SHIP_IMG[waitKey]) {
-    let attempts2 = 0;
-    const poll2 = setInterval(() => {
-      attempts2++;
-      if(_SHIP_IMG[waitKey] || attempts2 > 25) { clearInterval(poll2); }
-      if(_SHIP_IMG[waitKey] && document.getElementById('ov-guardian').classList.contains('on')) {
-        _drawGuardianPreview();
-        clearInterval(poll2);
-      }
-    }, 400);
-  }
-
+  const key = site.guardianKey;
+  if(key==='fg_realm')       drawSquid(gc,100,60,38,true);
+  else if(key==='fg_grey')    drawHammer(gc,100,60,38,true);
+  else if(key==='fg_krynn')   drawGithyanki(gc,100,60,38);
+  else if(key==='fg_cluster') drawSquid(gc,100,60,38,true);
+  else if(key==='fg_hero')    drawBeholder(gc,100,60,38);
+  else if(key==='fg_dark')    drawLeviathan(gc,100,60,38);
   document.getElementById('ov-guardian').classList.add('on');
-  setAmbient('combat');
+  setAmbient('combat'); // ominous
 }
 
 function confirmGuardianFight(){
@@ -10069,6 +10043,8 @@ function startCombat(key){
   setTimeout(()=>setAmbient('combat'), 600);
   cLog(`A ${t.name} drops out of the void! Battle stations!`,'dmg');
   cLog(`Choose your action.`,'');
+  // Idle mode — start AI combat loop after brief render delay
+  if(G._idleMode) { _idleUpdateUI(); setTimeout(()=>_idleStartCombatLoop(), 1500); }
 
   // ── Image-wait: if the enemy or player PNG isn't loaded yet, poll until
   // it arrives (or 10s passes) then redraw. Handles slow connections where
@@ -10076,10 +10052,7 @@ function startCombat(key){
   (function _waitForCbtImg() {
     const imgKey = key;
     const shipKey = G.ship?.type;
-    const guardianMap = {
-      fg_realm:'fg_realm', fg_grey:'fg_grey', fg_cluster:'harvester',
-      fg_krynn:'githyanki', fg_hero:'beholder', fg_dark:'leviathan'
-    };
+    const guardianMap = {fg_krynn:'githyanki', fg_hero:'beholder', fg_dark:'leviathan'};
     const resolvedEnemyImg = guardianMap[imgKey] || imgKey;
     if (_SHIP_IMG[resolvedEnemyImg] && _SHIP_IMG[shipKey]) return; // both already loaded
     let attempts = 0;
@@ -12393,6 +12366,7 @@ function checkEnemyDead(sigCdOverride){
 }
 
 function cbtWin(){
+  _idleStopCombatLoop();
   const e=G.cbt.enemy; const g=e.g[0]+Math.floor(Math.random()*(e.g[1]-e.g[0]+1));
   const items=genLoot(G.cbt.pendingLootKey);
   const lootKey=G.cbt.pendingLootKey;
@@ -12461,6 +12435,7 @@ function cbtWin(){
 }
 
 function endCbt(won){
+  _idleStopCombatLoop();
   document.getElementById('ov-combat').classList.remove('on');
   document.getElementById('ov-cbt-inv')?.classList.remove('on');
   const invPanel = document.getElementById('cbt-inv-panel');
@@ -12595,6 +12570,8 @@ function showLootOverlay(key, gold, items){
   }
   document.getElementById('ov-loot').classList.add('on');
   setTimeout(()=>snd('loot_open', 0.8), 200);
+  // Idle mode — auto-claim after a brief moment so the player can see the reward
+  if(G._idleMode) { setTimeout(() => { if(G._idleMode) claimLoot(); }, 2800); }
 }
 
 function claimLoot(){
@@ -13179,6 +13156,7 @@ function _anyOverlayOpen() {
 }
 
 function updateUI(){
+  if(typeof _idleSyncUI === 'function') _idleSyncUI();
   const s=G.ship;
   $id('s-hull',Math.max(0,s.hull)); $id('s-mhull',s.maxHull);
   $id('s-crew',s.crew); $id('s-mcrew',s.maxCrew); $id('s-air',s.air);
@@ -13626,6 +13604,18 @@ let _roamMissionOffered = false; // prevents re-offering missions on repeat hail
 let _roamPhase = 'choice'; // 'choice' | 'result'
 
 function triggerRoamingEncounter(factionId){
+  // Idle mode — auto-dismiss roaming encounters and resume travel
+  if(G._idleMode) {
+    TS._pausedForRoam = false;
+    startTravelHum();
+    if(TS.active || (G.tvl && G.phase === 'map')) {
+      G.phase = 'traveling';
+      if(G.tvl) { G.tvl._eventLocked=false; G.tvl.timer=setInterval(travelTick, G.tvl.tickMs||100); }
+      if(!TS.active && G.tvl) tsOpen(G.tvl.lane || getLane(G.tvl.from, G.tvl.to));
+    }
+    addLog('⚙ Idle: passing roaming vessel — no contact.', '');
+    return;
+  }
   _roamFactionId = factionId;
   _roamMissionOffered = false;
   _roamPhase = 'choice';
@@ -17170,8 +17160,8 @@ function _lsShowInteract(poi) {
         `${fs.n} crackles with hostile energy. A guardian vessel — ${guardian?.name || 'unknown'} — blocks access to the Fragment.`;
       const fightBtn = document.createElement('button');
       fightBtn.className='btn'; fightBtn.style.color='#ffdd44';
-      // Realm + Grey use the dungeon approach; other spheres go direct (for now)
-      if(fs.id === 'fs_realm' || fs.id === 'fs_grey') {
+      // Realm uses the dungeon approach; other spheres go direct (for now)
+      if(fs.id === 'fs_realm') {
         fightBtn.textContent='🔮 Enter the Site';
         fightBtn.onclick = () => {
           panel.classList.remove('on');
@@ -18513,20 +18503,6 @@ const FD_CONFIGS = {
       {id:'starcoin',c:0.75},{id:'corskit',c:0.50},{id:'beacon',c:0.22},
     ],
   },
-  grey: {
-    name: 'The Dwarven Vault',
-    entryLog: 'Entering the Dwarven Vault. Rune-wards flicker in the darkness. Stone guardians stir from their alcoves.',
-    guardianWarning: "Iron Warden Drekk stands between you and the Navigation Core — an ancient forge-construct armoured in siege-grade dwarven plate. Its rune sentinels have already been activated.",
-    floorColor:   '#0f1408',
-    accentColor:  '#88aa44',
-    minRooms: 5, maxRooms: 7,
-    enemies:       ['fd_grey_golem','fd_grey_rune'],
-    enemyWeights:  [2, 3],
-    lootTable: [
-      {id:'arccore',c:0.80},{id:'repkit',c:0.70},{id:'runeshard',c:0.75},
-      {id:'starcoin',c:0.65},{id:'levblood',c:0.35},{id:'beacon',c:0.20},
-    ],
-  },
 };
 
 const FD = {
@@ -18637,174 +18613,50 @@ function closeFragDungeon() {
   setTimeout(()=>openLocalSpace(), 300);
 }
 
-// ── Corridor segment helper (supports L-shaped / multi-segment corridors) ──
-function _fdCorrSegs(c) { return c.segs || [{x:c.x, y:c.y, w:c.w, h:c.h}]; }
-
-// ── Room factory ───────────────────────────────────────────────────────────
-const FD_ROOM_SIZES = [
-  {w:240,h:200},{w:280,h:230},{w:320,h:250},{w:360,h:265},
-  {w:400,h:280},{w:450,h:300},{w:500,h:320},{w:320,h:300}
-];
-function _fdPickSz(){ return FD_ROOM_SIZES[Math.floor(Math.random()*FD_ROOM_SIZES.length)]; }
-function _fdMakeRoom(id, type, x, y, sz) {
-  return { id, type, x, y, w:sz.w, h:sz.h, cx:x+sz.w/2, cy:y+sz.h/2,
-           revealed:false, visible:false, enemies:[], loots:[], guardianDefeated:false, _branch:false };
-}
-
-// ── Corridor factory — builds 1 or 2-segment (L-shaped) connections ────────
-function _fdMakeCorr(roomA, roomB, id) {
-  const CW = 58 + Math.floor(Math.random()*14); // corridor width 58–72px
-  const aRX = roomA.x + roomA.w;  // right edge of A
-  const aCY = roomA.cy;
-  const bLX = roomB.x;            // left edge of B
-  const bCY = roomB.cy;
-  const bCX = roomB.cx;
-
-  // ── Horizontal connection (B is to the right of A) ──────────────────────
-  if(bLX >= aRX - 10) {
-    const gap = bLX - aRX;
-    const yDiff = Math.abs(aCY - bCY);
-    if(yDiff <= CW + 4) {
-      // Nearly same height — single straight horizontal segment
-      const cy = (aCY + bCY)/2 - CW/2;
-      const seg = {x:aRX, y:cy, w:Math.max(10,gap), h:CW};
-      return {id, roomA:roomA.id, roomB:roomB.id, revealed:false, visible:false, x:seg.x, y:seg.y, w:seg.w, h:seg.h, segs:[seg]};
-    } else {
-      // L-shape: horizontal arm to bCX, then vertical arm to bCY
-      const hSeg = {x:aRX, y:aCY-CW/2, w:Math.max(CW, bCX-aRX), h:CW};
-      const vTop = Math.min(aCY, bCY) - CW/2;
-      const vBot = Math.max(aCY, bCY) + CW/2;
-      const vSeg = {x:bCX-CW/2, y:vTop, w:CW, h:vBot-vTop};
-      return {id, roomA:roomA.id, roomB:roomB.id, revealed:false, visible:false, x:hSeg.x, y:hSeg.y, w:hSeg.w, h:hSeg.h, segs:[hSeg, vSeg]};
-    }
-  }
-
-  // ── Vertical connection (B is below A) ─────────────────────────────────
-  if(roomB.y >= roomA.y + roomA.h - 10) {
-    const gap = roomB.y - (roomA.y + roomA.h);
-    const xDiff = Math.abs(roomA.cx - bCX);
-    if(xDiff <= CW + 4) {
-      // Nearly aligned — single vertical segment
-      const cx = (roomA.cx + bCX)/2 - CW/2;
-      const seg = {x:cx, y:roomA.y+roomA.h, w:CW, h:Math.max(10,gap)};
-      return {id, roomA:roomA.id, roomB:roomB.id, revealed:false, visible:false, x:seg.x, y:seg.y, w:seg.w, h:seg.h, segs:[seg]};
-    } else {
-      // L-shape: vertical arm down to bCY, then horizontal arm to bCX
-      const vSeg = {x:roomA.cx-CW/2, y:roomA.y+roomA.h, w:CW, h:bCY-(roomA.y+roomA.h)};
-      const hLeft = Math.min(roomA.cx, bCX) - CW/2;
-      const hRight = Math.max(roomA.cx, bCX) + CW/2;
-      const hSeg = {x:hLeft, y:bCY-CW/2, w:hRight-hLeft, h:CW};
-      return {id, roomA:roomA.id, roomB:roomB.id, revealed:false, visible:false, x:vSeg.x, y:vSeg.y, w:vSeg.w, h:vSeg.h, segs:[vSeg, hSeg]};
-    }
-  }
-
-  // ── Fallback — minimal horizontal bridge ──────────────────────────────
-  const seg = {x:aRX, y:aCY-CW/2, w:Math.max(20, bLX-aRX), h:CW};
-  return {id, roomA:roomA.id, roomB:roomB.id, revealed:false, visible:false, x:seg.x, y:seg.y, w:seg.w, h:seg.h, segs:[seg]};
-}
-
-// ── Layout generator — 4 templates chosen randomly each run ───────────────
+// ── Room generation ────────────────────────────────────────────────────────
 function _fdGenLayout(nRooms) {
-  const TEMPLATES = ['linear','lshape','branch','zigzag'];
-  const tpl = TEMPLATES[Math.floor(Math.random()*TEMPLATES.length)];
+  const CORR_H=64, GAP_MIN=70, GAP_MAX=140;
+  const SIZES=[{w:280,h:230},{w:320,h:250},{w:360,h:265},{w:400,h:280},{w:450,h:300}];
   const rooms=[], corridors=[];
-  const GAP = 70 + Math.floor(Math.random()*80);
-  const MX = FD.W, MY = FD.H;
+  let curX=160, curCY=FD.H/2;
 
-  // ── TEMPLATE: LINEAR ──────────────────────────────────────────────────
-  // Rooms go left to right with larger Y swings than before
-  if(tpl === 'linear') {
-    let rx=180, ry=MY*0.5;
-    for(let i=0;i<nRooms;i++){
-      const sz=_fdPickSz();
-      const type=i===0?'entry':i===nRooms-1?'guardian':Math.random()<0.55?'encounter':'loot';
-      ry=Math.max(sz.h/2+100,Math.min(MY-sz.h/2-100,ry+(Math.random()-0.5)*340));
-      rooms.push(_fdMakeRoom(i,type,rx,ry-sz.h/2,sz));
-      rx+=sz.w+GAP+Math.floor(Math.random()*60);
-    }
-  }
+  for(let i=0;i<nRooms;i++){
+    const sz=SIZES[Math.floor(Math.random()*SIZES.length)];
+    const type = i===0?'entry':i===nRooms-1?'guardian':Math.random()<0.55?'encounter':'loot';
+    const room={
+      id:i, type,
+      x:curX, y:curCY-sz.h/2, w:sz.w, h:sz.h,
+      cx:curX+sz.w/2, cy:curCY,
+      revealed:false, visible:false,
+      enemies:[], loots:[], guardianDefeated:false,
+    };
+    rooms.push(room);
 
-  // ── TEMPLATE: L-SHAPE ────────────────────────────────────────────────
-  // First half goes right, then pivots and goes down-right
-  else if(tpl === 'lshape') {
-    const pivot=Math.ceil(nRooms/2);
-    let rx=180, ry=MY*0.32;
-    for(let i=0;i<pivot;i++){
-      const sz=_fdPickSz();
-      const type=i===0?'entry':Math.random()<0.5?'encounter':'loot';
-      rooms.push(_fdMakeRoom(i,type,rx,ry-sz.h/2,sz));
-      rx+=sz.w+GAP+Math.floor(Math.random()*50);
-      ry=Math.max(sz.h/2+100,Math.min(MY*0.5,ry+(Math.random()-0.5)*120));
+    if(i>0){
+      const prev=rooms[i-1];
+      const oTop=Math.max(prev.y,room.y)+8;
+      const oBot=Math.min(prev.y+prev.h,room.y+room.h)-8;
+      const overlap=oBot-oTop;
+      const corrH=overlap>=CORR_H?CORR_H:Math.max(overlap,24);
+      const corrY=overlap>=corrH
+        ?(oTop+oBot)/2-corrH/2
+        :(prev.cy+room.cy)/2-corrH/2;
+      corridors.push({
+        id:i-1,
+        x:prev.x+prev.w,
+        y:corrY,
+        w:room.x-(prev.x+prev.w),
+        h:corrH,
+        roomA:i-1, roomB:i,
+        revealed:false, visible:false,
+      });
     }
-    // Pivot point: last right-going room defines where we go down
-    const pivotRoom=rooms[pivot-1];
-    let dx=pivotRoom.cx-80+Math.floor((Math.random()-0.5)*160);
-    let dy=pivotRoom.y+pivotRoom.h+GAP;
-    for(let i=pivot;i<nRooms;i++){
-      const sz=_fdPickSz();
-      const type=i===nRooms-1?'guardian':Math.random()<0.5?'encounter':'loot';
-      dx=Math.max(200,Math.min(MX-sz.w-200,dx+(Math.random()-0.5)*280));
-      rooms.push(_fdMakeRoom(i,type,dx-sz.w/2,dy,sz));
-      dy+=sz.h+GAP+Math.floor(Math.random()*60);
-    }
-  }
 
-  // ── TEMPLATE: BRANCH ─────────────────────────────────────────────────
-  // Main path left-to-right + 1 dead-end loot room branching off a middle room
-  else if(tpl === 'branch') {
-    let rx=180, ry=MY*0.5;
-    for(let i=0;i<nRooms;i++){
-      const sz=_fdPickSz();
-      const type=i===0?'entry':i===nRooms-1?'guardian':Math.random()<0.55?'encounter':'loot';
-      ry=Math.max(sz.h/2+100,Math.min(MY-sz.h/2-100,ry+(Math.random()-0.5)*220));
-      rooms.push(_fdMakeRoom(i,type,rx,ry-sz.h/2,sz));
-      rx+=sz.w+GAP+Math.floor(Math.random()*60);
-    }
-    // Pick a middle main-path room to branch from (avoid entry/guardian)
-    if(nRooms >= 4) {
-      const srcIdx=1+Math.floor(Math.random()*(nRooms-3));
-      const src=rooms[srcIdx];
-      const bSz=FD_ROOM_SIZES[Math.floor(Math.random()*4)];
-      const goUp=src.cy > MY*0.5;
-      const bY=goUp ? src.y-bSz.h-GAP*0.8 : src.y+src.h+GAP*0.8;
-      const bX=Math.max(100,Math.min(MX-bSz.w-100,src.cx-bSz.w/2));
-      const bRoom=_fdMakeRoom(rooms.length,'loot',bX,bY,bSz);
-      bRoom._branch=true;
-      rooms.push(bRoom);
-      // Branch corridor inserted after main-path corridors are built
-    }
+    const gap=GAP_MIN+Math.floor(Math.random()*(GAP_MAX-GAP_MIN));
+    curX+=sz.w+gap;
+    const dy=(Math.random()-0.5)*110;
+    curCY=Math.max(sz.h/2+80, Math.min(FD.H-sz.h/2-80, curCY+dy));
   }
-
-  // ── TEMPLATE: ZIGZAG ─────────────────────────────────────────────────
-  // Rooms alternate high/low, forcing L-shaped corridors
-  else {
-    const topBand=MY*0.18, botBand=MY*0.62;
-    let rx=180;
-    for(let i=0;i<nRooms;i++){
-      const sz=_fdPickSz();
-      const type=i===0?'entry':i===nRooms-1?'guardian':Math.random()<0.55?'encounter':'loot';
-      const baseY=i%2===0?topBand:botBand;
-      const jitter=(Math.random()-0.5)*120;
-      const ry=Math.max(60,Math.min(MY-sz.h-60,baseY+jitter));
-      rooms.push(_fdMakeRoom(i,type,rx,ry,sz));
-      rx+=sz.w+GAP+Math.floor(Math.random()*80);
-    }
-  }
-
-  // ── Build corridors for main path (non-branch rooms in order) ─────────
-  const mainRooms=rooms.filter(r=>!r._branch);
-  for(let i=1;i<mainRooms.length;i++){
-    corridors.push(_fdMakeCorr(mainRooms[i-1],mainRooms[i],corridors.length));
-  }
-  // Branch corridor (if branch template produced a branch room)
-  const branchRoom=rooms.find(r=>r._branch);
-  if(branchRoom){
-    const srcIdx=rooms.findIndex(r=>!r._branch&&r.type!=='entry'&&r.type!=='guardian'&&
-      Math.abs(r.cx-branchRoom.cx)<500);
-    const src=srcIdx>=0?rooms[srcIdx]:mainRooms[Math.floor(mainRooms.length/2)];
-    corridors.push(_fdMakeCorr(src,branchRoom,corridors.length));
-  }
-
   return {rooms,corridors};
 }
 
@@ -18843,7 +18695,7 @@ function _fdPopulateRooms(cfg){
 // ── Helpers ────────────────────────────────────────────────────────────────
 function _fdIsInFloor(wx,wy){
   for(const r of FD.rooms)    if(wx>=r.x&&wx<=r.x+r.w&&wy>=r.y&&wy<=r.y+r.h) return true;
-  for(const c of FD.corridors)for(const s of _fdCorrSegs(c))if(wx>=s.x&&wx<=s.x+s.w&&wy>=s.y&&wy<=s.y+s.h) return true;
+  for(const c of FD.corridors)if(wx>=c.x&&wx<=c.x+c.w&&wy>=c.y&&wy<=c.y+c.h) return true;
   return false;
 }
 
@@ -18867,14 +18719,9 @@ function _fdUpdateVisibility(){
     r.visible=los; if(los) r.revealed=true;
   });
   FD.corridors.forEach(c=>{
-    // Visibility check uses bounding centre of all segments
-    const segs=_fdCorrSegs(c);
-    const inRange=segs.some(s=>{
-      const dx=(s.x+s.w/2)-FD.px, dy=(s.y+s.h/2)-FD.py;
-      return Math.sqrt(dx*dx+dy*dy)<R+Math.max(s.w,s.h)*0.6;
-    });
-    const midSeg=segs[Math.floor(segs.length/2)];
-    const los=inRange&&_fdLOS(FD.px,FD.py,midSeg.x+midSeg.w/2,midSeg.y+midSeg.h/2);
+    const dx=(c.x+c.w/2)-FD.px, dy=(c.y+c.h/2)-FD.py;
+    const inRange=Math.sqrt(dx*dx+dy*dy)<R+Math.max(c.w,c.h)*0.6;
+    const los=inRange&&_fdLOS(FD.px,FD.py,c.x+c.w/2,c.y+c.h/2);
     c.visible=los; if(los) c.revealed=true;
   });
 }
@@ -19092,19 +18939,18 @@ function _fdRender(cx,cW,cH){
   // Revealed floors (dim history)
   cx.fillStyle='#130d06';
   FD.rooms.forEach(r=>{if(r.revealed&&!r.visible)cx.fillRect(r.x,r.y,r.w,r.h);});
-  FD.corridors.forEach(c=>{if(c.revealed&&!c.visible)_fdCorrSegs(c).forEach(s=>cx.fillRect(s.x,s.y,s.w,s.h));});
+  FD.corridors.forEach(c=>{if(c.revealed&&!c.visible)cx.fillRect(c.x,c.y,c.w,c.h);});
 
   // Visible floors (fully lit)
   FD.rooms.forEach(r=>{
     if(!r.visible) return;
-    const cfg=FD.config; const fc2=cfg?.floorColor||'#201408'; const ac=cfg?.accentColor||'#443318';
-    cx.fillStyle=r.type==='guardian'?'#2a1508':r.type==='loot'?'#1e180a':fc2;
+    cx.fillStyle=r.type==='guardian'?'#2a1508':r.type==='loot'?'#1e180a':'#201408';
     cx.fillRect(r.x,r.y,r.w,r.h);
     // Grid lines
-    cx.strokeStyle=ac+'44'; cx.lineWidth=1;
+    cx.strokeStyle='#2a1c0a'; cx.lineWidth=1;
     for(let lx=r.x+40;lx<r.x+r.w;lx+=40){cx.beginPath();cx.moveTo(lx,r.y);cx.lineTo(lx,r.y+r.h);cx.stroke();}
     for(let ly=r.y+40;ly<r.y+r.h;ly+=40){cx.beginPath();cx.moveTo(r.x,ly);cx.lineTo(r.x+r.w,ly);cx.stroke();}
-    cx.strokeStyle=ac; cx.lineWidth=3; cx.strokeRect(r.x+1,r.y+1,r.w-2,r.h-2);
+    cx.strokeStyle='#443318'; cx.lineWidth=3; cx.strokeRect(r.x+1,r.y+1,r.w-2,r.h-2);
     // Type ambiance
     if(r.type==='guardian'){
       const g=cx.createRadialGradient(r.x+r.w/2,r.y+r.h/2,20,r.x+r.w/2,r.y+r.h/2,r.w*0.55);
@@ -19120,11 +18966,8 @@ function _fdRender(cx,cW,cH){
   });
   FD.corridors.forEach(c=>{
     if(!c.visible)return;
-    const floorCol = FD.config?.floorColor || '#1a1006';
-    _fdCorrSegs(c).forEach(s=>{
-      cx.fillStyle=floorCol; cx.fillRect(s.x,s.y,s.w,s.h);
-      cx.strokeStyle='#332211'; cx.lineWidth=2; cx.strokeRect(s.x,s.y,s.w,s.h);
-    });
+    cx.fillStyle='#1a1006';cx.fillRect(c.x,c.y,c.w,c.h);
+    cx.strokeStyle='#332211';cx.lineWidth=2;cx.strokeRect(c.x,c.y,c.w,c.h);
   });
 
   // POIs in visible rooms
@@ -19227,7 +19070,7 @@ function _fdApplyFog(cx,cW,cH){
   fc.save();
   fc.beginPath();
   FD.rooms.forEach(r=>{ if(r.visible) fc.rect(r.x-FD.camX,r.y-FD.camY,r.w,r.h); });
-  FD.corridors.forEach(c=>{ if(c.visible) _fdCorrSegs(c).forEach(s=>fc.rect(s.x-FD.camX,s.y-FD.camY,s.w,s.h)); });
+  FD.corridors.forEach(c=>{ if(c.visible) fc.rect(c.x-FD.camX,c.y-FD.camY,c.w,c.h); });
   fc.clip();
   fc.globalCompositeOperation='destination-out';
   const px=FD.px-FD.camX,py=FD.py-FD.camY,R=FD_VISION_R;
@@ -19242,7 +19085,7 @@ function _fdApplyFog(cx,cW,cH){
   fc.save();
   fc.beginPath();
   FD.rooms.forEach(r=>{ if(r.revealed&&!r.visible) fc.rect(r.x-FD.camX,r.y-FD.camY,r.w,r.h); });
-  FD.corridors.forEach(c=>{ if(c.revealed&&!c.visible) _fdCorrSegs(c).forEach(s=>fc.rect(s.x-FD.camX,s.y-FD.camY,s.w,s.h)); });
+  FD.corridors.forEach(c=>{ if(c.revealed&&!c.visible) fc.rect(c.x-FD.camX,c.y-FD.camY,c.w,c.h); });
   fc.clip();
   fc.globalCompositeOperation='source-over';
   fc.fillStyle='rgba(6,2,1,0.65)'; fc.fillRect(0,0,cW,cH);
@@ -19266,11 +19109,8 @@ function _fdRenderMinimap(){
   });
   FD.corridors.forEach(c=>{
     if(!c.revealed)return;
-    const col=c.visible?'#886644':'#332211';
-    _fdCorrSegs(c).forEach(s=>{
-      mx.fillStyle=col;
-      mx.fillRect(ox+s.x*scX,oy+s.y*scY,Math.max(1,s.w*scX),Math.max(1,s.h*scY));
-    });
+    mx.fillStyle=c.visible?'#886644':'#332211';
+    mx.fillRect(ox+c.x*scX,oy+c.y*scY,c.w*scX,c.h*scY);
   });
   mx.fillStyle='#4488ff';
   mx.beginPath();mx.arc(ox+FD.px*scX,oy+FD.py*scY,3,0,Math.PI*2);mx.fill();
@@ -20111,6 +19951,280 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 });
+// ╔══════════════════════════════════════════════════════════════════════════╗
+// ║  IDLE MODE SYSTEM                                                        ║
+// ║  AI handles combat, waystations, anchoring, and perpetual bounce travel  ║
+// ╚══════════════════════════════════════════════════════════════════════════╝
+
+// ── State ─────────────────────────────────────────────────────────────────
+// G._idleMode      : boolean — idle is active
+// G._idleBounce    : boolean — perpetual bounce is running
+// G._idleBounceTo  : sphere id — current bounce destination
+// G._idleBounceAlt : sphere id — the other end (alternates on arrive)
+// G._idleCbtTimer  : setInterval handle for combat AI loop
+
+// ── Toggle ────────────────────────────────────────────────────────────────
+function toggleIdleMode() {
+  G._idleMode = !G._idleMode;
+  _idleUpdateUI();
+  if(!G._idleMode) {
+    _idleStopCombatLoop();
+    G._idleBounce = false;
+    addLog('⚙ Idle mode disabled.', '');
+  } else {
+    addLog('⚙ Idle mode enabled. AI will handle combat, waystations, and anchoring.', 'imp');
+    // If we're mid-combat right now, start the AI immediately
+    if(G.phase === 'combat' && G.cbt?.pTurn) _idleStartCombatLoop();
+    // If on map, show the bounce config
+    if(G.phase === 'map') _idleShowBouncePanel();
+  }
+}
+
+function _idleUpdateUI() {
+  const btn = document.getElementById('idle-toggle-btn');
+  if(!btn) return;
+  if(G._idleMode) {
+    btn.textContent = '⚙ Idle: ON';
+    btn.classList.add('active');
+  } else {
+    btn.textContent = '⚙ Idle: OFF';
+    btn.classList.remove('active');
+  }
+  // Combat bar indicator
+  const bar = document.getElementById('idle-combat-bar');
+  if(bar) bar.style.display = G._idleMode && G.phase === 'combat' ? 'block' : 'none';
+}
+
+// Called from updateUI (already fires on every phase change) — keeps button visible
+function _idleSyncUI() {
+  const tsBtn = document.getElementById('idle-toggle-btn');
+  if(tsBtn) {
+    // Button is in the travel seq overlay — make sure it's always accessible
+    tsBtn.style.display = '';
+  }
+  _idleUpdateUI();
+}
+
+// ── Combat AI loop ────────────────────────────────────────────────────────
+function _idleStartCombatLoop() {
+  _idleStopCombatLoop();
+  G._idleCbtTimer = setInterval(_idleCombatTick, 1200);
+}
+function _idleStopCombatLoop() {
+  if(G._idleCbtTimer) { clearInterval(G._idleCbtTimer); G._idleCbtTimer = null; }
+}
+
+async function _idleCombatTick() {
+  if(!G._idleMode) { _idleStopCombatLoop(); return; }
+  if(G.phase !== 'combat') { _idleStopCombatLoop(); return; }
+  if(!G.cbt?.pTurn) return; // enemy acting — wait
+
+  const s   = G.ship;
+  const cbt = G.cbt;
+  const e   = cbt.enemy;
+  const hullPct = s.hull / s.maxHull;
+
+  // ── PRIORITY 1: flee if critically low with no heals ──────────────────
+  if(hullPct <= 0.20) {
+    const hasHeal = s.inv?.some(i => i.use && (i.use.startsWith('hp') || i.use === 'hp20crew1'));
+    if(!hasHeal) {
+      addLog('⚙ Idle: critically low hull — fleeing!', 'dmg');
+      doAction('flee');
+      return;
+    }
+  }
+
+  // ── PRIORITY 2: check if all weapons are on cooldown ──────────────────
+  const readyWpns = s.wpns.map((wk,i) => ({wk,i,cd:cbt.cds[i]||0})).filter(w => w.cd === 0);
+  const allOnCD   = readyWpns.length === 0;
+
+  if(allOnCD) {
+    // ── No weapons available ──
+    if(hullPct <= 0.35) {
+      // Try to use a heal item
+      const healItem = s.inv?.find(i => i.use && (i.use.startsWith('hp') || i.use === 'hp20crew1'));
+      if(healItem) {
+        addLog('⚙ Idle: all weapons on cooldown + low hull — using heal item.', '');
+        doAction('item', 0, healItem.uid);
+        return;
+      }
+    }
+    // Hull > 35% or no heal items — evade
+    addLog('⚙ Idle: all weapons on cooldown — evading.', '');
+    doAction('evade');
+    return;
+  }
+
+  // ── PRIORITY 3: emergency heal if hull ≤ 35% ─────────────────────────
+  if(hullPct <= 0.35) {
+    const healItem = s.inv?.find(i => i.use && (i.use.startsWith('hp') || i.use === 'hp20crew1'));
+    if(healItem) {
+      addLog('⚙ Idle: low hull — using heal item.', '');
+      doAction('item', 0, healItem.uid);
+      return;
+    }
+  }
+
+  // ── PRIORITY 4: signature ability if available ────────────────────────
+  if(s.sigTier && SIG_ABILITY[s.type] && cbt.sigCd === 0) {
+    const sigDef = SIG_ABILITY[s.type];
+    const tier   = sigDef.tiers[s.sigTier - 1];
+    // Only fire sig if it deals damage (has dmg property or known offensive)
+    if(tier && tier.dmg !== false) {
+      doAction('sig');
+      return;
+    }
+  }
+
+  // ── PRIORITY 5: fire best ready weapon ───────────────────────────────
+  // Score each ready weapon by average damage
+  let best = null, bestScore = -1;
+  for(const {wk, i} of readyWpns) {
+    const w = WPN[wk];
+    if(!w) continue;
+    const avgDmg = (w.d[0] + w.d[1]) / 2 * (w.fires || 1);
+    if(avgDmg > bestScore) { bestScore = avgDmg; best = i; }
+  }
+  if(best !== null) {
+    doAction('wpn', best);
+    return;
+  }
+
+  // ── PRIORITY 6: fallback evade ────────────────────────────────────────
+  doAction('evade');
+}
+
+// ── Waystation auto-pass ──────────────────────────────────────────────────
+// Called from showWaystationOffer when idle is active — auto click Pass Through
+function _idleAutoWaystation(ws) {
+  addLog(`⚙ Idle: passing ${ws.n} — no stop.`, '');
+  const rt = G._resumeTravel; G._resumeTravel = null;
+  G._restResumeBackup = null;
+  G.ship.midLanePos = null;
+  if(rt) startTravel(rt.toId, rt.watchesRemaining, rt.pausedPos, rt.pausedProg, rt.laneOrigin);
+}
+
+// ── Anchor auto-rest ──────────────────────────────────────────────────────
+// Called from watchExpiredMidJourney when idle is active
+function _idleAutoAnchor() {
+  addLog('⚙ Idle: watch complete — anchoring for rest.', '');
+  G._autoRest = true; // doRest will auto-resume after rest animation
+}
+
+// ── Bounce travel ─────────────────────────────────────────────────────────
+function _idleShowBouncePanel() {
+  const panel = document.getElementById('idle-bounce-panel');
+  if(!panel) return;
+  const fromId  = G.ship.loc || 'realm';
+  const fromSph = G.spheres?.find(s => s.id === fromId);
+  document.getElementById('idle-bounce-from').textContent = fromSph?.n || fromId;
+
+  // Populate destination dropdown — accessible non-boss spheres the player can reach
+  const sel = document.getElementById('idle-bounce-to-sel');
+  sel.innerHTML = '';
+  // Get spheres reachable from current location via a defined lane
+  const reachable = G.spheres?.filter(s =>
+    s.id !== fromId && s.vis && !s.boss &&
+    getLane(fromId, s.id)
+  ) || [];
+  if(reachable.length === 0) {
+    panel.style.display = 'none';
+    addLog('⚙ Idle: no reachable spheres for bounce from current location.', 'dmg');
+    return;
+  }
+  reachable.forEach(s => {
+    const opt = document.createElement('option');
+    opt.value = s.id; opt.textContent = s.n;
+    sel.appendChild(opt);
+  });
+
+  panel.style.display = 'flex';
+}
+
+function startBounceTravel() {
+  const panel = document.getElementById('idle-bounce-panel');
+  const sel   = document.getElementById('idle-bounce-to-sel');
+  if(!sel?.value) return;
+
+  G._idleBounce   = true;
+  G._idleBounceTo = sel.value;
+  G._idleBounceAlt = G.ship.loc;  // will flip on each arrival
+
+  if(panel) panel.style.display = 'none';
+  addLog(`⚙ Idle Bounce active: ${G.spheres?.find(s=>s.id===G.ship.loc)?.n} ↔ ${G.spheres?.find(s=>s.id===G._idleBounceTo)?.n}`, 'imp');
+
+  // Start the first leg
+  _idleBounceDepart();
+}
+
+function _idleBounceDepart() {
+  if(!G._idleBounce || !G._idleMode) return;
+  const dest = G._idleBounceTo;
+  if(!dest) { G._idleBounce = false; return; }
+  addLog(`⚙ Idle: departing for ${G.spheres?.find(s=>s.id===dest)?.n}…`, '');
+  G._autoRest = true; // enable auto-rest for the leg
+  startTravel(dest);
+}
+
+// Called from arrive() when idle bounce is active
+function _idleOnArrive(sphereId) {
+  if(!G._idleMode || !G._idleBounce) return;
+  // ── Resupply: hull, air, crew ────────────────────────────────────────
+  const s = G.ship;
+  let spent = 0;
+  // Hull repair at port rates: 0.5 TS per hull point
+  if(s.hull < s.maxHull) {
+    const cost = Math.floor((s.maxHull - s.hull) * 0.5);
+    if(s.gold >= cost) {
+      s.gold -= cost; s.hull = s.maxHull; spent += cost;
+      addLog(`⚙ Idle: hull repaired (−${cost} TS).`, 'gd');
+    } else {
+      addLog('⚙ Idle: not enough TS to repair hull — disabling idle.', 'dmg');
+      toggleIdleMode(); return;
+    }
+  }
+  // Air refill
+  const maxAir = s.maxAir || 12;
+  if(s.air < maxAir) {
+    const cost = Math.floor((maxAir - s.air) * 0.6);
+    if(s.gold >= cost) {
+      s.gold -= cost; s.air = maxAir; spent += cost;
+      addLog(`⚙ Idle: air refilled (−${cost} TS).`, 'gd');
+    } else {
+      addLog('⚙ Idle: not enough TS to refill air — disabling idle.', 'dmg');
+      toggleIdleMode(); return;
+    }
+  }
+  // Crew hire
+  if(s.crew < s.maxCrew) {
+    const cost = (s.maxCrew - s.crew) * 3;
+    if(s.gold >= cost) {
+      s.gold -= cost; s.crew = s.maxCrew; spent += cost;
+      addLog(`⚙ Idle: crew hired (−${cost} TS).`, 'gd');
+    } else {
+      addLog('⚙ Idle: not enough TS to hire crew — disabling idle.', 'dmg');
+      toggleIdleMode(); return;
+    }
+  }
+  if(spent > 0) snd('purchase', 0.5);
+  updateUI();
+
+  // ── Flip destination and depart ────────────────────────────────────
+  const prev = G._idleBounceTo;
+  G._idleBounceTo  = G._idleBounceAlt;
+  G._idleBounceAlt = prev;
+
+  // Brief pause so the arrival sequence can finish, then depart
+  setTimeout(() => {
+    if(G._idleMode && G._idleBounce) _idleBounceDepart();
+  }, 1800);
+}
+
+// ── Hooks into existing functions ─────────────────────────────────────────
+// These are called from the relevant functions when G._idleMode is true.
+// The hook points are patched into startCombat, showWaystationOffer,
+// watchExpiredMidJourney, and arrive below.
+
 </script>
 <!-- ═══ SPLASH SCREEN ═══ -->
 <div id="sp" style="position:fixed;inset:0;z-index:10000;background:#000 url('splash.jpg') center/cover no-repeat;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent;">
