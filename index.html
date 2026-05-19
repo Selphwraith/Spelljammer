@@ -1430,7 +1430,7 @@ body {
    COMBAT INVENTORY OVERLAY
    ══════════════════════════════════════════════════════════════════ */
 #ov-cbt-inv {
-  position: fixed; inset: 0; z-index: 400;
+  position: fixed; inset: 0; z-index: 600;
   display: none; align-items: center; justify-content: center;
   background: rgba(2,0,8,0.88);
   backdrop-filter: blur(3px);
@@ -2034,41 +2034,6 @@ body {
     <!-- Combat log — full width, always at the bottom -->
     <div class="clog" id="clog"></div>
 
-    <!-- Combat inventory overlay — opens from Items button -->
-    <div id="ov-cbt-inv">
-      <div id="cbt-inv-modal">
-
-        <!-- Header -->
-        <div id="cbt-inv-header">
-          <div id="cbt-inv-title">🎒 Ship's Hold</div>
-          <button class="cbt-inv-sort-btn active" id="sort-type"   onclick="cbtInvSort('type')">By Type</button>
-          <button class="cbt-inv-sort-btn"          id="sort-alpha" onclick="cbtInvSort('alpha')">A–Z</button>
-          <button class="cbt-inv-sort-btn"          id="sort-val"   onclick="cbtInvSort('val')">By Value</button>
-          <button id="cbt-inv-close" onclick="closeCbtInv()">✕ Close</button>
-        </div>
-
-        <!-- Usable items — top section -->
-        <div id="cbt-inv-usables-wrap">
-          <div class="cbt-inv-section-hdr">
-            ⚗ USABLE IN COMBAT
-            <span class="count" id="cbt-usable-count">0</span>
-            <span style="font-size:8px;color:#332244;margin-left:auto;">click to use · drag to reorder</span>
-          </div>
-          <div id="cbt-inv-usables"></div>
-        </div>
-
-        <!-- Cargo / trade goods — bottom section -->
-        <div id="cbt-inv-cargo-wrap">
-          <div class="cbt-inv-section-hdr">
-            📦 CARGO &amp; TRADE GOODS
-            <span class="count" id="cbt-cargo-count">0</span>
-            <span style="font-size:8px;color:#332244;margin-left:auto;">drag to reorder</span>
-          </div>
-          <div id="cbt-inv-cargo"></div>
-        </div>
-
-      </div>
-    </div>
 
     <!-- Legacy panel (kept for "enemy acting" message compatibility) -->
     <div id="cbt-inv-panel" style="display:none;"></div>
@@ -2175,6 +2140,42 @@ body {
     </div>
   </div>
 
+
+  <!-- Combat inventory overlay — opens from Items button -->
+    <div id="ov-cbt-inv">
+      <div id="cbt-inv-modal">
+
+        <!-- Header -->
+        <div id="cbt-inv-header">
+          <div id="cbt-inv-title">🎒 Ship's Hold</div>
+          <button class="cbt-inv-sort-btn active" id="sort-type"   onclick="cbtInvSort('type')">By Type</button>
+          <button class="cbt-inv-sort-btn"          id="sort-alpha" onclick="cbtInvSort('alpha')">A–Z</button>
+          <button class="cbt-inv-sort-btn"          id="sort-val"   onclick="cbtInvSort('val')">By Value</button>
+          <button id="cbt-inv-close" onclick="closeCbtInv()">✕ Close</button>
+        </div>
+
+        <!-- Usable items — top section -->
+        <div id="cbt-inv-usables-wrap">
+          <div class="cbt-inv-section-hdr">
+            ⚗ USABLE IN COMBAT
+            <span class="count" id="cbt-usable-count">0</span>
+            <span style="font-size:8px;color:#332244;margin-left:auto;">click to use · drag to reorder</span>
+          </div>
+          <div id="cbt-inv-usables"></div>
+        </div>
+
+        <!-- Cargo / trade goods — bottom section -->
+        <div id="cbt-inv-cargo-wrap">
+          <div class="cbt-inv-section-hdr">
+            📦 CARGO &amp; TRADE GOODS
+            <span class="count" id="cbt-cargo-count">0</span>
+            <span style="font-size:8px;color:#332244;margin-left:auto;">drag to reorder</span>
+          </div>
+          <div id="cbt-inv-cargo"></div>
+        </div>
+
+      </div>
+    </div>
   <!-- SHIP DETAILS -->
   <div class="ovlay" id="ov-shp">
     <div class="ovl-title-row">
