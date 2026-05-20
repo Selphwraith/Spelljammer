@@ -1408,21 +1408,30 @@ body {
 
 /* Event alert banner — appears when enemy/waypoint approaches */
 #ts-alert {
-  position: absolute; top: 72px; left: 50%;
-  transform: translateX(-50%);
-  background: rgba(60,5,5,0.95); border: 1px solid #ff442255;
-  border-radius: 5px; padding: 8px 20px;
-  font-family: 'Cinzel', serif; font-size: 12px; color: #ff8844;
-  letter-spacing: 2px; text-align: center;
-  display: none; z-index: 6;
-  animation: ts-pulse 1s ease-in-out infinite;
+  position: fixed; top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(60,5,5,0.92); border: 1px solid #ff442266;
+  border-radius: 8px; padding: 14px 36px;
+  font-family: 'Cinzel', serif; font-size: 18px; color: #ff8844;
+  letter-spacing: 3px; text-align: center;
+  display: none; z-index: 1200; pointer-events: none;
+  white-space: nowrap;
 }
-#ts-alert.show { display: block; }
-#ts-alert.waypoint { background: rgba(5,30,60,0.95);
-  border-color: #4488ff55; color: #88ccff; }
-@keyframes ts-pulse {
-  0%,100%{ box-shadow: 0 0 8px #ff442200; }
-  50%    { box-shadow: 0 0 18px #ff442244; }
+#ts-alert.show {
+  display: block;
+  animation: ts-flash-in 0.18s ease-out forwards, ts-flash-out 0.45s ease-in 1.2s forwards;
+}
+#ts-alert.waypoint {
+  background: rgba(5,25,55,0.92);
+  border-color: #4488ff66; color: #88ccff;
+}
+@keyframes ts-flash-in {
+  from { opacity: 0; transform: translate(-50%, -50%) scale(0.88); }
+  to   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+@keyframes ts-flash-out {
+  from { opacity: 1; }
+  to   { opacity: 0; }
 }
 
 
@@ -9109,11 +9118,10 @@ function tsResolveEvent(ev) {
   if (ev.type === 'enemy') {
     const alertEl = document.getElementById('ts-alert');
     if (alertEl) { alertEl.textContent = '⚔ INTERCEPT'; alertEl.className = 'show'; }
+    // CSS handles the fade — just clear the class after animation completes
+    setTimeout(() => { if (alertEl) alertEl.className = ''; }, 1700);
     setTimeout(() => {
-      if (alertEl) alertEl.className = '';
-      // Save travel resume state BEFORE switching phase — mirrors the waystation path.
-      // Without this, if G.tvl is touched during combat, endCbt has no fallback and
-      // drops the player back to their origin sphere instead of resuming the voyage.
+      // Save travel resume state BEFORE switching phase
       if (G.tvl?.to && !G._resumeTravel) {
         const laneOrigin = G.tvl._laneOrigin || G.tvl.fromPos || {x:.5,y:.5};
         const destSph = G.spheres?.find(s=>s.id===G.tvl.to) || {x:.5,y:.5};
@@ -9121,8 +9129,6 @@ function tsResolveEvent(ev) {
         const pausedPos = { x: laneOrigin.x + (destSph.x-laneOrigin.x)*pg, y: laneOrigin.y + (destSph.y-laneOrigin.y)*pg };
         G._resumeTravel = { toId:G.tvl.to, watchesRemaining:G.tvl._watchesLeft||0, pausedPos, pausedProg:G.tvl.prog, laneOrigin };
       }
-      // Set phase back to map so startCombat's phase check passes
-      // (we left it as 'traveling' while the enemy was approaching)
       G.phase = 'map';
       startCombat(ev.key);
     }, 600);
@@ -9245,7 +9251,7 @@ function tsQueueEnemy(enemyKey) {
   TS.events.push(ev);
   const alertEl = document.getElementById('ts-alert');
   if (alertEl) { alertEl.textContent = '⚠ ENEMY APPROACHING'; alertEl.className = 'show'; }
-  setTimeout(() => { if (alertEl && alertEl.textContent === '⚠ ENEMY APPROACHING') alertEl.className = ''; }, 2500);
+  setTimeout(() => { if (alertEl && alertEl.textContent === '⚠ ENEMY APPROACHING') alertEl.className = ''; }, 1700);
 }
 
 // Queue a roaming friendly encounter — varied approach direction like enemies
@@ -9259,7 +9265,7 @@ function tsQueueRoam(factionId) {
   ev.col = fac?.col || '#88ccff';
   const alertEl = document.getElementById('ts-alert');
   if (alertEl) { alertEl.textContent = `📡 ${fac?.n || 'VESSEL'} HAILING`; alertEl.className = 'show waypoint'; }
-  setTimeout(() => { if (alertEl) alertEl.className = ''; }, 2200);
+  setTimeout(() => { if (alertEl) alertEl.className = ''; }, 1700);
 }
 
 // Queue a waypoint approach event — always dead ahead, it's a fixed station
@@ -9275,7 +9281,7 @@ function tsQueueWaypoint(ws) {
   });
   const alertEl = document.getElementById('ts-alert');
   if (alertEl) { alertEl.textContent = '📡 WAYSTATION AHEAD'; alertEl.className = 'show waypoint'; }
-  setTimeout(() => { if (alertEl) alertEl.className = ''; }, 2000);
+  setTimeout(() => { if (alertEl) alertEl.className = ''; }, 1700);
 }
 
 // Skip: fast-forwards travelTick (not called when skipBlocked)
