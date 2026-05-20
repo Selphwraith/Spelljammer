@@ -4313,7 +4313,14 @@ function watchExpiredMidJourney() {
   G.watch._pauseShown = true;
   clearInterval(G.tvl.timer); G.tvl.timer = null;
   stopLiveClock();
-  if (G.tvl) { G.tvl.cur = 0; G.tvl.steps = 0; }
+  // Capture before zeroing — anchorCb and pushCb need these
+  const _savedProg         = G.tvl?.prog ?? 0;
+  const _savedWatchesLeft  = G.tvl?._watchesLeft ?? 0;
+  if (G.tvl) {
+    G.tvl._pausedProg       = _savedProg;
+    G.tvl._watchesRemaining = _savedWatchesLeft;
+    G.tvl.cur = 0; G.tvl.steps = 0;
+  }
   G.phase = 'map';
   tickLeg();
   stopTravelHum();
@@ -12766,7 +12773,7 @@ function endCbt(won){
     if(won) addLog('Enemy destroyed. Resuming course to '+G.tvl.toFragSite.n+'…','gd');
     document.getElementById('tvlbar').classList.add('on');
     if(G.tvl){ G.tvl._eventLocked=false; G.tvl.timer=setInterval(travelTick, G.tvl.tickMs||100); }
-    startTravelHum(); startLiveClock(); resetLiveClock(G.tvl ? G.tvl.prog/100 : 0);
+    startTravelHum(); startLiveClock(); resetLiveClock(G.tvl && isFinite(G.tvl.prog) ? G.tvl.prog/100 : 0);
     updateWatchHUD();
     tsOpen(G.tvl.lane);
     return;
@@ -12800,7 +12807,7 @@ function endCbt(won){
   if(won)addLog('Resuming voyage.','');
   document.getElementById('tvlbar').classList.add('on');
   if(G.tvl){ G.tvl._eventLocked=false; G.tvl.timer=setInterval(travelTick, G.tvl.tickMs||100); }
-  startTravelHum(); startLiveClock(); resetLiveClock(G.tvl ? G.tvl.prog/100 : 0);
+  startTravelHum(); startLiveClock(); resetLiveClock(G.tvl && isFinite(G.tvl.prog) ? G.tvl.prog/100 : 0);
   updateWatchHUD();
   tsOpen(G.tvl.lane);
 }
