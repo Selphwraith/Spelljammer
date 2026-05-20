@@ -17229,8 +17229,8 @@ function _lsUpdatePlayer(dt) {
       LS.pvx *= 0.6; LS.pvy *= 0.6;
     } else {
       const speed = Math.min(LS.pSpeed, td * 4);
-      LS.pvx += (tdx/td) * speed * dt * 3;
-      LS.pvy += (tdy/td) * speed * dt * 3;
+      LS.pvx += (tdx/td) * speed * dt * 12;
+      LS.pvy += (tdy/td) * speed * dt * 12;
       LS.pAngle = Math.atan2(tdy, tdx);
     }
   }
@@ -19407,8 +19407,8 @@ function _fdUpdatePlayer(dt){
     if(td<12){FD.pTargetX=null;FD.pTargetY=null;FD.pvx*=0.4;FD.pvy*=0.4;}
     else{
       const tx=(tdx/td)*FD.pSpeed,ty=(tdy/td)*FD.pSpeed;
-      FD.pvx+=(tx-FD.pvx)*Math.min(dt*6,1);
-      FD.pvy+=(ty-FD.pvy)*Math.min(dt*6,1);
+      FD.pvx+=(tx-FD.pvx)*Math.min(dt*14,1);
+      FD.pvy+=(ty-FD.pvy)*Math.min(dt*14,1);
     }
   }
   FD.pvx*=FD.pFriction; FD.pvy*=FD.pFriction;
