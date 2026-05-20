@@ -12757,6 +12757,9 @@ function endCbt(won){
   setAmbient('map');
   // Local space / dungeon combat — return to LS instead of resuming travel
   if(_lsPendingReturn) {
+    // Kill any stale travel timer so it can't double-tick when travel restarts
+    if(G.tvl?.timer){ clearInterval(G.tvl.timer); G.tvl.timer=null; }
+    G._resumeTravel = null; // discard any stale resume state
     G.phase = 'map'; setTag('Navigation'); updateUI();
     _lsCheckReturnAfterCombat();
     return;
@@ -16495,6 +16498,10 @@ function closeLsOverlay() {
   if(LS.animId) { cancelAnimationFrame(LS.animId); LS.animId = null; }
   LS.keys = {};
   if(LS._humActive) { stopTravelHum(); LS._humActive = false; }
+  // Clear pending-return flags — player chose to leave LS manually,
+  // so any stale combat-return state must not bleed into the next travel leg
+  _lsPendingReturn = false;
+  _lsPendingFragment = null;
   document.getElementById('watch-hud')?.classList.remove('ls-mode');
   setTag('Navigation'); updateUI();
   _syncWatchHudVisibility();
@@ -18240,6 +18247,7 @@ function _lsCheckReturnAfterCombat() {
   // Fragment dungeon — minion combat return (reopen dungeon)
   if(FD.pendingReturn) {
     FD.pendingReturn = false;
+    _lsPendingReturn = false; // MUST clear — otherwise stale true bleeds into travel combat
     // lqTrackKill already fired in cbtWin — do not call again here
     if(FD.pendingEnemyIdx !== null) {
       FD.enemies.splice(FD.pendingEnemyIdx, 1);
